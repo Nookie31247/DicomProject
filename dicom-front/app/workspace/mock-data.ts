@@ -30,7 +30,9 @@ export type Patient = {
 // 로그인한 사용자(목업). 인증 연동 전 화면 확인용 더미 데이터입니다.
 export const currentUser = {
   name: "강현우",
+  userId: "hyunwoo.kang", // 로그인 아이디
   role: "doctor" as "doctor" | "researcher",
+  licenseNumber: "2024-12345", // 의사 면허번호 (회원유형이 의사일 때만 사용)
 };
 
 export const patients: Patient[] = [

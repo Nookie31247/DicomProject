@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import "./home.css";
 
 export const metadata: Metadata = {
   title: "DICOM! — DICOM 파일을 보다 간편하게",
 };
+
+const heroPoints = [
+  "DICOM 파일을 웹에서 손쉽게 볼 수 있습니다.",
+  "DICOM 파일을 저장할 수 있습니다.",
+  "AI가 자동으로 DICOM 파일을 분석해줍니다.",
+  "등록된 자료는 자동으로 익명화되서 연구 기관에 전송됩니다.",
+];
 
 export default function Home() {
   return (
@@ -19,28 +25,40 @@ export default function Home() {
       </header>
 
       {/* ───────────── Hero ───────────── */}
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">DICOM 파일을 보다 간편하게!</p>
+      <section className="grid grid-cols-[1.15fr_0.85fr] items-center gap-12 bg-paper px-[clamp(24px,5vw,62px)] pt-16 pb-[88px] max-[900px]:grid-cols-1 max-[560px]:px-5 max-[560px]:pt-10 max-[560px]:pb-14">
+        <div className="max-w-[620px] max-[900px]:order-1">
+          <p className="eyebrow text-[22px] tracking-[-0.01em] mb-[18px] max-[560px]:text-[18px]">
+            DICOM 파일을 보다 간편하게!
+          </p>
 
-          <ul className="hero-points">
-            <li>DICOM 파일을 웹에서 손쉽게 볼 수 있습니다.</li>
-            <li>DICOM 파일을 저장할 수 있습니다.</li>
-            <li>AI가 자동으로 DICOM 파일을 분석해줍니다.</li>
-            <li>등록된 자료는 자동으로 익명화되서 연구 기관에 전송됩니다.</li>
+          <ul className="m-0 mb-10 flex list-none flex-col gap-[18px] p-0">
+            {heroPoints.map((text) => (
+              <li
+                key={text}
+                className="relative pl-[22px] text-[27px] font-semibold leading-[1.4] text-ink before:absolute before:left-0 before:top-[13px] before:h-2 before:w-2 before:rounded-[2px] before:bg-mint before:content-[''] max-[900px]:text-[22px] max-[560px]:text-[19px]"
+              >
+                {text}
+              </li>
+            ))}
           </ul>
 
-          <div className="cta-row">
-            <Link href="/login" className="btn btn-primary">
+          <div className="flex gap-[18px] max-[560px]:flex-wrap">
+            <Link
+              href="/login"
+              className="btn btn-primary text-[21px] px-9 py-[18px] max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
+            >
               로그인
             </Link>
-            <Link href="/signup" className="btn btn-secondary">
+            <Link
+              href="/signup"
+              className="btn btn-secondary text-[21px] px-9 py-[18px] max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
+            >
               시작하기
             </Link>
           </div>
         </div>
 
-        <div className="hero-visual" aria-hidden="true">
+        <div className="flex justify-center max-[900px]:order-[-1]" aria-hidden="true">
           <div className="scan-frame">
             <div className="scan-grid" />
             <div className="scan-line" />
@@ -54,9 +72,23 @@ export default function Home() {
       </section>
 
       {/* ───────────── Promo / Intro panel ───────────── */}
-      <section className="promo" id="how-it-works">
-        <div className="promo-pattern" aria-hidden="true" />
-        <p className="promo-text">
+      <section
+        className="relative mx-[clamp(24px,5vw,62px)] mt-12 mb-20 flex min-h-[560px] flex-1 items-center justify-center overflow-hidden rounded-3xl p-12 max-[560px]:min-h-[360px] max-[560px]:px-6 max-[560px]:py-8"
+        id="how-it-works"
+        style={{
+          background: "linear-gradient(160deg, #e2e5ea 0%, #d9d9d9 100%)",
+        }}
+      >
+        <div
+          className="absolute inset-0 opacity-50"
+          aria-hidden="true"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.6) 1.5px, transparent 1.5px)",
+            backgroundSize: "26px 26px",
+          }}
+        />
+        <p className="relative m-0 max-w-[720px] text-center text-[34px] font-semibold text-ink-soft max-[560px]:text-[22px]">
           여기에 서비스 소개(홍보) 내용을 작성합니다
         </p>
       </section>
