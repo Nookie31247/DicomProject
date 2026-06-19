@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import "../styles/auth.css";
 
 export const metadata: Metadata = {
   title: "로그인 — DICOM!",
