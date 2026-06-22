@@ -2,15 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { patients, currentUser, type DicomItem } from "./mock-data";
+import {useParams, useRouter} from "next/navigation";
+import { patients, currentUser, type DicomItem } from "../mock-data";
 
 export default function WorkspacePage() {
-    const currentPatient = patients[0];
+    const router = useRouter();
+    const params = useParams(); // ★ URL의 [id] 값을 가져옴
+    const studyIdFromUrl = params?.id as string;
 
-    // 선택된 DICOM 항목 상태 (첫 항목 기본 선택)
+    // 1. [고정값 제거] URL의 검사 ID(studyIdFromUrl)를 가지고 있는 환자를 동적으로 매칭
+    const currentPatient = patients.find((p) =>
+        p.items.some((it) => it.id === studyIdFromUrl)
+    ) || patients[0]; // 만약 일치하는 환자가 없으면 기본값으로 patients[0]을 백업
+
+    // 2. 선택된 DICOM 항목 상태 (URL 파라미터로 넘어온 ID를 기본 선택값으로 도킹)
     const [selectedItemId, setSelectedItemId] = useState<string | null>(
-        currentPatient?.items[0]?.id || null
+        studyIdFromUrl || currentPatient?.items[0]?.id || null
     );
 
     // 현재 선택된 시리즈 내의 "몇 번째 이미지"인지 관리하는 상태 (기본값: 1번째)
@@ -25,15 +32,13 @@ export default function WorkspacePage() {
         setCurrentImageIndex(1);
     };
 
-    const router = useRouter();
-
     function handleLogout() {
         router.push("/");
     }
 
     // 돌아가기
     const handleGoBack = () => {
-        router.push("./workspace");
+        router.push("../workspace");
     };
 
     return (
