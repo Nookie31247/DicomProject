@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {useParams, useRouter} from "next/navigation";
-import { patients, currentUser, type DicomItem } from "../mock-data";
+import { patients, currentUser, type DicomItem } from "@/mock-data";
 
 export default function WorkspacePage() {
     const router = useRouter();

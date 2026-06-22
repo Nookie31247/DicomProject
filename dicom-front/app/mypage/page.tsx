@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { currentUser } from "../workspace/mock-data";
+import { currentUser } from "../../mock-data";
 
 const roleLabel = (r: "doctor" | "researcher") =>
   r === "doctor" ? "의사" : "연구자";

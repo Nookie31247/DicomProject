@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { patients, currentUser, type DicomItem } from "../workspace/mock-data";
+import { patients, currentUser, type DicomItem } from "../../mock-data";
 
 export default function WorkspacePage() {
   // 선택된 환자 / 선택된 DICOM 항목 상태.
