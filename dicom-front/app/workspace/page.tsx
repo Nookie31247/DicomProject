@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { patients, currentUser } from "./mock-data"; // 경로 상황에 맞게 조정
+import { patients, currentUser } from "@/mock-data"; // 경로 상황에 맞게 조정
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
