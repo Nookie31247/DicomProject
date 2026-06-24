@@ -5,14 +5,14 @@ export const metadata: Metadata = {
   title: "DICOM! — DICOM 파일을 보다 간편하게",
 };
 
-const heroPoints = [
-  "DICOM 파일을 웹에서 손쉽게 볼 수 있습니다.",
-  "DICOM 파일을 저장할 수 있습니다.",
-  "AI가 자동으로 DICOM 파일을 분석해줍니다.",
-  "등록된 자료는 자동으로 익명화되서 연구 기관에 전송됩니다.",
-];
-
 export default function Home() {
+  const heroPoints = [
+    "DICOM 파일을 웹에서 손쉽게 볼 수 있습니다.",
+    "DICOM 파일을 저장할 수 있습니다.",
+    "AI가 자동으로 DICOM 파일을 분석해줍니다.",
+    "등록된 자료는 자동으로 익명화되서 연구 기관에 전송됩니다.",
+  ];
+
   return (
     <div className="page">
       {/* ───────────── Nav ───────────── */}
