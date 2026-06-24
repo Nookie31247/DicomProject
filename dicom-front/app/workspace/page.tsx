@@ -81,7 +81,9 @@ export default function WorkspaceDashboardPage() {
   const sexLabel = (s: "M" | "F") => (s === "M" ? "남" : "여");
 
   const workspaceStyle = { "--ws-grid": "380px 1fr" } as CSSProperties;
-  const studyGridColumns = "30px 84px 1.6fr 1fr 1fr 70px 70px 100px";
+
+  // ★ 수정 포인트 1: 기존 "30px 84px 1.6fr 1fr 1fr 70px 70px 100px" 에서 검사 부위에 해당하는 1fr 제거
+  const studyGridColumns = "30px 84px 1.6fr 1fr 70px 70px 100px";
 
   return (
       <div className="page">
@@ -263,7 +265,7 @@ export default function WorkspaceDashboardPage() {
                     <span></span>
                     <span className="col-modality">모달리티</span>
                     <span className="col-desc">검사 설명</span>
-                    <span className="col-body">검사 부위</span>
+                    {/* ★ 수정 포인트 2: <span className="col-body">검사 부위</span> 제거됨 */}
                     <span className="col-date">검사 일자</span>
                     <span className="col-series">시리즈</span>
                     <span className="col-images">영상 수</span>
@@ -277,7 +279,6 @@ export default function WorkspaceDashboardPage() {
                               <div
                                   className={`study-row ${it.id === selectedItemId ? "active" : ""}`}
                                   onClick={() => setSelectedItemId(it.id)}
-                                  // ★ 변경: 더블클릭 시 동적 경로 뷰어로 데이터 라우팅 연동
                                   onDoubleClick={() => router.push(`/viewer/${it.id}`)}
                                   style={{ gridTemplateColumns: studyGridColumns }}
                                   title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
@@ -296,7 +297,7 @@ export default function WorkspaceDashboardPage() {
                           </span>
                         </span>
                                 <span className="col-desc">{it.description}</span>
-                                <span className="col-body">{it.bodyPart}</span>
+                                {/* ★ 수정 포인트 3: <span className="col-body">{it.bodyPart}</span> 제거됨 */}
                                 <span className="col-date">{it.studyDate}</span>
                                 <span className="col-series">#{it.seriesNumber}</span>
                                 <span className="col-images">{it.images}</span>
