@@ -15,14 +15,7 @@ export default function Home() {
 
   return (
     <div className="page">
-      {/* ───────────── Nav ───────────── */}
-      <header className="nav">
-        <span className="logo">DICOM!</span>
-        <nav className="nav-links">
-          <Link href="#how-it-works">사용방법</Link>
-          <Link href="#faq">FAQ</Link>
-        </nav>
-      </header>
+
 
       {/* ───────────── Hero ───────────── */}
       <section className="grid grid-cols-[1.15fr_0.85fr] items-center gap-12 bg-paper px-[clamp(24px,5vw,62px)] pt-16 pb-[88px] max-[900px]:grid-cols-1 max-[560px]:px-5 max-[560px]:pt-10 max-[560px]:pb-14">

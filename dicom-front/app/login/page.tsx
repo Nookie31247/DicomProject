@@ -8,17 +8,6 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className="page">
-      {/* ───────────── Nav ───────────── */}
-      <header className="nav">
-        <Link href="/" className="logo">
-          DICOM!
-        </Link>
-        <nav className="nav-links">
-          <Link href="/#how-it-works">사용방법</Link>
-          <Link href="/#faq">FAQ</Link>
-        </nav>
-      </header>
-
       {/* ───────────── Auth section ───────────── */}
       <section className="auth">
         <div className="auth-visual" aria-hidden="true">

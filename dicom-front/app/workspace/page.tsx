@@ -3,13 +3,13 @@
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { patients, currentUser } from "@/mock-data"; // 경로 상황에 맞게 조정
+import { patients, studies, currentUser } from "@/mock-data";
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
 
   // ── 환자(Patient) 관련 상태 ──
-  const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.id);
+  const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.["patient-id"]);
   const [checkedPatientIds, setCheckedPatientIds] = useState<Set<string>>(new Set());
   const [showHiddenPatients, setShowHiddenPatients] = useState(false);
 
@@ -17,8 +17,6 @@ export default function WorkspaceDashboardPage() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [checkedStudyIds, setCheckedStudyIds] = useState<Set<string>>(new Set());
   const [showHiddenStudies, setShowHiddenStudies] = useState(false);
-
-  const handleLogout = () => router.push("/");
 
   // ==========================================
   // 1. 환자 목록 컨트롤 로직
@@ -47,8 +45,8 @@ export default function WorkspaceDashboardPage() {
     setCheckedPatientIds(new Set());
   };
 
-  const displayedPatients = showHiddenPatients ? [] : patients;
-  const selectedPatient = patients.find((p) => p.id === selectedPatientId) ?? null;
+  const displayedPatients = showHiddenPatients ? [] : patients.filter(p => !p.hidden);
+  const selectedPatient = patients.find((p) => p["patient-id"] === selectedPatientId) ?? null;
 
   // ==========================================
   // 2. 검사(DICOM) 목록 컨트롤 로직
@@ -73,7 +71,7 @@ export default function WorkspaceDashboardPage() {
 
   const displayedStudies = (!selectedPatient || showHiddenStudies)
       ? []
-      : selectedPatient.items;
+      : studies.filter(s => s["patient-id"] === selectedPatientId && !s.hidden);
 
   // ==========================================
   // 기타 헬퍼 및 스타일
@@ -87,20 +85,6 @@ export default function WorkspaceDashboardPage() {
 
   return (
       <div className="page">
-        {/* ───────────── Nav ───────────── */}
-        <header className="nav">
-          <Link href="/" className="logo">
-            DICOM!
-          </Link>
-          <div className="nav-user">
-            <span className="user-avatar">{currentUser.name.charAt(0)}</span>
-            <span className="user-name">{currentUser.name}님</span>
-            <button type="button" className="logout-btn" onClick={handleLogout}>
-              로그아웃
-            </button>
-          </div>
-        </header>
-
         {/* ───────────── Workspace ───────────── */}
         <section className="workspace" style={workspaceStyle}>
 
@@ -125,28 +109,28 @@ export default function WorkspaceDashboardPage() {
             <ul className="patient-list flex-1 overflow-y-auto">
               {displayedPatients.length > 0 ? (
                   displayedPatients.map((p) => (
-                      <li key={p.id} className="flex items-center pl-2 gap-2">
+                      <li key={p["patient-id"]} className="flex items-center pl-2 gap-2">
                         <input
                             type="checkbox"
-                            checked={checkedPatientIds.has(p.id)}
-                            onChange={() => togglePatientCheck(p.id)}
+                            checked={checkedPatientIds.has(p["patient-id"])}
+                            onChange={() => togglePatientCheck(p["patient-id"])}
                             className="cursor-pointer"
                         />
                         <button
                             type="button"
                             className={`patient-row flex-1 ${
-                                p.id === selectedPatientId ? "active" : ""
+                                p["patient-id"] === selectedPatientId ? "active" : ""
                             }`}
-                            onClick={() => handleSelectPatient(p.id)}
+                            onClick={() => handleSelectPatient(p["patient-id"])}
                         >
-                          <span className="patient-avatar">{p.name.charAt(0)}</span>
+                          <span className="patient-avatar">{p["patient-name"].charAt(0)}</span>
                           <span className="patient-main">
-                      <span className="patient-name">{p.name}</span>
+                      <span className="patient-name">{p["patient-name"]}</span>
                       <span className="patient-sub">
-                        {sexLabel(p.sex)} · {p.birthDate}
+                        {sexLabel(p["patient-sex"])} · {p["patient-birth"]}
                       </span>
                     </span>
-                          <span className="patient-badge">{p.items.length}</span>
+                          <span className="patient-badge">{p["study-count"]}</span>
                         </button>
                       </li>
                   ))
@@ -198,8 +182,8 @@ export default function WorkspaceDashboardPage() {
                     </div>
                     {selectedPatient ? (
                         <span className="ws-sub-label">
-                      {selectedPatient.name} · {sexLabel(selectedPatient.sex)} ·{" "}
-                          {selectedPatient.birthDate} · {selectedPatient.patientId}
+                      {selectedPatient["patient-name"]} · {sexLabel(selectedPatient["patient-sex"])} ·{" "}
+                          {selectedPatient["patient-birth"]} · {selectedPatient["patient-id"]}
                     </span>
                     ) : (
                         <span className="ws-sub-label">환자를 선택하세요</span>
@@ -275,19 +259,19 @@ export default function WorkspaceDashboardPage() {
                   <ul className="study-list">
                     {displayedStudies.length > 0 ? (
                         displayedStudies.map((it, idx) => (
-                            <li key={it.id}>
+                            <li key={it["study-key"]}>
                               <div
-                                  className={`study-row ${it.id === selectedItemId ? "active" : ""}`}
-                                  onClick={() => setSelectedItemId(it.id)}
-                                  onDoubleClick={() => router.push(`/viewer/${it.id}`)}
+                                  className={`study-row ${it["study-key"] === selectedItemId ? "active" : ""}`}
+                                  onClick={() => setSelectedItemId(it["study-key"])}
+                                  onDoubleClick={() => router.push(`/viewer/${it["study-key"]}`)}
                                   style={{ gridTemplateColumns: studyGridColumns }}
                                   title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
                               >
                                 <div onClick={(e) => e.stopPropagation()} className="flex items-center">
                                   <input
                                       type="checkbox"
-                                      checked={checkedStudyIds.has(it.id)}
-                                      onChange={() => toggleStudyCheck(it.id)}
+                                      checked={checkedStudyIds.has(it["study-key"])}
+                                      onChange={() => toggleStudyCheck(it["study-key"])}
                                       className="cursor-pointer"
                                   />
                                 </div>
@@ -298,15 +282,15 @@ export default function WorkspaceDashboardPage() {
                         </span>
                                 <span className="col-desc">{it.description}</span>
                                 {/* ★ 수정 포인트 3: <span className="col-body">{it.bodyPart}</span> 제거됨 */}
-                                <span className="col-date">{it.studyDate}</span>
-                                <span className="col-series">#{it.seriesNumber}</span>
-                                <span className="col-images">{it.images}</span>
+                                <span className="col-date">{it.datetime.split("T")[0]}</span>
+                                <span className="col-series">#{it["series-num"]}</span>
+                                <span className="col-images">{it["images-num"]}</span>
                                 <span
                                     className={`col-research text-center font-bold ${
-                                        idx % 2 === 0 ? "text-[#28a745]" : "text-[#dc3545]"
+                                        it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
                                     }`}
                                 >
-                          {idx % 2 === 0 ? "예" : "아니오"}
+                          {it["allow-research"] ? "예" : "아니오"}
                         </span>
                               </div>
                             </li>

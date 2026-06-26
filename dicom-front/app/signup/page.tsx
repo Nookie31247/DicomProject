@@ -21,17 +21,6 @@ export default function SignupPage() {
 
   return (
     <div className="page">
-      {/* ───────────── Nav ───────────── */}
-      <header className="nav">
-        <Link href="/" className="logo">
-          DICOM!
-        </Link>
-        <nav className="nav-links">
-          <Link href="/#how-it-works">사용방법</Link>
-          <Link href="/#faq">FAQ</Link>
-        </nav>
-      </header>
-
       {/* ───────────── Auth section ───────────── */}
       {/* items-start: 의사 선택 시 카드가 길어져도 왼쪽 비주얼이 밀려나지 않게 */}
       <section className="auth items-start">
