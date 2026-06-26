@@ -105,7 +105,7 @@ export default function WorkspacePage() {
         }
     };
 
-    const workspaceStyle = { "--ws-grid": "400px 1fr" } as CSSProperties;
+    const workspaceStyle = { "--ws-grid": "480px 1fr" } as CSSProperties;
 
     return (
         <div className="page flex h-screen flex-col overflow-hidden">
@@ -163,7 +163,7 @@ export default function WorkspacePage() {
                                 <span className="ws-sub-label">{currentStudy.modality} · 시리즈 #{currentSeries.seriesNumber} · {currentSeries.date}</span>
                             )}
                         </div>
-                        <button type="button" className="btn btn-primary px-5 py-2.5 text-sm">AI 판독</button>
+                        <button type="button" className="logout-btn">AI 판독</button>
                     </div>
 
                     <div className="viewer-stage flex flex-row justify-between items-start flex-1 p-10 px-5 overflow-hidden min-h-0 relative" onWheel={handleViewerWheel}>

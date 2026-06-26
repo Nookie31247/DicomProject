@@ -68,7 +68,7 @@ export const patients: ApiPatient[] = [
     "patient-sex": "M",
     "patient-birth": "1978-11-30",
     "latest-study-datetime": "2024-05-28T09:15:00Z",
-    "study-count": 3,
+    "study-count": 0,
     hidden: false,
   },
 ];

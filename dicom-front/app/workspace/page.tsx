@@ -40,12 +40,42 @@ export default function WorkspaceDashboardPage() {
     setCheckedPatientIds(new Set());
   };
 
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({ keyword: "", start: "", end: "" });
+
+  const handleSearch = () => {
+    setAppliedFilters({ keyword: searchKeyword, start: startDate, end: endDate });
+  };
+
   const toggleShowHiddenPatients = () => {
     setShowHiddenPatients((prev) => !prev);
     setCheckedPatientIds(new Set());
   };
 
-  const displayedPatients = showHiddenPatients ? [] : patients.filter(p => !p.hidden);
+  const displayedPatients = showHiddenPatients ? [] : patients.filter(p => {
+    if (p.hidden) return false;
+    
+    if (appliedFilters.keyword) {
+      const kw = appliedFilters.keyword.toLowerCase();
+      if (!p["patient-name"].toLowerCase().includes(kw) && !p["patient-id"].toLowerCase().includes(kw)) {
+        return false;
+      }
+    }
+    
+    if (appliedFilters.start) {
+      const studyDate = p["latest-study-datetime"].split("T")[0];
+      if (studyDate < appliedFilters.start) return false;
+    }
+    
+    if (appliedFilters.end) {
+      const studyDate = p["latest-study-datetime"].split("T")[0];
+      if (studyDate > appliedFilters.end) return false;
+    }
+    
+    return true;
+  });
   const selectedPatient = patients.find((p) => p["patient-id"] === selectedPatientId) ?? null;
 
   // ==========================================
@@ -78,7 +108,7 @@ export default function WorkspaceDashboardPage() {
   // ==========================================
   const sexLabel = (s: "M" | "F") => (s === "M" ? "남" : "여");
 
-  const workspaceStyle = { "--ws-grid": "400px 1fr" } as CSSProperties;
+  const workspaceStyle = { "--ws-grid": "480px 1fr" } as CSSProperties;
 
   // ★ 수정 포인트 1: 기존 "30px 84px 1.6fr 1fr 1fr 70px 70px 100px" 에서 검사 부위에 해당하는 1fr 제거
   const studyGridColumns = "30px 84px 1.6fr 1fr 70px 70px 100px";
@@ -99,7 +129,46 @@ export default function WorkspaceDashboardPage() {
                     </h2>
                     <span className="ws-count">{displayedPatients.length}명</span>
                   </div>
-                  <button type="button" className="logout-btn">환자 추가</button>
+                  <button type="button" className="logout-btn" style={{ padding: '6px 12px', fontSize: '13px' }}>환자 추가</button>
+                </div>
+
+                {/* 검색 필터 UI */}
+                <div className="flex gap-2 mt-2 items-stretch">
+                  {/* 왼쪽: 검색창 & 날짜 */}
+                  <div className="flex flex-col flex-1 gap-2">
+                    <input
+                      type="text"
+                      placeholder="환자 이름 또는 ID 검색"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-[12px] text-[13px] text-slate-800 focus:outline-none focus:border-[#14b876]"
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="date"
+                        className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-[12px] text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                      <span className="text-slate-400">-</span>
+                      <input
+                        type="date"
+                        className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-[12px] text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* 오른쪽: 검색 버튼 */}
+                  <button
+                    type="button"
+                    className="w-[72px] bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-[12px] text-[14px] transition-colors flex items-center justify-center cursor-pointer"
+                    onClick={handleSearch}
+                  >
+                    검색
+                  </button>
                 </div>
               </div>
             </div>
@@ -125,7 +194,7 @@ export default function WorkspaceDashboardPage() {
                           <span className="patient-main">
                       <span className="patient-name">{p["patient-name"]}</span>
                       <span className="patient-sub">
-                        {sexLabel(p["patient-sex"])} · {p["patient-birth"]}
+                        {sexLabel(p["patient-sex"])} · {p["patient-birth"]} · 최근 진료: {p["latest-study-datetime"]?.split('T')[0]}
                       </span>
                     </span>
                           <span className="patient-badge">{p["study-count"]}</span>
@@ -180,8 +249,7 @@ export default function WorkspaceDashboardPage() {
                     </div>
                     {selectedPatient ? (
                         <span className="ws-sub-label">
-                      {selectedPatient["patient-name"]} · {sexLabel(selectedPatient["patient-sex"])} ·{" "}
-                          {selectedPatient["patient-birth"]} · {selectedPatient["patient-id"]}
+                      {selectedPatient["patient-name"]} · {sexLabel(selectedPatient["patient-sex"])} · {selectedPatient["patient-birth"]}
                     </span>
                     ) : (
                         <span className="ws-sub-label">환자를 선택하세요</span>
@@ -221,14 +289,6 @@ export default function WorkspaceDashboardPage() {
                               className="px-2 py-1 text-xs cursor-pointer"
                           >
                             연구 목적 활용 허용
-                          </button>
-                          <button
-                              type="button"
-                              onClick={() => executeStudyAction("연구 목적 활용 허용 안할 검사 ID 리스트:")}
-                              disabled={checkedStudyIds.size === 0}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            연구 목적 활용 허용 안함
                           </button>
                         </div>
                     )}

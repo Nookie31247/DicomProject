@@ -97,7 +97,7 @@ export default function WorkspacePage() {
         }
     };
 
-    const workspaceStyle = { "--ws-grid": "400px 1fr" } as CSSProperties;
+    const workspaceStyle = { "--ws-grid": "480px 1fr" } as CSSProperties;
 
     return (
         <div className="page">
