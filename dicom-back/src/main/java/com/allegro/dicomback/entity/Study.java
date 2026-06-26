@@ -54,4 +54,8 @@ public class Study {
     public void delete() {
         this.delFlag = 1;
     }
+
+    // 검색 설명
+    @Column(name = "description")
+    private String description;
 }

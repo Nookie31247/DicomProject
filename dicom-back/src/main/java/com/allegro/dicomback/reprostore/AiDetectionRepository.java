@@ -1,0 +1,14 @@
+package com.allegro.dicomback.reprostore;
+
+import com.allegro.dicomback.entity.ai.AiDetection;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface AiDetectionRepository extends JpaRepository<AiDetection, Long> {
+
+    // 특정 AI 분석 결과(ResultKey)에 속한 박스 목록 조회
+    List<AiDetection> findByResultKey(Long resultKey);
+
+    // 특정 단면 이미지(ImageKey)에서 탐지된 병변만 필터링
+    List<AiDetection> findByImageKey(Long imageKey);
+}

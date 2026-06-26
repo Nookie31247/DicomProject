@@ -1,7 +1,7 @@
 package com.allegro.dicomback.entity.anonymization;
 
 import com.allegro.dicomback.entity.Study;
-import com.allegro.dicomback.entity.User.User;
+import com.allegro.dicomback.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

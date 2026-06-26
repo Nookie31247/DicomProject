@@ -15,9 +15,8 @@ import java.time.LocalDateTime;
 public class Patient {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "PId")
-    private Long pId;
+    @Column(name = "PId",  length = 64)
+    private String pId;
 
     // 환자 성명
     @Column(name = "PName", length = 64)
