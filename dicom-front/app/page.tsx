@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 
 export const metadata: Metadata = {
   title: "DICOM! — DICOM 파일을 보다 간편하게",
@@ -52,15 +53,7 @@ export default function Home() {
         </div>
 
         <div className="flex justify-center max-[900px]:order-[-1]" aria-hidden="true">
-          <div className="scan-frame">
-            <div className="scan-grid" />
-            <div className="scan-line" />
-            <div className="scan-corner tl" />
-            <div className="scan-corner tr" />
-            <div className="scan-corner bl" />
-            <div className="scan-corner br" />
-            <span className="scan-tag">SLICE 084 / 220</span>
-          </div>
+          <ScanVisual />
         </div>
       </section>
 

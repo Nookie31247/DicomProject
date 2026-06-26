@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 
 export default function SignupPage() {
   const [memberType, setMemberType] = useState<"doctor" | "researcher">(
@@ -28,15 +29,7 @@ export default function SignupPage() {
           className="auth-visual sticky top-24 max-[900px]:static"
           aria-hidden="true"
         >
-          <div className="scan-frame">
-            <div className="scan-grid" />
-            <div className="scan-line" />
-            <div className="scan-corner tl" />
-            <div className="scan-corner tr" />
-            <div className="scan-corner bl" />
-            <div className="scan-corner br" />
-            <span className="scan-tag">SLICE 084 / 220</span>
-          </div>
+          <ScanVisual />
           <p className="visual-caption">
             의사와 연구원 모두를 위한
             <br />

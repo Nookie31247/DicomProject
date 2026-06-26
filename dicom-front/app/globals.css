@@ -19,20 +19,9 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --animate-sweep: sweep 3.2s ease-in-out infinite;
 }
 
-@keyframes sweep {
-  0%,
-  100% {
-    top: 12%;
-    opacity: 0.9;
-  }
-  50% {
-    top: 86%;
-    opacity: 0.5;
-  }
-}
+
 
 /* ========== Base ========== */
 @layer base {
@@ -99,86 +88,7 @@
     @apply w-full;
   }
 
-  /* ---- Scan visual ---- */
-  .scan-frame {
-    @apply relative w-full overflow-hidden;
-    max-width: 420px;
-    aspect-ratio: 4 / 5;
-    background: radial-gradient(
-        circle at 30% 20%,
-        rgba(76, 255, 157, 0.18),
-        transparent 55%
-      ),
-      var(--color-slate);
-    border-radius: 28px;
-    box-shadow: 0 30px 60px -20px rgba(15, 31, 61, 0.45);
-  }
 
-  .scan-grid {
-    @apply absolute inset-0;
-    background-image: linear-gradient(
-        rgba(255, 255, 255, 0.06) 1px,
-        transparent 1px
-      ),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-    background-size: 28px 28px;
-  }
-
-  .scan-line {
-    @apply absolute;
-    left: 6%;
-    right: 6%;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--color-mint) 50%,
-      transparent
-    );
-    box-shadow: 0 0 16px 2px rgba(76, 255, 157, 0.7);
-    animation: var(--animate-sweep);
-  }
-
-  .scan-corner {
-    @apply absolute;
-    width: 26px;
-    height: 26px;
-    border: 2px solid var(--color-mint);
-    opacity: 0.85;
-  }
-  .scan-corner.tl {
-    top: 18px;
-    left: 18px;
-    border-right: none;
-    border-bottom: none;
-  }
-  .scan-corner.tr {
-    top: 18px;
-    right: 18px;
-    border-left: none;
-    border-bottom: none;
-  }
-  .scan-corner.bl {
-    bottom: 18px;
-    left: 18px;
-    border-right: none;
-    border-top: none;
-  }
-  .scan-corner.br {
-    bottom: 18px;
-    right: 18px;
-    border-left: none;
-    border-top: none;
-  }
-
-  .scan-tag {
-    @apply absolute left-1/2 font-semibold;
-    bottom: 22px;
-    transform: translateX(-50%);
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    color: rgba(76, 255, 157, 0.85);
-  }
 
   /* ---- Buttons ---- */
   .btn {
@@ -775,10 +685,4 @@
   }
 }
 
-/* prefers-reduced-motion: 레이어 밖(우선순위 최상위)에 두어 .scan-line 애니메이션을 확실히 끔 */
-@media (prefers-reduced-motion: reduce) {
-  .scan-line {
-    animation: none;
-    top: 50%;
-  }
-}
+

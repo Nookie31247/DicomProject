@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { patients, studies, series as allSeries } from "@/mock-data";
-
+import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 
 
 export default function WorkspacePage() {
@@ -152,31 +152,7 @@ export default function WorkspacePage() {
                         </div>
 
                         <div className="main-viewer-zone flex flex-1 justify-center items-start h-full px-4">
-                            <div className="scan-frame relative flex w-full max-w-[960px] max-h-[540px] min-w-0 shrink flex-col items-center justify-center aspect-video bg-black border border-[#222]">
-                                {currentSeries && (
-                                    <>
-                                        <div className="scan-grid" />
-                                        <div className="scan-line" />
-                                        <div className="scan-corner tl" />
-                                        <div className="scan-corner tr" />
-                                        <div className="scan-corner bl" />
-                                        <div className="scan-corner br" />
-                                        <div className="absolute top-4 left-4 flex flex-col gap-1 text-[11px] font-mono text-[#14b876] opacity-80 z-20">
-                                            <span>{currentPatient["patient-name"]}</span>
-                                            <span>{currentPatient["patient-id"]}</span>
-                                            <span className="mt-1 text-white">{currentSeries.bodyPart}</span>
-                                        </div>
-                                        <div className="absolute bottom-4 left-4 flex flex-col gap-1 text-[11px] font-mono text-slate-400 z-20">
-                                            <span>W: {currentSeries.ww} / L: {currentSeries.wl}</span>
-                                        </div>
-                                    </>
-                                )}
-                                <div className="relative z-10 flex flex-col items-center">
-                                    <span className="text-xl font-bold tracking-[0.5px] text-white">
-                                        {currentStudy ? `${currentStudy.modality} IMAGE #${currentImageIndex}` : "NO IMAGE SELECTED"}
-                                    </span>
-                                </div>
-                            </div>
+                            <ScanVisual />
                         </div>
                     </div>
 

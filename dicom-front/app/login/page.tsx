@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 
 export const metadata: Metadata = {
   title: "로그인 — DICOM!",
@@ -11,15 +12,7 @@ export default function LoginPage() {
       {/* ───────────── Auth section ───────────── */}
       <section className="auth">
         <div className="auth-visual" aria-hidden="true">
-          <div className="scan-frame">
-            <div className="scan-grid" />
-            <div className="scan-line" />
-            <div className="scan-corner tl" />
-            <div className="scan-corner tr" />
-            <div className="scan-corner bl" />
-            <div className="scan-corner br" />
-            <span className="scan-tag">SLICE 084 / 220</span>
-          </div>
+          <ScanVisual />
           <p className="visual-caption">
             DICOM 파일을 안전하게 보관하고
             <br />
