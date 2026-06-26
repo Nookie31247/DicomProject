@@ -1,30 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { patients, studies, series as allSeries, currentUser } from "@/mock-data";
+import { patients, studies, series as allSeries } from "@/mock-data";
 
-// 타입 정의
-interface Series {
-    id: string;
-    seriesNumber: number;
-    description: string;
-    images: number;
-    date: string;
-    bodyPart: string;
-    thickness: string;
-    contrast: boolean;
-    ww: number;
-    wl: number;
-}
 
-const BODY_PARTS = [
-    "HEAD", "NECK", "CHEST", "ABDOMEN", "PELVIS",
-    "L-SPINE", "C-SPINE", "SHOULDER", "KNEE", "ANKLE"
-];
-
-const getRandomBodyPart = () => BODY_PARTS[Math.floor(Math.random() * BODY_PARTS.length)];
 
 export default function WorkspacePage() {
     const router = useRouter();
@@ -43,8 +23,8 @@ export default function WorkspacePage() {
                 id: s["series-key"],
                 seriesNumber: s["series-index"],
                 description: `${currentStudy.modality} Scan`,
-                images: s["series-num"] > 10 ? s["series-num"] : s["series-num"] * 30,
-                date: s.datetime.split("T")[0],
+                images: s["images-num"],
+                date: s.datetime.replace("T", " ").split("Z")[0],
                 bodyPart: s.bodypart,
                 thickness: "5.0mm",
                 contrast: false,
@@ -53,20 +33,7 @@ export default function WorkspacePage() {
             }));
         }
 
-        // Fallback for studies without mock series data
-        const studyDate = currentStudy.datetime ? currentStudy.datetime.split("T")[0] : "-";
-        return [
-            {
-                id: `${currentStudy["study-key"]}-s1`, seriesNumber: 1, description: `${currentStudy.modality} Axial Scan`,
-                images: 30, date: studyDate,
-                bodyPart: "HEAD", thickness: "5.0mm", contrast: false, ww: 80, wl: 40
-            },
-            {
-                id: `${currentStudy["study-key"]}-s2`, seriesNumber: 2, description: `${currentStudy.modality} Coronal Scan`,
-                images: 20, date: studyDate,
-                bodyPart: "HEAD", thickness: "3.0mm", contrast: true, ww: 150, wl: 50
-            }
-        ];
+        return [];
     }, [currentStudy]);
 
     const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
@@ -90,7 +57,7 @@ export default function WorkspacePage() {
     useEffect(() => {
         const activeThumbnail = thumbnailRefs.current[currentImageIndex];
         if (activeThumbnail) {
-            activeThumbnail.scrollIntoView({ behavior: "smooth", block: "center" });
+            activeThumbnail.scrollIntoView({ behavior: "auto", block: "center" });
         }
     }, [currentImageIndex]);
 
@@ -113,57 +80,63 @@ export default function WorkspacePage() {
             <section className="workspace" style={workspaceStyle}>
                 <aside className="ws-panel studies-panel flex h-full flex-col">
                     <div className="ws-panel-head shrink-0">
-                        <div className="ws-head-left">
+                        <div className="ws-head-left flex flex-col">
                             <div className="ws-title-row flex items-center gap-2">
                                 <button type="button" className="ws-collapse-btn transform-none text-base font-bold" onClick={handleGoBack}>←</button>
                                 <h2 className="ws-panel-title">시리즈 목록</h2>
                             </div>
-                            <span className="ws-sub-label">{currentPatient["patient-name"]} · {currentPatient["patient-id"]}</span>
+                            {currentStudy && (
+                                <div className="text-[15px] font-semibold text-slate-700 mt-1 mb-0.5 flex items-center gap-2">
+                                    <span className={`modality-badge mod-${currentStudy.modality.toLowerCase()}`}>{currentStudy.modality}</span>
+                                    <span>{currentStudy.description}</span>
+                                    <span className="text-sm text-slate-500 font-normal">| {currentStudy.datetime.replace("T", " ").split("Z")[0]}</span>
+                                </div>
+                            )}
+                            <span className="ws-sub-label">{currentPatient["patient-name"]} · {currentPatient["patient-birth"]}</span>
                         </div>
                     </div>
 
                     <div className="study-table flex-1 overflow-y-auto">
                         <div className="study-head flex items-center px-4 py-3 text-[13px] font-bold text-slate-500">
                             <span className="w-16">시리즈</span>
-                            <span className="flex-1">시리즈 정보</span>
+                            <span className="flex-1">촬영 일시</span>
                             <span className="w-16 text-center">부위</span>
                             <span className="w-16 text-right">영상 수</span>
                         </div>
 
                         <ul className="study-list">
-                            {seriesList.map((ser) => (
-                                <li key={ser.id}>
-                                    <button
-                                        type="button"
-                                        className={`study-row w-full flex items-center px-4 py-3 text-left transition-colors text-sm ${
-                                            ser.id === selectedSeriesId ? "active" : ""
-                                        }`}
-                                        onClick={() => handleSelectSeries(ser.id)}
-                                    >
-                                        <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
+                            {seriesList.length > 0 ? (
+                                seriesList.map((ser) => (
+                                    <li key={ser.id}>
+                                        <button
+                                            type="button"
+                                            className={`study-row w-full flex items-center px-4 py-3 text-left transition-colors text-sm ${
+                                                ser.id === selectedSeriesId ? "active" : ""
+                                            }`}
+                                            onClick={() => handleSelectSeries(ser.id)}
+                                        >
+                                            <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
 
-                                        <div className="flex-1 flex flex-col items-start pr-2 overflow-hidden">
-                                            <span className="truncate text-slate-700 w-full font-semibold">{ser.description}</span>
-                                            <span className="text-[12px] text-slate-500 mt-0.5 mb-1 tracking-wide">{ser.date}</span>
-                                        </div>
-                                        <span className="w-16 text-center pl-2 text-slate-500 truncate">{ser.bodyPart}</span>
-                                        <span className="w-16 text-right text-slate-500">{ser.images}장</span>
-                                    </button>
+                                            <div className="flex-1 flex flex-col items-start pr-2 justify-center overflow-hidden">
+                                                <span className="text-[13px]  font-medium tracking-wide">{ser.date}</span>
+                                            </div>
+                                            <span className="w-16 text-center pl-2 truncate">{ser.bodyPart}</span>
+                                            <span className="w-16 text-right ">{ser.images}장</span>
+                                        </button>
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="p-4 text-center text-slate-500 text-sm">
+                                    시리즈가 없습니다.
                                 </li>
-                            ))}
+                            )}
                         </ul>
                     </div>
                 </aside>
 
-                <section className="ws-panel viewer-panel flex h-full flex-col overflow-hidden">
-                    <div className="ws-panel-head flex items-center justify-between shrink-0">
-                        <div className="ws-head-left">
-                            <h2 className="ws-panel-title">{currentStudy ? `${currentStudy.description} - DICOM VIEWER` : "DICOM VIEWER"}</h2>
-                            {currentStudy && currentSeries && (
-                                <span className="ws-sub-label">{currentStudy.modality} · 시리즈 #{currentSeries.seriesNumber} · {currentSeries.date}</span>
-                            )}
-                        </div>
-                        <button type="button" className="logout-btn">AI 판독</button>
+                <section className="ws-panel viewer-panel relative flex h-full flex-col overflow-hidden">
+                    <div className="flex items-center justify-center p-4 shrink-0">
+                        <h2 className="text-4xl font-bold text-slate-600 tracking-wider">DICOM VIEWER</h2>
                     </div>
 
                     <div className="viewer-stage flex flex-row justify-between items-start flex-1 p-10 px-5 overflow-hidden min-h-0 relative" onWheel={handleViewerWheel}>
@@ -205,6 +178,10 @@ export default function WorkspacePage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="absolute bottom-6 right-6 z-50">
+                        <button type="button" className="logout-btn shadow-md">AI 판독</button>
                     </div>
                 </section>
             </section>

@@ -8,7 +8,7 @@ export type ApiPatient = {
   "patient-id": string;
   "patient-sex": "M" | "F";
   "patient-birth": string;
-  "latest-study-datetime": string;
+  "latest-study-datetime": string | null;
   "study-count": number;
   hidden: boolean;
 };
@@ -31,6 +31,7 @@ export type ApiSeries = {
   "series-index": number;
   datetime: string;
   "series-num": number;
+  "images-num": number;
   bodypart: string;
   hidden: boolean;
 };
@@ -68,7 +69,7 @@ export const patients: ApiPatient[] = [
     "patient-sex": "M",
     "patient-birth": "1978-11-30",
     "latest-study-datetime": "2024-05-28T09:15:00Z",
-    "study-count": 0,
+    "study-count": 1,
     hidden: false,
   },
 ];
@@ -143,6 +144,17 @@ export const studies: ApiStudy[] = [
     "allow-research": true,
     hidden: false,
   },
+  {
+    "study-key": "ST-3001",
+    "patient-id": "P-20240003",
+    modality: "CT",
+    description: "Brain CT w/o contrast",
+    datetime: "2024-05-28T09:15:00Z",
+    "series-num": 1,
+    "images-num": 50,
+    "allow-research": false,
+    hidden: false,
+  },
 ];
 
 export const series: ApiSeries[] = [
@@ -153,6 +165,7 @@ export const series: ApiSeries[] = [
     "series-index": 1,
     datetime: "2024-05-14T10:30:00Z",
     "series-num": 1,
+    "images-num": 120,
     bodypart: "CHEST",
     hidden: false,
   },
@@ -162,6 +175,7 @@ export const series: ApiSeries[] = [
     "series-index": 2,
     datetime: "2024-05-14T10:35:00Z",
     "series-num": 2,
+    "images-num": 100,
     bodypart: "CHEST",
     hidden: false,
   },
@@ -172,6 +186,7 @@ export const series: ApiSeries[] = [
     "series-index": 1,
     datetime: "2024-06-01T14:20:00Z",
     "series-num": 1,
+    "images-num": 44,
     bodypart: "KNEE",
     hidden: false,
   },
@@ -181,6 +196,7 @@ export const series: ApiSeries[] = [
     "series-index": 2,
     datetime: "2024-06-01T14:25:00Z",
     "series-num": 2,
+    "images-num": 50,
     bodypart: "KNEE",
     hidden: false,
   },
@@ -190,7 +206,19 @@ export const series: ApiSeries[] = [
     "series-index": 3,
     datetime: "2024-06-01T14:30:00Z",
     "series-num": 3,
+    "images-num": 50,
     bodypart: "KNEE",
+    hidden: false,
+  },
+  // 박지후 - ST-3001 (Brain CT)
+  {
+    "series-key": "SE-3001-1",
+    "study-key": "ST-3001",
+    "series-index": 1,
+    datetime: "2024-05-28T09:15:00Z",
+    "series-num": 1,
+    "images-num": 50,
+    bodypart: "HEAD",
     hidden: false,
   },
 ];

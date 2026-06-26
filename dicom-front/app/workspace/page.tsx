@@ -14,7 +14,6 @@ export default function WorkspaceDashboardPage() {
   const [showHiddenPatients, setShowHiddenPatients] = useState(false);
 
   // ── 검사(Study/DICOM) 관련 상태 ──
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [checkedStudyIds, setCheckedStudyIds] = useState<Set<string>>(new Set());
   const [showHiddenStudies, setShowHiddenStudies] = useState(false);
 
@@ -23,7 +22,6 @@ export default function WorkspaceDashboardPage() {
   // ==========================================
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id);
-    setSelectedItemId(null);
     setCheckedStudyIds(new Set()); // 환자 변경 시 검사 선택 초기화
   };
 
@@ -54,8 +52,8 @@ export default function WorkspaceDashboardPage() {
     setCheckedPatientIds(new Set());
   };
 
-  const displayedPatients = showHiddenPatients ? [] : patients.filter(p => {
-    if (p.hidden) return false;
+  const displayedPatients = patients.filter(p => {
+    if (p.hidden !== showHiddenPatients) return false;
     
     if (appliedFilters.keyword) {
       const kw = appliedFilters.keyword.toLowerCase();
@@ -65,11 +63,13 @@ export default function WorkspaceDashboardPage() {
     }
     
     if (appliedFilters.start) {
+      if (!p["latest-study-datetime"]) return false;
       const studyDate = p["latest-study-datetime"].split("T")[0];
       if (studyDate < appliedFilters.start) return false;
     }
     
     if (appliedFilters.end) {
+      if (!p["latest-study-datetime"]) return false;
       const studyDate = p["latest-study-datetime"].split("T")[0];
       if (studyDate > appliedFilters.end) return false;
     }
@@ -99,9 +99,9 @@ export default function WorkspaceDashboardPage() {
     setCheckedStudyIds(new Set());
   };
 
-  const displayedStudies = (!selectedPatient || showHiddenStudies)
+  const displayedStudies = !selectedPatient
       ? []
-      : studies.filter(s => s["patient-id"] === selectedPatientId && !s.hidden);
+      : studies.filter(s => s["patient-id"] === selectedPatientId && s.hidden === showHiddenStudies);
 
   // ==========================================
   // 기타 헬퍼 및 스타일
@@ -319,8 +319,7 @@ export default function WorkspaceDashboardPage() {
                         displayedStudies.map((it, idx) => (
                             <li key={it["study-key"]}>
                               <div
-                                  className={`study-row ${it["study-key"] === selectedItemId ? "active" : ""}`}
-                                  onClick={() => setSelectedItemId(it["study-key"])}
+                                  className="study-row"
                                   onDoubleClick={() => router.push(`/viewer/${it["study-key"]}`)}
                                   style={{ gridTemplateColumns: studyGridColumns }}
                                   title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
