@@ -78,7 +78,7 @@ export default function WorkspaceDashboardPage() {
   // ==========================================
   const sexLabel = (s: "M" | "F") => (s === "M" ? "남" : "여");
 
-  const workspaceStyle = { "--ws-grid": "380px 1fr" } as CSSProperties;
+  const workspaceStyle = { "--ws-grid": "400px 1fr" } as CSSProperties;
 
   // ★ 수정 포인트 1: 기존 "30px 84px 1.6fr 1fr 1fr 70px 70px 100px" 에서 검사 부위에 해당하는 1fr 제거
   const studyGridColumns = "30px 84px 1.6fr 1fr 70px 70px 100px";
@@ -99,9 +99,7 @@ export default function WorkspaceDashboardPage() {
                     </h2>
                     <span className="ws-count">{displayedPatients.length}명</span>
                   </div>
-                  <button type="button" className="logout-btn">
-                    환자 추가
-                  </button>
+                  <button type="button" className="logout-btn">환자 추가</button>
                 </div>
               </div>
             </div>
@@ -135,7 +133,7 @@ export default function WorkspaceDashboardPage() {
                       </li>
                   ))
               ) : (
-                  <li className="p-4 text-center text-[#888] text-sm">
+                  <li className="p-4 text-center text-slate-500 text-sm">
                     표시할 환자가 없습니다.
                   </li>
               )}
@@ -296,7 +294,7 @@ export default function WorkspaceDashboardPage() {
                             </li>
                         ))
                     ) : (
-                        <li className="p-4 text-center text-[#888] text-sm">
+                        <li className="p-4 text-center text-slate-500 text-sm">
                           표시할 검사 파일이 없습니다.
                         </li>
                     )}

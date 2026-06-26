@@ -5,26 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { patients, studies, series as allSeries } from "@/mock-data";
 import "../../styles.css";
 
-// UI 렌더링을 위해 가공된 시리즈 타입 정의
-interface Series {
-    id: string;
-    seriesNumber: number;
-    description: string;
-    images: number;
-    date: string;
-    bodyPart: string;
-    thickness: string;
-    contrast: boolean;
-    ww: number;
-    wl: number;
-}
-
-const BODY_PARTS = [
-    "HEAD", "NECK", "CHEST", "ABDOMEN", "PELVIS",
-    "L-SPINE", "C-SPINE", "SHOULDER", "KNEE", "ANKLE"
-];
-
-const getRandomBodyPart = () => BODY_PARTS[Math.floor(Math.random() * BODY_PARTS.length)];
 
 // ISO 문자열에서 날짜(YYYY-MM-DD)만 잘라내는 유틸리티
 const formatDate = (dateString?: string) => {
@@ -45,9 +25,10 @@ export default function WorkspacePage() {
     const seriesList = useMemo(() => {
         if (!currentStudy) return [];
 
-        return allSeries
-            .filter((s) => s["study-key"] === currentStudy["study-key"])
-            .map((s, idx) => ({
+        const filteredSeries = allSeries.filter((s) => s["study-key"] === currentStudy["study-key"]);
+
+        if (filteredSeries.length > 0) {
+            return filteredSeries.map((s, idx) => ({
                 id: s["series-key"],
                 seriesNumber: s["series-index"],
                 description: `${currentStudy.modality} Scan`,
@@ -60,6 +41,22 @@ export default function WorkspacePage() {
                 ww: 80 + idx * 50,
                 wl: 40 + idx * 10
             }));
+        }
+
+        // 데이터가 없을 경우를 대비한 폴백(Fallback) 더미 데이터
+        const studyDate = formatDate(currentStudy.datetime);
+        return [
+            {
+                id: `${currentStudy["study-key"]}-s1`, seriesNumber: 1, description: `${currentStudy.modality} Axial Scan`,
+                images: 30, date: studyDate,
+                bodyPart: "HEAD", thickness: "5.0mm", contrast: false, ww: 80, wl: 40
+            },
+            {
+                id: `${currentStudy["study-key"]}-s2`, seriesNumber: 2, description: `${currentStudy.modality} Coronal Scan`,
+                images: 20, date: studyDate,
+                bodyPart: "HEAD", thickness: "3.0mm", contrast: true, ww: 150, wl: 50
+            }
+        ];
     }, [currentStudy]);
 
     const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
@@ -100,7 +97,7 @@ export default function WorkspacePage() {
         }
     };
 
-    const workspaceStyle = { "--ws-grid": "440px 1fr" } as CSSProperties;
+    const workspaceStyle = { "--ws-grid": "400px 1fr" } as CSSProperties;
 
     return (
         <div className="page">
@@ -118,11 +115,10 @@ export default function WorkspacePage() {
                     </div>
 
                     <div className="study-table flex-1 overflow-y-auto">
-                        <div className="study-head flex items-center px-4 py-3 text-[12.5px] font-bold text-[#45526b]">
+                        <div className="study-head flex items-center px-4 py-3 text-[12.5px] font-bold text-slate-500">
                             <span className="w-16">시리즈</span>
                             <span className="flex-1">시리즈 정보</span>
-                            {/* 우측 정렬을 풀고 좌측 정렬(text-left)로 변경 */}
-                            <span className="w-24 text-left">부위</span>
+                            <span className="w-16 text-center">부위</span>
                             <span className="w-16 text-right">영상 수</span>
                         </div>
 
@@ -140,16 +136,12 @@ export default function WorkspacePage() {
 
                                         <div className="flex-1 flex flex-col items-start pr-2 overflow-hidden">
                                             <div>
-                                                <span className="truncate text-[#0f1f3d] w-full font-semibold mr-2">{ser.description}</span>
+                                                <span className="truncate text-slate-700 w-full font-semibold mr-2">{ser.description}</span>
                                             </div>
-                                            <span className="text-[12px] text-[#45526b] mt-0.5 mb-1 tracking-wide">{ser.date}</span>
-                                            <div className="flex gap-1.5 text-[10px] font-mono">
-                                                {ser.contrast && <span className="text-[#14b876] bg-[#14b876]/10 px-1.5 py-0.5 rounded-sm border border-[#14b876]/30">+CONTRAST</span>}
-                                            </div>
+                                            <span className="text-[12px] text-slate-500 mt-0.5 mb-1 tracking-wide">{ser.date}</span>
                                         </div>
-                                        {/* 텍스트가 좌측에 정렬되도록 text-left로 수정 */}
-                                        <span className="w-24 text-left text-[#45526b] truncate">{ser.bodyPart}</span>
-                                        <span className="w-16 text-right text-[#45526b]">{ser.images}장</span>
+                                        <span className="w-16 text-center pl-2 text-slate-500 truncate">{ser.bodyPart}</span>
+                                        <span className="w-16 text-right text-slate-500">{ser.images}장</span>
                                     </button>
                                 </li>
                             ))}
@@ -165,7 +157,7 @@ export default function WorkspacePage() {
                                 <span className="ws-sub-label">{currentStudy.modality} · 시리즈 #{currentSeries.seriesNumber} · {currentSeries.date}</span>
                             )}
                         </div>
-                        <button type="button" className="minibtn text-[13px] px-[18px] py-2">AI 판독</button>
+                        <button type="button" className="logout-btn">AI 판독</button>
                     </div>
 
                     <div className="viewer-stage flex flex-row justify-between items-start flex-1 p-10 px-5 overflow-hidden min-h-0 relative" onWheel={handleViewerWheel}>
@@ -190,13 +182,13 @@ export default function WorkspacePage() {
                                         <div className="scan-corner tr" />
                                         <div className="scan-corner bl" />
                                         <div className="scan-corner br" />
-                                        <div className="absolute top-4 left-4 flex flex-col gap-1 text-[11px] font-mono text-[#4cff9d] opacity-80 z-20">
+                                        <div className="absolute top-4 left-4 flex flex-col gap-1 text-[11px] font-mono text-[#14b876] opacity-80 z-20">
                                             {/* Kebab-case 키로 환자 정보 출력 */}
                                             <span>{currentPatient["patient-name"]}</span>
                                             <span>{currentPatient["patient-id"]}</span>
                                             <span className="mt-1 text-white">{currentSeries.bodyPart}</span>
                                         </div>
-                                        <div className="absolute bottom-4 left-4 flex flex-col gap-1 text-[11px] font-mono text-[#888   ] z-20">
+                                        <div className="absolute bottom-4 left-4 flex flex-col gap-1 text-[11px] font-mono text-slate-400 z-20">
                                             <span>W: {currentSeries.ww} / L: {currentSeries.wl}</span>
                                         </div>
                                     </>
