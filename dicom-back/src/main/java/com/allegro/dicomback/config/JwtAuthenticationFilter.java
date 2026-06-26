@@ -1,0 +1,66 @@
+package com.allegro.dicomback.config;
+
+import com.allegro.dicomback.exception.BaseException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+
+        // 로그인/회원가입 등 인증이 필요 없는 경로는 필터 건너뛰기
+        String path = request.getRequestURI();
+        if (path.startsWith("/api/users/login") || path.startsWith("/api/users/signup")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String authHeader = request.getHeader("Authorization");
+
+        // 1. 토큰 존재 여부 확인
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = authHeader.substring(7);
+
+        try {
+            // 2. 토큰 검증
+            jwtTokenProvider.validateToken(token);
+
+            // 3. 정보 추출
+            String userId = jwtTokenProvider.getUserId(token);
+            Integer role = jwtTokenProvider.getRole(token);
+
+            // 4. SecurityContext에 인증 정보 저장
+            var auth = new UsernamePasswordAuthenticationToken(
+                    userId,
+                    null,
+                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
+            );
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+        } catch (BaseException e) {
+            // 토큰이 만료되었거나 위조된 경우, 인증되지 않은 상태로 요청이 넘어가서
+            // SecurityConfig의 설정에 따라 403 Forbidden 등으로 응답 처리됨
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
