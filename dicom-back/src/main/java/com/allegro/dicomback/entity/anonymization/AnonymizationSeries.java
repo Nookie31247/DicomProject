@@ -16,21 +16,21 @@ public class AnonymizationSeries {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     //가명화 시리즈 고유 번호
     @Column(name = "AnonSeriesKey")
-    private Long AnonSeriesKey;
+    private Long anonSeriesKey;
 
     //시리즈 내부 식별 키
    @ManyToOne(fetch = FetchType.LAZY)
    @JoinColumn(name = "SeriesKey", nullable = false)
-    private Series SeriesKey;
+    private Series seriesKey;
 
     //가명화 로그 고유 번호
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "AnonKey", nullable = false)
-    private AnonymizationStudy AnonKey;
+    private AnonymizationStudy anonStudyKey;
 
     //가명화된 SeriesInstanceUID
     @Column(name = "AnonSeriesUID" , unique = true, nullable = false,length = 128)
-    private String AnonSeriesUID;
+    private String anonSeriesUID;
 
 
 }

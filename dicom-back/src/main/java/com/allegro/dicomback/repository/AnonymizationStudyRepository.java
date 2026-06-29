@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface AnonymizationStudyRepository extends JpaRepository<AnonymizationStudy, String> {
+public interface AnonymizationStudyRepository extends JpaRepository<AnonymizationStudy, Long> {
 
-    Optional<AnonymizationStudy> findByStudyStudyKey(String sopInstanceUID);
+    Optional<AnonymizationStudy> findByStudy_StudyKey(Long studyKey);
 
     Optional<AnonymizationStudy> findByAnonPId(String anonPId);
 

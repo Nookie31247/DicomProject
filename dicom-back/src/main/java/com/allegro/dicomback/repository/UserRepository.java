@@ -16,5 +16,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 로그인 및 회원 보안 인증용 조회
     Optional<User> findByUserId(String userId);
 
-    List<User> findByUserStatus(Integer userStatus);
+    List<User> findByUserStatus(boolean userStatus);
 }

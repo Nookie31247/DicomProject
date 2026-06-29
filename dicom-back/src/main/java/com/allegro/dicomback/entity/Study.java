@@ -22,7 +22,7 @@ public class Study {
     private Long studyKey;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "Doctor", referencedColumnName = "UserName", nullable = false)
+    @JoinColumn(name = "Doctor", nullable = false)
     private User doctor;
 
     @Column(name = "Modality", length = 16)

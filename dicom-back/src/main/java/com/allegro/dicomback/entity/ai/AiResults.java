@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "ai_detections")
+@Table(name = "ai_results")
 @Getter
 @Setter
 @NoArgsConstructor

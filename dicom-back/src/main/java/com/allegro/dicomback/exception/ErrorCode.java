@@ -13,6 +13,8 @@ public enum ErrorCode {
 
     // DICOM/데이터 관련 (2xxx)
     STUDY_NOT_FOUND(HttpStatus.NOT_FOUND, "DICOM_001", "해당 스터디를 찾을 수 없습니다."),
+    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "DICOM_002", "해당 이미지를 찾을 수 없습니다."),
+    FILE_NOT_FOUND_ON_DISK(HttpStatus.INTERNAL_SERVER_ERROR, "DICOM_003", "원본 파일을 디스크에서 찾을 수 없습니다."),
 
     // JWT 관련 (3xxx)
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "JWT_001", "토큰이 만료되었습니다."),

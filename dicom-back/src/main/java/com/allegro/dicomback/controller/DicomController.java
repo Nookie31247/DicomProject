@@ -2,6 +2,7 @@ package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.dto.DicomRequestDto;
 import com.allegro.dicomback.dto.DicomResponseDto;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/dicom")
+@RequiredArgsConstructor //의존성 주입
 public class DicomController {
 
     //환자 목록 불러오기

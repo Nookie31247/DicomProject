@@ -10,7 +10,7 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     List<Series> findByStudy_StudyKeyAndDelFlag(Long studyKey, Integer delFlag);
 
     // 고유 시리즈 UID로 단건 조회
-    Series findBySeriesInstanceUID(String seriesInstanceUID);
+    Series findBySeriesInstanceUid(String seriesInstanceUid);
 
     // AI 판독 전용 시리즈(SeriesNum이 9000번대 이상) 조회 시 활용
     List<Series> findByStudy_StudyKeyAndSeriesNumGreaterThanEqual(Long studyKey, Integer seriesNum);

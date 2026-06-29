@@ -10,5 +10,5 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     List<Image> findBySeries_SeriesKeyAndDelFlagOrderByInstanceNumAsc(Long seriesKey, Integer delFlag);
 
     // 단일 영상 고유 UID(SOPInstanceUID)로 단건 조회
-    Image findBySOPInstanceUID(String sopInstanceUID);
+    Image findBySopInstanceUid (String sopInstanceUID);
 }
