@@ -97,7 +97,7 @@ public class UserService {
         User user = findActiveUser(request.userId());
 
         // 비밀번호 검증
-        validatePassword(request.currentPassword(), user.getUserPassword());
+        validatePassword(request.password(), user.getUserPassword());
 
         // 소프트 삭제 처리
         user.deactivate();
