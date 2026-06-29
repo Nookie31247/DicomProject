@@ -46,4 +46,9 @@ public class User {
     // @ManyToOne(fetch = FetchType.LAZY)
     // @JoinColumn(name = "HospitalId")
     // private Hospital hospital;
+
+    public void deactivate() {
+        this.userStatus = false;
+        this.deletedAt = LocalDateTime.now(); //탈퇴 시간 기록
+    }
 }
