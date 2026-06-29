@@ -1,20 +1,16 @@
-"use client";
-
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { patients, studies, series as allSeries } from "@/mock-data";
-import ScanVisual from "@/app/components/scan-visual/ScanVisual";
+import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
 
-
-export default function WorkspacePage() {
-    const router = useRouter();
-    const params = useParams();
-    const studyIdFromUrl = params?.id as string;
+export default async function ViewerPage({ params }: { params: Promise<{ id: string }> }) {
+    // Next.js 15+ 에서는 params가 Promise이므로 await 처리합니다.
+    const { id } = await params;
+    const studyIdFromUrl = id;
 
     const currentStudy = studies.find((s) => s["study-key"] === studyIdFromUrl) ?? null;
     const currentPatient = patients.find((p) => p["patient-id"] === currentStudy?.["patient-id"]) || patients[0];
 
-    const seriesList = useMemo(() => {
+    const seriesList = (() => {
         if (!currentStudy) return [];
         const filteredSeries = allSeries.filter((s) => s["study-key"] === currentStudy["study-key"]);
         
@@ -26,53 +22,12 @@ export default function WorkspacePage() {
                 images: s["images-num"],
                 date: s.datetime.replace("T", " ").split("Z")[0],
                 bodyPart: s.bodypart,
-                thickness: "5.0mm",
-                contrast: false,
-                ww: 80,
-                wl: 40,
             }));
         }
-
         return [];
-    }, [currentStudy]);
+    })();
 
-    const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
-    const [currentImageIndex, setCurrentImageIndex] = useState<number>(1);
-    const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-    // 초기 선택 로직은 그대로 유지
-    useEffect(() => {
-        if (seriesList.length > 0 && !selectedSeriesId) {
-            setSelectedSeriesId(seriesList[0].id);
-        }
-    }, [seriesList, selectedSeriesId]);
-
-    const currentSeries = seriesList.find((s) => s.id === selectedSeriesId) || seriesList[0];
-
-    const handleSelectSeries = (id: string) => {
-        setSelectedSeriesId(id);
-        setCurrentImageIndex(1);
-    };
-
-    useEffect(() => {
-        const activeThumbnail = thumbnailRefs.current[currentImageIndex];
-        if (activeThumbnail) {
-            activeThumbnail.scrollIntoView({ behavior: "auto", block: "center" });
-        }
-    }, [currentImageIndex]);
-
-    const handleGoBack = () => { router.push("/workspace"); };
-
-    const handleViewerWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-        if (!currentSeries) return;
-        if (e.deltaY > 0) {
-            setCurrentImageIndex((prev) => Math.min(prev + 1, currentSeries.images));
-        } else if (e.deltaY < 0) {
-            setCurrentImageIndex((prev) => Math.max(prev - 1, 1));
-        }
-    };
-
-    // ── Tailwind 스타일 변수 (globals.css에서 이관) ──
+    // ── Tailwind 스타일 변수 ──
     const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
     const modalityColors: Record<string, string> = {
         ct: "bg-[#2563eb]",
@@ -82,26 +37,34 @@ export default function WorkspacePage() {
         pt: "bg-[#be185d]",
     };
 
+    // 샘플 1번부터 4번 파일 목록 (실제 연동 시에는 API에서 받아온 해당 시리즈의 인스턴스 URL 배열로 대체)
+    const dicomUrls = [
+      "/dicom/CT_brain_001.dcm",
+      "/dicom/CT_brain_002.dcm",
+      "/dicom/CT_brain_003.dcm",
+      "/dicom/CT_brain_004.dcm"
+    ];
+
     return (
         <div className="page flex h-screen flex-col overflow-hidden">
-
             <section
                 className="grid flex-1 items-stretch gap-5 pt-6 px-[clamp(20px,4vw,48px)] pb-8 min-h-0 h-[calc(100vh-93px)] transition-[grid-template-columns] duration-200 max-[1100px]:grid-cols-1 max-[1100px]:h-auto max-[1100px]:auto-rows-[minmax(280px,auto)] max-[560px]:px-4 max-[560px]:pt-4.5 max-[560px]:pb-7 max-[560px]:gap-3.5"
-                style={{ gridTemplateColumns: "480px 1fr" }}
+                style={{ gridTemplateColumns: "360px 1fr" }}
             >
+                {/* 좌측 시리즈 목록 패널 */}
                 <aside className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] h-full">
                     <div className="flex shrink-0 items-start justify-between gap-3 pt-4.5 px-4.5 pb-4 border-b border-line">
                         <div className="flex min-w-0 flex-1 flex-col gap-1.25">
                             <div className="flex items-center gap-2">
-                                <button type="button" className="flex shrink-0 cursor-pointer items-center justify-center w-7.5 h-7.5 rounded-lg border border-line bg-paper text-ink-soft text-xl leading-none transition-[background,color,border-color] duration-150 hover:bg-canvas hover:text-ink hover:border-mint-deep transform-none font-bold"
-                                    onClick={handleGoBack}>←
-                                </button>
+                                {/* useRouter() 대신 Link 태그로 변경하여 서버 컴포넌트로 만듭니다. */}
+                                <Link href="/workspace" className="flex shrink-0 cursor-pointer items-center justify-center w-7.5 h-7.5 rounded-lg border border-line bg-paper text-ink-soft text-xl leading-none transition-[background,color,border-color] duration-150 hover:bg-canvas hover:text-ink hover:border-mint-deep transform-none font-bold no-underline">
+                                    ←
+                                </Link>
                                 <h2 className="m-0 font-bold text-xl text-ink tracking-[-0.01em]">시리즈 목록</h2>
                             </div>
                             {currentStudy && (
                                 <div className="text-base font-semibold text-slate-700 mt-1 mb-0.5 flex items-center gap-2">
                                     <span className={`${modalityBadgeClass} ${modalityColors[currentStudy.modality.toLowerCase()] || "bg-slate"}`}>{currentStudy.modality}</span>
-                                    <span>{currentStudy.description}</span>
                                     <span className="text-sm text-slate-500 font-normal">| {currentStudy.datetime.replace("T", " ").split("Z")[0]}</span>
                                 </div>
                             )}
@@ -112,8 +75,7 @@ export default function WorkspacePage() {
                     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                         <div className="gap-2.5 shrink-0 tracking-[0.02em] bg-canvas border-b border-line max-[560px]:hidden flex items-center px-4 py-3 text-sm font-bold text-slate-500">
                             <span className="w-16">시리즈</span>
-                            <span className="flex-1">촬영 일시</span>
-                            <span className="w-16 text-center">부위</span>
+                            <span className="flex-1 text-center">부위</span>
                             <span className="w-16 text-right">영상 수</span>
                         </div>
 
@@ -123,17 +85,10 @@ export default function WorkspacePage() {
                                     <li key={ser.id}>
                                         <button
                                             type="button"
-                                            className={`study-row gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] rounded-xl bg-transparent font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 hover:bg-canvas flex items-center px-4 py-3 ${
-                                                ser.id === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent"
-                                            }`}
-                                            onClick={() => handleSelectSeries(ser.id)}
+                                            className="study-row gap-2.5 w-full text-left p-3.5 border-[1.5px] rounded-xl font-[inherit] text-sm text-ink flex items-center px-4 py-3 border-transparent"
                                         >
                                             <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
-
-                                            <div className="flex-1 flex flex-col items-start pr-2 justify-center overflow-hidden">
-                                                <span className="text-sm  font-medium tracking-wide">{ser.date}</span>
-                                            </div>
-                                            <span className="w-16 text-center pl-2 truncate">{ser.bodyPart}</span>
+                                            <span className="flex-1 text-center pl-2 truncate">{ser.bodyPart}</span>
                                             <span className="w-16 text-right ">{ser.images}장</span>
                                         </button>
                                     </li>
@@ -147,30 +102,13 @@ export default function WorkspacePage() {
                     </div>
                 </aside>
 
-                <section className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] relative h-full">
-                    <div className="flex items-center justify-center p-4 shrink-0">
-                        <h2 className="text-4xl font-bold text-slate-600 tracking-wider">DICOM VIEWER</h2>
-                    </div>
-
-                    <div className="flex flex-row justify-between items-start flex-1 p-10 px-5 overflow-hidden min-h-0 relative gap-5.5" onWheel={handleViewerWheel}>
-                        <div className="thumbnail-bar flex flex-col gap-3 w-32 shrink-0 overflow-y-auto overflow-x-hidden pr-1 max-h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none" onWheel={(e) => e.stopPropagation()}>
-                            {currentSeries ? (
-                                Array.from({ length: currentSeries.images }, (_, i) => i + 1).map((idx) => (
-                                    <button key={idx} ref={(el) => { thumbnailRefs.current[idx] = el; }} type="button" onClick={() => setCurrentImageIndex(idx)}
-                                            className={`thumb-item group flex h-25 w-25 shrink-0 cursor-pointer items-center justify-center rounded-md border text-xs font-bold transition-all duration-150 ${
-                                                idx === currentImageIndex ? "border-[#00FF66] bg-white/15 text-[#00FF66] border-2" : "border-[#333] bg-[#1a1a1a] text-[#888]"
-                                            }`}>#{idx}</button>
-                                ))
-                            ) : null}
-                        </div>
-
-                        <div className="main-viewer-zone flex flex-1 justify-center items-start h-full px-4">
-                            <ScanVisual />
-                        </div>
-                    </div>
-
-                    <div className="absolute bottom-6 right-6 z-50">
-                        <button type="button" className="btn btn-medium shadow-md">AI 판독</button>
+                {/* 우측 메인 뷰어 패널 */}
+                <section className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] relative h-full p-4">
+                    <div className="main-viewer-zone flex flex-1 justify-center items-center h-full w-full relative min-h-0">
+                        {/* DicomViewer 내부에서 상태를 관리하므로 서버 컴포넌트 안에서 그대로 사용 가능합니다. */}
+                        <DicomViewer dicomUrls={dicomUrls}>
+                            <button type="button" className="btn btn-small shadow-md">AI 판독</button>
+                        </DicomViewer>
                     </div>
                 </section>
             </section>
