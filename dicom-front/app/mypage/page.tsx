@@ -67,7 +67,7 @@ export default function MyPage() {
     <div className="page">
       {/* ───────────── My page ───────────── */}
       <section className="flex flex-1 justify-center px-[clamp(20px,5vw,62px)] pt-11 pb-20 max-[560px]:px-4 max-[560px]:pb-14 max-[560px]:pt-7">
-        <div className="w-full max-w-[720px] rounded-3xl border border-line bg-paper px-[clamp(26px,4vw,52px)] py-11 shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-[560px]:px-5.5 max-[560px]:py-8">
+        <div className="w-full max-w-180 rounded-3xl border border-line bg-paper px-[clamp(26px,4vw,52px)] py-11 shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-[560px]:px-5.5 max-[560px]:py-8">
           {/* 제목 위 뒤로가기 버튼 */}
           <Link
             href="/workspace"
@@ -95,7 +95,7 @@ export default function MyPage() {
             <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
               <dt className="text-base font-semibold text-ink-soft">회원유형</dt>
               <dd className="m-0 text-base font-semibold text-ink">
-                <span className="inline-flex items-center rounded-full bg-[rgba(76,255,157,0.18)] px-[13px] py-1 text-sm font-bold text-mint-deep">
+                <span className="inline-flex items-center rounded-full bg-[rgba(76,255,157,0.18)] px-3.25 py-1 text-sm font-bold text-mint-deep">
                   {roleLabel(currentUser.role)}
                 </span>
               </dd>
@@ -120,7 +120,7 @@ export default function MyPage() {
 
             {editingPw ? (
               <form
-                className="flex max-w-[420px] flex-col gap-4"
+                className="flex max-w-105 flex-col gap-4"
                 onSubmit={submitPw}
               >
                 <label className="flex flex-col gap-2">

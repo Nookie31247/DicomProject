@@ -1,16 +1,19 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { patients, studies, series as allSeries } from "@/mock-data";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
 
-export default async function ViewerPage({ params }: { params: Promise<{ id: string }> }) {
-    // Next.js 15+ 에서는 params가 Promise이므로 await 처리합니다.
-    const { id } = await params;
-    const studyIdFromUrl = id;
+export default function ViewerPage() {
+    const params = useParams();
+    const studyIdFromUrl = params?.id as string;
 
     const currentStudy = studies.find((s) => s["study-key"] === studyIdFromUrl) ?? null;
     const currentPatient = patients.find((p) => p["patient-id"] === currentStudy?.["patient-id"]) || patients[0];
 
-    const seriesList = (() => {
+    const seriesList = useMemo(() => {
         if (!currentStudy) return [];
         const filteredSeries = allSeries.filter((s) => s["study-key"] === currentStudy["study-key"]);
         
@@ -25,7 +28,20 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
             }));
         }
         return [];
-    })();
+    }, [currentStudy]);
+
+    const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
+
+    // 초기 선택 로직
+    useEffect(() => {
+        if (seriesList.length > 0 && !selectedSeriesId) {
+            setSelectedSeriesId(seriesList[0].id);
+        }
+    }, [seriesList, selectedSeriesId]);
+
+    const handleSelectSeries = (id: string) => {
+        setSelectedSeriesId(id);
+    };
 
     // ── Tailwind 스타일 변수 ──
     const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
@@ -85,7 +101,10 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
                                     <li key={ser.id}>
                                         <button
                                             type="button"
-                                            className="study-row gap-2.5 w-full text-left p-3.5 border-[1.5px] rounded-xl font-[inherit] text-sm text-ink flex items-center px-4 py-3 border-transparent"
+                                            onClick={() => handleSelectSeries(ser.id)}
+                                            className={`study-row gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] rounded-xl font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 flex items-center px-4 py-3 ${
+                                                ser.id === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent hover:bg-canvas"
+                                            }`}
                                         >
                                             <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
                                             <span className="flex-1 text-center pl-2 truncate">{ser.bodyPart}</span>
@@ -105,7 +124,7 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
                 {/* 우측 메인 뷰어 패널 */}
                 <section className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] relative h-full p-4">
                     <div className="main-viewer-zone flex flex-1 justify-center items-center h-full w-full relative min-h-0">
-                        {/* DicomViewer 내부에서 상태를 관리하므로 서버 컴포넌트 안에서 그대로 사용 가능합니다. */}
+                        {/* selectedSeriesId에 따라 다른 URL 배열을 넘겨줄 수 있습니다. 현재는 데모용 고정 배열을 넘깁니다. */}
                         <DicomViewer dicomUrls={dicomUrls}>
                             <button type="button" className="btn btn-small shadow-md">AI 판독</button>
                         </DicomViewer>
