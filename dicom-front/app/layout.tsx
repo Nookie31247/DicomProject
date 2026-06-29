@@ -27,22 +27,24 @@ export default function RootLayout({
   // 임시로 로그인 여부를 저장 (추후 전역 상태나 서버 사이드 인증 정보로 대체 가능)
   const isLogin = true;
 
+  const navLinkClass = "relative font-semibold no-underline text-[17px] text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
+
   return (
     <html
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <header className="nav shrink-0">
-          <Link href="/" className="logo">
+      <body className="bg-canvas text-ink font-sans min-h-full flex flex-col">
+        <header className="flex items-center justify-between border-b border-line bg-paper py-7 px-[clamp(24px,5vw,62px)] max-[560px]:px-5 max-[560px]:py-5 shrink-0">
+          <Link href="/" className="font-bold no-underline text-[28px] tracking-[-0.01em] text-ink">
             DICOM!
           </Link>
           {isLogin ? (
             <NavUser />
           ) : (
-            <nav className="nav-links">
-              <Link href="/#how-it-works">사용방법</Link>
-              <Link href="/#faq">FAQ</Link>
+            <nav className="flex gap-10 max-[560px]:gap-5.5">
+              <Link href="/#how-it-works" className={navLinkClass}>사용방법</Link>
+              <Link href="/#faq" className={navLinkClass}>FAQ</Link>
             </nav>
           )}
         </header>
