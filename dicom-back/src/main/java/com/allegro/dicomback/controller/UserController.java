@@ -31,9 +31,10 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    // 요청 시 { "id": "[id값]" }으로 해야 인식 됨
     @PostMapping("/check-id")
     public ResponseEntity<Boolean> checkId(@RequestBody IdCheckRequest request) {
-        return ResponseEntity.ok(userService.checkIdDuplicate(request.id()));
+        return ResponseEntity.ok(userService.checkIdDuplicate(request.userId()));
     }
 
     @PutMapping("/change-password")
