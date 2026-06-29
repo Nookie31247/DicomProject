@@ -1,23 +1,28 @@
 package com.allegro.dicomback.config;
 
 import com.allegro.dicomback.exception.BaseException;
+import com.allegro.dicomback.exception.ErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
 
+
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -43,6 +48,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 2. 토큰 검증
             jwtTokenProvider.validateToken(token);
+
+            //블랙리스트처리
+            String isLogout = redisTemplate.opsForValue().get("jwt:blacklist:" + token);
+            if (!ObjectUtils.isEmpty(isLogout)) {
+                // 블랙리스트에 존재하면 예외 발생
+                throw new BaseException(ErrorCode.INVALID_TOKEN);
+            }
 
             // 3. 정보 추출
             String userId = jwtTokenProvider.getUserId(token);

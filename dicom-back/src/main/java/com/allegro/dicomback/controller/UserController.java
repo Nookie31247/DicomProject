@@ -27,7 +27,7 @@ public class UserController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String token) {
-//        userService.logout(token);
+        userService.logout(token);
         return ResponseEntity.noContent().build();
     }
 

@@ -1,4 +1,4 @@
-package com.allegro.dicomback.reprostore;
+package com.allegro.dicomback.repository;
 
 import com.allegro.dicomback.entity.ai.AuditLog;
 import org.springframework.data.jpa.repository.JpaRepository;

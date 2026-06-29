@@ -1,4 +1,4 @@
-package com.allegro.dicomback.entity.User;
+package com.allegro.dicomback.entity.user;
 
 import jakarta.persistence.*;
 import lombok.*;

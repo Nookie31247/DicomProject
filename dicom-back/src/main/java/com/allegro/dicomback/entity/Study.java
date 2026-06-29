@@ -1,5 +1,6 @@
 package com.allegro.dicomback.entity;
 
+import com.allegro.dicomback.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
@@ -22,7 +23,7 @@ public class Study {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Doctor", referencedColumnName = "UserName", nullable = false)
-    private SecurityProperties.User doctor;
+    private User doctor;
 
     @Column(name = "Modality", length = 16)
     private String modality;

@@ -1,7 +1,8 @@
 package com.allegro.dicomback.repository;
 
-import com.allegro.dicomback.entity.User.User;
+import com.allegro.dicomback.entity.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -11,4 +12,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 아이디가 있는지 확인
     boolean existsByUserId(String userId);
+
+    // 로그인 및 회원 보안 인증용 조회
+    Optional<User> findByUserId(String userId);
+
+    List<User> findByUserStatus(Integer userStatus);
 }

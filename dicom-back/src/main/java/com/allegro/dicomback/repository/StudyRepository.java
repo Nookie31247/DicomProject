@@ -1,4 +1,4 @@
-package com.allegro.dicomback.reprostore;
+package com.allegro.dicomback.repository;
 
 import com.allegro.dicomback.entity.Study;
 import org.springframework.data.jpa.repository.JpaRepository;

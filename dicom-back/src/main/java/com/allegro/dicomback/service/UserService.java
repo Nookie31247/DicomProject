@@ -2,14 +2,17 @@ package com.allegro.dicomback.service;
 
 import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.UserDto.*;
-import com.allegro.dicomback.entity.User.User;
+import com.allegro.dicomback.entity.user.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> RedisTemplate;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -72,6 +76,17 @@ public class UserService {
 
         // 새 비밀번호 암호화 후 업데이트
         user.setUserPassword(passwordEncoder.encode(request.newPassword()));
+    }
+
+    // 로그아웃 (블랙리스트 형식으로)
+    @Transactional
+    public void logout(String token) {
+        if(token != null && !token.isEmpty()) {
+            token = token.substring(7);
+        }
+
+        String redisKey= "jwt:blacklist:" + token;
+        RedisTemplate.opsForValue().set(redisKey, "1", 24, TimeUnit.HOURS);
     }
 
     // 회원탈퇴
