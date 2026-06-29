@@ -3,140 +3,121 @@
 import { useState } from "react";
 import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
+import { userApi } from "@/services/auth";
 
 export default function SignupPage() {
-  const [memberType, setMemberType] = useState<"doctor" | "researcher">(
-    "researcher"
-  );
+  const [userRole, setUserRole] = useState<"의료진" | "연구원">("의료진");
 
-  // 라디오 필 공통 스타일 + 선택 상태 스타일 (테두리 두께는 2px로 고정해 흔들림 방지)
-  const pillBase =
-    "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-[13px] text-base transition-[border-color,background,color] duration-150";
-  const pillActive =
-    "border-mint-deep bg-[rgba(76,255,157,0.3)] text-ink font-bold";
-  const pillIdle = "border-line bg-canvas text-ink-soft font-semibold";
+  // 상태 관리
+  const [userId, setUserId] = useState("");
+  const [idMessage, setIdMessage] = useState({ text: "", color: "" });
+  const [isIdChecked, setIsIdChecked] = useState(false);
 
-  // 네이티브 라디오는 완전히 숨김 (선택 표시는 필 테두리/배경으로 대체)
-  const hiddenRadio =
-    "pointer-events-none absolute m-0 h-px w-px border-0 p-0 opacity-0 [clip:rect(0_0_0_0)] [clip-path:inset(50%)]";
+  const [formData, setFormData] = useState({
+    password: "",
+    passwordConfirm: "",
+    name: "",
+    medicalLicenseNumber: ""
+  });
+
+  // 유효성 검사 메시지
+  const getPwMessage = () => {
+    if (!formData.passwordConfirm) return { text: "", color: "" };
+    return formData.password === formData.passwordConfirm
+        ? { text: "비밀번호가 일치합니다.", color: "text-mint-deep" }
+        : { text: "비밀번호가 일치하지 않습니다.", color: "text-red-500" };
+  };
+
+  const handleCheckUserId = async () => {
+    if (!userId) return;
+    try {
+      const isDuplicate = await userApi.checkId(userId);
+      if (isDuplicate) {
+        setIdMessage({ text: "이미 사용 중인 아이디입니다.", color: "text-red-500" });
+        setIsIdChecked(false);
+      } else {
+        setIdMessage({ text: "사용 가능한 아이디입니다.", color: "text-mint-deep" });
+        setIsIdChecked(true);
+      }
+    } catch {
+      setIdMessage({ text: "검사 중 오류가 발생했습니다.", color: "text-red-500" });
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!isIdChecked) return alert("아이디 중복 확인을 해주세요.");
+    if (formData.password !== formData.passwordConfirm) return alert("비밀번호를 확인해주세요.");
+    if (!formData.name) return alert("이름을 입력해주세요.");
+
+    try {
+      await userApi.signup({
+        userId,
+        password: formData.password,
+        name: formData.name,
+        userRole: userRole === "의료진" ? "의료진" : "연구원",
+        medicalLicenseNumber: formData.medicalLicenseNumber
+      });
+      alert("회원가입이 완료되었습니다!");
+    } catch {
+      alert("회원가입에 실패했습니다.");
+    }
+  };
+
+  const pwMsg = getPwMessage();
 
   return (
-    <div className="page">
-      {/* ───────────── Auth section ───────────── */}
-      {/* items-start: 의사 선택 시 카드가 길어져도 왼쪽 비주얼이 밀려나지 않게 */}
-      <section className="grid flex-1 items-start grid-cols-[1.05fr_0.95fr] gap-14 pt-[72px] px-[clamp(24px,5vw,62px)] pb-24 max-[900px]:grid-cols-1 max-[560px]:px-5 max-[560px]:pt-10 max-[560px]:pb-16 max-[560px]:gap-9">
-        <div
-          className="flex flex-col items-center gap-7 max-[900px]:order-[-1] sticky top-24 max-[900px]:static"
-          aria-hidden="true"
-        >
-          <ScanVisual />
-          <p className="text-center font-semibold text-lg text-ink-soft leading-[1.5] max-w-[360px] max-[560px]:text-base">
-            의사와 연구원 모두를 위한
-            <br />
-            안전한 DICOM 분석 플랫폼입니다.
-          </p>
-        </div>
+      <div className="page">
+        <section className="grid flex-1 items-start grid-cols-[1.05fr_0.95fr] gap-14 pt-[72px] px-[clamp(24px,5vw,62px)] pb-24 max-[900px]:grid-cols-1">
+          <div className="flex flex-col items-center gap-7 sticky top-24"><ScanVisual /></div>
 
-        <div className="mx-auto w-full bg-paper rounded-3xl shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-w-[480px] px-[clamp(28px,4vw,52px)] py-[52px] max-[900px]:px-[26px] max-[900px]:py-10">
-          <p className="eyebrow">DICOM!과 함께 시작해보세요</p>
-          <h1 className="font-bold text-[34px] tracking-[-0.01em] m-0 text-ink max-[560px]:text-[28px] mb-7">회원가입</h1>
-
-          <form className="flex flex-col gap-[18px]">
-            <label className="field">
-              <span className="field-label">아이디</span>
-              <input
-                type="text"
-                name="username"
-                placeholder="아이디를 입력하세요"
-                autoComplete="username"
-              />
-            </label>
-
-            <label className="field">
-              <span className="field-label">비밀번호</span>
-              <input
-                type="password"
-                name="password"
-                placeholder="비밀번호를 입력하세요"
-                autoComplete="new-password"
-              />
-            </label>
-
-            <label className="field">
-              <span className="field-label">비밀번호 확인</span>
-              <input
-                type="password"
-                name="passwordConfirm"
-                placeholder="비밀번호를 다시 입력하세요"
-                autoComplete="new-password"
-              />
-            </label>
-
-            <label className="field">
-              <span className="field-label">이름</span>
-              <input type="text" name="name" placeholder="이름을 입력하세요" />
-            </label>
-
-            <fieldset className="field gap-2.5">
-              <legend className="field-label">회원유형</legend>
-              <div className="flex gap-3 max-[560px]:flex-col">
-                <label
-                  className={`${pillBase} ${
-                    memberType === "doctor" ? pillActive : pillIdle
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="memberType"
-                    value="doctor"
-                    checked={memberType === "doctor"}
-                    onChange={() => setMemberType("doctor")}
-                    className={hiddenRadio}
-                  />
-                  의사
-                </label>
-                <label
-                  className={`${pillBase} ${
-                    memberType === "researcher" ? pillActive : pillIdle
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="memberType"
-                    value="researcher"
-                    checked={memberType === "researcher"}
-                    onChange={() => setMemberType("researcher")}
-                    className={hiddenRadio}
-                  />
-                  연구원
-                </label>
-              </div>
-            </fieldset>
-
-            {memberType === "doctor" && (
+          <div className="mx-auto w-full bg-paper rounded-3xl shadow-xl max-w-[560px] px-[52px] py-[52px]">
+            <h1 className="font-bold text-[34px] mb-7">회원가입</h1>
+            <form className="flex flex-col gap-[18px]">
+              {/* 아이디 */}
               <label className="field">
-                <span className="field-label">의사면허번호</span>
-                <input
-                  type="text"
-                  name="medicalLicenseNumber"
-                  placeholder="의사면허번호를 입력하세요"
-                />
+                <span className="field-label">아이디</span>
+                <div className="flex gap-2 w-full">
+                  <input type="text" value={userId} placeholder="아이디를 입력하세요" className="flex-1"
+                         onChange={(e) => { setUserId(e.target.value); setIsIdChecked(false); setIdMessage({text:"", color:""}); }} />
+                  <button type="button" onClick={handleCheckUserId} className="px-4 rounded-xl font-bold bg-ink text-white whitespace-nowrap">중복확인</button>
+                </div>
+                {idMessage.text && <p className={`text-xs font-bold mt-1 ${idMessage.color}`}>{idMessage.text}</p>}
               </label>
-            )}
 
-            <button className="btn btn-big w-full mt-2" type="button">
-              회원가입
-            </button>
-          </form>
+              {/* 비밀번호 */}
+              <label className="field"><span className="field-label">비밀번호</span>
+                <input type="password" placeholder="비밀번호를 입력하세요" onChange={(e) => setFormData({...formData, password: e.target.value})} /></label>
 
-          <p className="text-center text-[15px] text-ink-soft mt-6">
-            이미 계정이 있으신가요?{" "}
-            <Link className="font-bold no-underline text-mint-deep hover:underline" href="/login">
-              로그인
-            </Link>
-          </p>
-        </div>
-      </section>
-    </div>
+              <label className="field"><span className="field-label">비밀번호 확인</span>
+                <input type="password" placeholder="비밀번호를 다시 입력하세요" onChange={(e) => setFormData({...formData, passwordConfirm: e.target.value})} />
+                {pwMsg.text && <p className={`text-xs font-bold mt-1 ${pwMsg.color}`}>{pwMsg.text}</p>}
+              </label>
+
+              <label className="field"><span className="field-label">이름</span>
+                <input type="text" placeholder="이름을 입력하세요" onChange={(e) => setFormData({...formData, name: e.target.value})} /></label>
+
+              {/* 회원 유형 */}
+              <fieldset className="field">
+                <legend className="field-label">회원유형</legend>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setUserRole("의료진")}
+                          className={`flex-1 py-3 rounded-xl border-2 font-semibold ${userRole === "의료진" ? "border-mint-deep bg-[rgba(76,255,157,0.3)]" : "border-line"}`}>의사</button>
+                  <button type="button" onClick={() => setUserRole("연구원")}
+                          className={`flex-1 py-3 rounded-xl border-2 font-semibold ${userRole === "연구원" ? "border-mint-deep bg-[rgba(76,255,157,0.3)]" : "border-line"}`}>연구원</button>
+                </div>
+              </fieldset>
+
+              {userRole === "의료진" && (
+                  <label className="field">
+                    <span className="field-label">의사면허번호</span>
+                    <input type="text" placeholder="면허번호를 입력하세요" onChange={(e) => setFormData({...formData, medicalLicenseNumber: e.target.value})} />
+                  </label>
+              )}
+
+              <button className="btn btn-big w-full mt-2" type="button" onClick={handleSignup}>회원가입</button>
+            </form>
+          </div>
+        </section>
+      </div>
   );
 }
