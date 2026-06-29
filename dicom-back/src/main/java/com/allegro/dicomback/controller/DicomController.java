@@ -2,9 +2,14 @@ package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.dto.DicomRequestDto;
 import com.allegro.dicomback.dto.DicomResponseDto;
+import com.allegro.dicomback.service.DicomService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 
@@ -12,6 +17,7 @@ import java.util.List;
 @RequestMapping("/api/dicom")
 @RequiredArgsConstructor //의존성 주입
 public class DicomController {
+    private final DicomService dicomService;
 
     //환자 목록 불러오기
     @GetMapping("/patients")
@@ -82,25 +88,37 @@ public class DicomController {
 
     //스터디 다운로드
     @GetMapping("/studies/download")
-    public ResponseEntity<Void> downloadStudies(
+    public ResponseEntity<StreamingResponseBody> downloadStudies(
             @RequestParam("study-key") Long studyKey
     ) {
-        return ResponseEntity.ok().build();
+        StreamingResponseBody stream = dicomService.downloadSeriesAsZip(studyKey);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"study_" + studyKey + ".dcm\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
     }
 
     //시리즈 다운로드
     @GetMapping("/series/download")
-    public ResponseEntity<Void> downloadSeries(
+    public ResponseEntity<StreamingResponseBody> downloadSeries(
             @RequestParam ("series-key")  Long seriesKey
     ) {
-        return ResponseEntity.ok().build();
+        StreamingResponseBody stream = dicomService.downloadSeriesAsZip(seriesKey);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"series_" + seriesKey + ".dcm\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
     }
 
     //이미지 다운로드
     @GetMapping("/images/download")
-    public ResponseEntity<Void> downloadImages(
+    public ResponseEntity<Resource> downloadImages(
             @RequestParam ("image-key") Long imageKey
     ) {
-        return ResponseEntity.ok().build();
+        Resource resource = dicomService.downloadImage(imageKey);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"image_" + imageKey + ".dcm\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
     }
 }

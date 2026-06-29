@@ -9,6 +9,8 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     // Series에 속한 단면 이미지 목록을 슬라이스 순서대로 조회
     List<Image> findBySeries_SeriesKeyAndDelFlagOrderByInstanceNumAsc(Long seriesKey, Integer delFlag);
 
+
+    List<Image> findBySeries_Study_StudyKeyAndDelFlag(Long studyKey, Integer delFlag);
     // 단일 영상 고유 UID(SOPInstanceUID)로 단건 조회
     Image findBySopInstanceUid (String sopInstanceUID);
 }
