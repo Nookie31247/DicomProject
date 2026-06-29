@@ -37,11 +37,11 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <div className="mx-auto w-full bg-paper rounded-3xl shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-w-[480px] px-[clamp(28px,4vw,52px)] py-[52px] max-[900px]:px-[26px] max-[900px]:py-10">
+        <div className="mx-auto w-full bg-paper rounded-3xl shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-w-[480px] px-[clamp(28px,4vw,52px)] py-[52px] max-[900px]:px-6.5 max-[900px]:py-10">
           <p className="eyebrow">DICOM!과 함께 시작해보세요</p>
-          <h1 className="font-bold text-[34px] tracking-[-0.01em] m-0 text-ink max-[560px]:text-[28px] mb-7">회원가입</h1>
+          <h1 className="font-bold text-4xl tracking-[-0.01em] m-0 text-ink max-[560px]:text-3xl mb-7">회원가입</h1>
 
-          <form className="flex flex-col gap-[18px]">
+          <form className="flex flex-col gap-4.5">
             <label className="field">
               <span className="field-label">아이디</span>
               <input
@@ -129,7 +129,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="text-center text-[15px] text-ink-soft mt-6">
+          <p className="text-center text-base text-ink-soft mt-6">
             이미 계정이 있으신가요?{" "}
             <Link className="font-bold no-underline text-mint-deep hover:underline" href="/login">
               로그인

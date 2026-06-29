@@ -22,7 +22,7 @@ export default function LoginPage() {
 
         <div className="mx-auto w-full bg-paper rounded-3xl py-14 px-[clamp(32px,4vw,56px)] shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-w-[480px] max-[900px]:py-11 max-[900px]:px-7">
           <p className="eyebrow">다시 만나서 반가워요</p>
-          <h1 className="font-bold text-[34px] tracking-[-0.01em] m-0 mb-8 text-ink max-[560px]:text-[28px]">로그인</h1>
+          <h1 className="font-bold text-4xl tracking-[-0.01em] m-0 mb-8 text-ink max-[560px]:text-3xl">로그인</h1>
 
           <form className="flex flex-col gap-5">
             <label className="field">
@@ -50,7 +50,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center mt-7 text-[15px] text-ink-soft">
+          <p className="text-center mt-7 text-base text-ink-soft">
             아직 계정이 없으신가요?{" "}
             <Link className="font-bold no-underline text-mint-deep hover:underline" href="/signup">
               회원가입

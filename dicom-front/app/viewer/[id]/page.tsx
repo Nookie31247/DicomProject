@@ -73,7 +73,7 @@ export default function WorkspacePage() {
     };
 
     // ── Tailwind 스타일 변수 (globals.css에서 이관) ──
-    const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-[42px] px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
+    const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
     const modalityColors: Record<string, string> = {
         ct: "bg-[#2563eb]",
         mr: "bg-[#7c3aed]",
@@ -96,21 +96,21 @@ export default function WorkspacePage() {
                                 <button type="button" className="flex shrink-0 cursor-pointer items-center justify-center w-7.5 h-7.5 rounded-lg border border-line bg-paper text-ink-soft text-xl leading-none transition-[background,color,border-color] duration-150 hover:bg-canvas hover:text-ink hover:border-mint-deep transform-none font-bold"
                                     onClick={handleGoBack}>←
                                 </button>
-                                <h2 className="m-0 font-bold text-[19px] text-ink tracking-[-0.01em]">시리즈 목록</h2>
+                                <h2 className="m-0 font-bold text-xl text-ink tracking-[-0.01em]">시리즈 목록</h2>
                             </div>
                             {currentStudy && (
-                                <div className="text-[15px] font-semibold text-slate-700 mt-1 mb-0.5 flex items-center gap-2">
+                                <div className="text-base font-semibold text-slate-700 mt-1 mb-0.5 flex items-center gap-2">
                                     <span className={`${modalityBadgeClass} ${modalityColors[currentStudy.modality.toLowerCase()] || "bg-slate"}`}>{currentStudy.modality}</span>
                                     <span>{currentStudy.description}</span>
                                     <span className="text-sm text-slate-500 font-normal">| {currentStudy.datetime.replace("T", " ").split("Z")[0]}</span>
                                 </div>
                             )}
-                            <span className="text-left font-medium text-[13.5px] text-ink-soft leading-[1.4]">{currentPatient["patient-name"]} · {currentPatient["patient-birth"]}</span>
+                            <span className="text-left font-medium text-sm text-ink-soft leading-[1.4]">{currentPatient["patient-name"]} · {currentPatient["patient-birth"]}</span>
                         </div>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                        <div className="gap-2.5 shrink-0 tracking-[0.02em] bg-canvas border-b border-line max-[560px]:hidden flex items-center px-4 py-3 text-[13px] font-bold text-slate-500">
+                        <div className="gap-2.5 shrink-0 tracking-[0.02em] bg-canvas border-b border-line max-[560px]:hidden flex items-center px-4 py-3 text-sm font-bold text-slate-500">
                             <span className="w-16">시리즈</span>
                             <span className="flex-1">촬영 일시</span>
                             <span className="w-16 text-center">부위</span>
@@ -131,7 +131,7 @@ export default function WorkspacePage() {
                                             <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
 
                                             <div className="flex-1 flex flex-col items-start pr-2 justify-center overflow-hidden">
-                                                <span className="text-[13px]  font-medium tracking-wide">{ser.date}</span>
+                                                <span className="text-sm  font-medium tracking-wide">{ser.date}</span>
                                             </div>
                                             <span className="w-16 text-center pl-2 truncate">{ser.bodyPart}</span>
                                             <span className="w-16 text-right ">{ser.images}장</span>

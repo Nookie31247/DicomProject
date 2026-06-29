@@ -11,6 +11,7 @@
   --color-line: #e3e6ec;
   --color-mint: #4cff9d;
   --color-mint-deep: #14b876;
+  --color-mint-hover: #3fe88c;
   --color-slate: #1a2332;
 
   --color-background: var(--color-paper);
@@ -50,17 +51,17 @@
 
   /* .btn-big (구 btn-primary): 메인 버튼 (로그인, 회원가입 등) */
   .btn-big {
-    @apply text-[18px] px-7 py-4 rounded-[20px] bg-mint text-slate shadow-[0_6px_18px_rgba(76,255,157,0.35)] hover:-translate-y-0.5 hover:bg-[#3fe88c] hover:shadow-[0_10px_22px_rgba(76,255,157,0.42)];
+    @apply text-lg px-7 py-4 rounded-[20px] bg-mint text-slate shadow-[0_6px_18px_rgba(76,255,157,0.35)] hover:-translate-y-0.5 hover:bg-mint-hover hover:shadow-[0_10px_22px_rgba(76,255,157,0.42)];
   }
 
   /* .btn-medium (구 logout-btn): 유저 메뉴, 워크스페이스 패널 버튼 등 */
   .btn-medium {
-    @apply text-[15px] px-[18px] py-[9px] rounded-xl bg-mint text-slate shadow-[0_2px_8px_rgba(76,255,157,0.2)] hover:-translate-y-px hover:bg-[#3fe88c] hover:shadow-[0_6px_16px_rgba(76,255,157,0.35)] max-[560px]:text-[14px] max-[560px]:px-3.5 max-[560px]:py-2;
+    @apply text-base px-4.5 py-2.5 rounded-xl bg-mint text-slate shadow-[0_2px_8px_rgba(76,255,157,0.2)] hover:-translate-y-px hover:bg-mint-hover hover:shadow-[0_6px_16px_rgba(76,255,157,0.35)] max-[560px]:text-sm max-[560px]:px-3.5 max-[560px]:py-2;
   }
 
   /* .btn-small: 워크스페이스 환자 추가 등 작은 버튼 */
   .btn-small {
-    @apply text-[13px] px-3 py-1.5 rounded-lg bg-mint text-slate shadow-sm hover:-translate-y-px hover:bg-[#3fe88c] hover:shadow-[0_4px_12px_rgba(76,255,157,0.3)];
+    @apply text-sm px-3 py-1.5 rounded-lg bg-mint text-slate shadow-sm hover:-translate-y-px hover:bg-mint-hover hover:shadow-[0_4px_12px_rgba(76,255,157,0.3)];
   }
 
   /* ── Eyebrow ────────────────────────────────────────────── */

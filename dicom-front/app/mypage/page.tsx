@@ -61,17 +61,17 @@ export default function MyPage() {
   // 비밀번호 입력 필드 공통 스타일
   const pwInput =
     "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
-  const pwFieldLabel = "text-[15px] font-semibold text-ink";
+  const pwFieldLabel = "text-base font-semibold text-ink";
 
   return (
     <div className="page">
       {/* ───────────── My page ───────────── */}
       <section className="flex flex-1 justify-center px-[clamp(20px,5vw,62px)] pt-11 pb-20 max-[560px]:px-4 max-[560px]:pb-14 max-[560px]:pt-7">
-        <div className="w-full max-w-[720px] rounded-3xl border border-line bg-paper px-[clamp(26px,4vw,52px)] py-11 shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-[560px]:px-[22px] max-[560px]:py-8">
+        <div className="w-full max-w-[720px] rounded-3xl border border-line bg-paper px-[clamp(26px,4vw,52px)] py-11 shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-[560px]:px-5.5 max-[560px]:py-8">
           {/* 제목 위 뒤로가기 버튼 */}
           <Link
             href="/workspace"
-            className="mb-[18px] flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-line bg-paper text-xl leading-none text-ink-soft no-underline transition-[background,color,border-color] duration-150 hover:border-mint-deep hover:bg-canvas hover:text-ink"
+            className="mb-4.5 flex h-9.5 w-9.5 items-center justify-center rounded-[10px] border border-line bg-paper text-xl leading-none text-ink-soft no-underline transition-[background,color,border-color] duration-150 hover:border-mint-deep hover:bg-canvas hover:text-ink"
             aria-label="워크스페이스로 돌아가기"
             title="뒤로가기"
           >
@@ -80,20 +80,20 @@ export default function MyPage() {
           <h1 className="m-0 mb-1.5 text-3xl font-bold tracking-[-0.01em] text-ink max-[560px]:text-[26px]">
             마이페이지
           </h1>
-          <p className="m-0 mb-8 text-[17px] text-ink-soft">
+          <p className="m-0 mb-8 text-lg text-ink-soft">
             {currentUser.name}님의 계정 정보입니다.
           </p>
 
           {/* ── 회원 정보 ── */}
           <dl className="m-0 mb-10 flex flex-col divide-y divide-line overflow-hidden rounded-2xl border border-line">
-            <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-[22px] py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-[5px]">
-              <dt className="text-[15px] font-semibold text-ink-soft">아이디</dt>
+            <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
+              <dt className="text-base font-semibold text-ink-soft">아이디</dt>
               <dd className="m-0 text-base font-semibold text-ink">
                 {currentUser.userId}
               </dd>
             </div>
-            <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-[22px] py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-[5px]">
-              <dt className="text-[15px] font-semibold text-ink-soft">회원유형</dt>
+            <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
+              <dt className="text-base font-semibold text-ink-soft">회원유형</dt>
               <dd className="m-0 text-base font-semibold text-ink">
                 <span className="inline-flex items-center rounded-full bg-[rgba(76,255,157,0.18)] px-[13px] py-1 text-sm font-bold text-mint-deep">
                   {roleLabel(currentUser.role)}
@@ -101,8 +101,8 @@ export default function MyPage() {
               </dd>
             </div>
             {currentUser.role === "doctor" && (
-              <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-[22px] py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-[5px]">
-                <dt className="text-[15px] font-semibold text-ink-soft">
+              <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
+                <dt className="text-base font-semibold text-ink-soft">
                   의사 면허번호
                 </dt>
                 <dd className="m-0 text-base font-semibold text-ink">
@@ -114,7 +114,7 @@ export default function MyPage() {
 
           {/* ── 비밀번호 변경 ── */}
           <section>
-            <h2 className="m-0 mb-4 text-[19px] font-bold tracking-[-0.01em] text-ink">
+            <h2 className="m-0 mb-4 text-xl font-bold tracking-[-0.01em] text-ink">
               비밀번호 변경
             </h2>
 
@@ -191,7 +191,7 @@ export default function MyPage() {
 
             {pwMessage && (
               <p
-                className={`mt-[14px] text-[14.5px] font-semibold ${
+                className={`mt-3.5 text-sm font-semibold ${
                   pwMessage.type === "error"
                     ? "text-[#d92d20]"
                     : "text-mint-deep"
@@ -203,11 +203,11 @@ export default function MyPage() {
           </section>
 
           {/* ── 회원 탈퇴 ── */}
-          <div className="mt-9 border-t border-line pt-[26px]">
+          <div className="mt-9 border-t border-line pt-6.5">
             <button
               type="button"
               onClick={handleWithdraw}
-              className="cursor-pointer rounded-xl border-[1.5px] border-[#f1c7c9] bg-transparent px-[22px] py-[11px] text-[15px] font-semibold text-[#d92d20] transition-[background,border-color] duration-150 hover:border-[#d92d20] hover:bg-[#fef3f2]"
+              className="cursor-pointer rounded-xl border-[1.5px] border-[#f1c7c9] bg-transparent px-5.5 py-[11px] text-base font-semibold text-[#d92d20] transition-[background,border-color] duration-150 hover:border-[#d92d20] hover:bg-[#fef3f2]"
             >
               회원탈퇴
             </button>
