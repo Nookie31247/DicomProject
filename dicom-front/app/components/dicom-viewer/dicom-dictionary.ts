@@ -1,4 +1,4 @@
-// DICOM 파일의
+// DICOM 파일의 메타데이터 태그값을 String 설명문으로 변경하는 코드
 
 export const dicomTagDictionary: Record<string, string> = {
   // Patient Information (0010)
