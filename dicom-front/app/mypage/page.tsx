@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { currentUser } from "../../mock-data";
+import { currentUser } from "@/mock-data";
 
 const roleLabel = (r: "doctor" | "researcher") =>
   r === "doctor" ? "의사" : "연구자";
@@ -50,11 +50,6 @@ export default function MyPage() {
     setPwMessage({ type: "ok", text: "비밀번호가 변경되었습니다. (목업)" });
   }
 
-  function handleLogout() {
-    // 인증 미구현: 실제 로그아웃 처리는 추후 연동. 지금은 홈으로 이동만.
-    router.push("/");
-  }
-
   function handleWithdraw() {
     // 인증 미구현: 실제 탈퇴는 추후 백엔드 연동.
     const ok = window.confirm(
@@ -70,20 +65,6 @@ export default function MyPage() {
 
   return (
     <div className="page">
-      {/* ───────────── Nav ───────────── */}
-      <header className="nav">
-        <Link href="/" className="logo">
-          DICOM!
-        </Link>
-        <div className="nav-user">
-          <span className="user-avatar">{currentUser.name.charAt(0)}</span>
-          <span className="user-name">{currentUser.name}님</span>
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            로그아웃
-          </button>
-        </div>
-      </header>
-
       {/* ───────────── My page ───────────── */}
       <section className="flex flex-1 justify-center px-[clamp(20px,5vw,62px)] pt-11 pb-20 max-[560px]:px-4 max-[560px]:pb-14 max-[560px]:pt-7">
         <div className="w-full max-w-[720px] rounded-3xl border border-line bg-paper px-[clamp(26px,4vw,52px)] py-11 shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-[560px]:px-[22px] max-[560px]:py-8">

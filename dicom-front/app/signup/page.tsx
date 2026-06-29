@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 
 export default function SignupPage() {
   const [memberType, setMemberType] = useState<"doctor" | "researcher">(
@@ -21,45 +22,26 @@ export default function SignupPage() {
 
   return (
     <div className="page">
-      {/* ───────────── Nav ───────────── */}
-      <header className="nav">
-        <Link href="/" className="logo">
-          DICOM!
-        </Link>
-        <nav className="nav-links">
-          <Link href="/#how-it-works">사용방법</Link>
-          <Link href="/#faq">FAQ</Link>
-        </nav>
-      </header>
-
       {/* ───────────── Auth section ───────────── */}
       {/* items-start: 의사 선택 시 카드가 길어져도 왼쪽 비주얼이 밀려나지 않게 */}
-      <section className="auth items-start">
+      <section className="grid flex-1 items-start grid-cols-[1.05fr_0.95fr] gap-14 pt-[72px] px-[clamp(24px,5vw,62px)] pb-24 max-[900px]:grid-cols-1 max-[560px]:px-5 max-[560px]:pt-10 max-[560px]:pb-16 max-[560px]:gap-9">
         <div
-          className="auth-visual sticky top-24 max-[900px]:static"
+          className="flex flex-col items-center gap-7 max-[900px]:order-[-1] sticky top-24 max-[900px]:static"
           aria-hidden="true"
         >
-          <div className="scan-frame">
-            <div className="scan-grid" />
-            <div className="scan-line" />
-            <div className="scan-corner tl" />
-            <div className="scan-corner tr" />
-            <div className="scan-corner bl" />
-            <div className="scan-corner br" />
-            <span className="scan-tag">SLICE 084 / 220</span>
-          </div>
-          <p className="visual-caption">
+          <ScanVisual />
+          <p className="text-center font-semibold text-lg text-ink-soft leading-[1.5] max-w-[360px] max-[560px]:text-base">
             의사와 연구원 모두를 위한
             <br />
             안전한 DICOM 분석 플랫폼입니다.
           </p>
         </div>
 
-        <div className="auth-card px-[clamp(28px,4vw,52px)] py-[52px] max-[900px]:px-[26px] max-[900px]:py-10">
+        <div className="mx-auto w-full bg-paper rounded-3xl shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-w-[480px] px-[clamp(28px,4vw,52px)] py-[52px] max-[900px]:px-[26px] max-[900px]:py-10">
           <p className="eyebrow">DICOM!과 함께 시작해보세요</p>
-          <h1 className="auth-title mb-7">회원가입</h1>
+          <h1 className="font-bold text-[34px] tracking-[-0.01em] m-0 text-ink max-[560px]:text-[28px] mb-7">회원가입</h1>
 
-          <form className="auth-form gap-[18px]">
+          <form className="flex flex-col gap-[18px]">
             <label className="field">
               <span className="field-label">아이디</span>
               <input
@@ -142,14 +124,14 @@ export default function SignupPage() {
               </label>
             )}
 
-            <button className="btn btn-primary btn-block" type="button">
+            <button className="btn btn-big w-full mt-2" type="button">
               회원가입
             </button>
           </form>
 
-          <p className="switch-line mt-6">
+          <p className="text-center text-[15px] text-ink-soft mt-6">
             이미 계정이 있으신가요?{" "}
-            <Link className="switch-link" href="/login">
+            <Link className="font-bold no-underline text-mint-deep hover:underline" href="/login">
               로그인
             </Link>
           </p>
