@@ -192,7 +192,7 @@ export default function WorkspaceDashboardPage() {
                   {/* 오른쪽: 검색 버튼 */}
                   <button
                     type="button"
-                    className="w-[72px] bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
+                    className="w-18 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
                     onClick={handleSearch}
                   >
                     검색

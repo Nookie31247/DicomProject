@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import {useState, type FormEvent, useEffect} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { currentUser } from "@/mock-data";
-
-const roleLabel = (r: "doctor" | "researcher") =>
-  r === "doctor" ? "의사" : "연구자";
+import {getUserInfo} from "@/app/api/authApi";
 
 export default function MyPage() {
   const router = useRouter();
+
+  // 비밀번호 입력 필드 공통 스타일
+  const pwInput = "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
+  const pwFieldLabel = "text-base font-semibold text-ink";
 
   // 비밀번호 수정 영역 토글 + 입력 상태
   const [editingPw, setEditingPw] = useState(false);
@@ -73,10 +74,12 @@ export default function MyPage() {
     router.push("/");
   }
 
-  // 비밀번호 입력 필드 공통 스타일
-  const pwInput =
-    "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
-  const pwFieldLabel = "text-base font-semibold text-ink";
+  const [userdata, setUserdata] = useState();
+  const [username, setUsername] = useState("");
+  useEffect(async () => {
+    setUsername(localStorage.getItem("userdata"));
+    setUserdata(await getUserInfo());
+  }, []);
 
   return (
     <div className="page">
@@ -96,7 +99,7 @@ export default function MyPage() {
             마이페이지
           </h1>
           <p className="m-0 mb-8 text-lg text-ink-soft">
-            {currentUser.name}님의 계정 정보입니다.
+            {username}님의 계정 정보입니다.
           </p>
 
           {/* ── 회원 정보 ── */}
@@ -104,27 +107,23 @@ export default function MyPage() {
             <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
               <dt className="text-base font-semibold text-ink-soft">아이디</dt>
               <dd className="m-0 text-base font-semibold text-ink">
-                {currentUser.userId}
+                {userdata.userId}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
+              <dt className="text-base font-semibold text-ink-soft">가입일자</dt>
+              <dd className="m-0 text-base font-semibold text-ink">
+                {userdata.registerDay}
               </dd>
             </div>
             <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
               <dt className="text-base font-semibold text-ink-soft">회원유형</dt>
               <dd className="m-0 text-base font-semibold text-ink">
                 <span className="inline-flex items-center rounded-full bg-[rgba(76,255,157,0.18)] px-3.25 py-1 text-sm font-bold text-mint-deep">
-                  {roleLabel(currentUser.role)}
+                  {userdata.userRole}
                 </span>
               </dd>
             </div>
-            {currentUser.role === "doctor" && (
-              <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
-                <dt className="text-base font-semibold text-ink-soft">
-                  의사 면허번호
-                </dt>
-                <dd className="m-0 text-base font-semibold text-ink">
-                  {currentUser.licenseNumber}
-                </dd>
-              </div>
-            )}
           </dl>
 
           {/* ── 비밀번호 변경 ── */}

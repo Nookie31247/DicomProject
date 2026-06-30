@@ -1,8 +1,12 @@
+"use client"
 
 import {useState} from "react";
 import {signup} from "@/app/api/authApi";
+import {useRouter} from "next/navigation";
 
 export default function SignupForm() {
+  const router = useRouter();
+
   // 라디오 필 공통 스타일 + 선택 상태 스타일 (테두리 두께는 2px로 고정해 흔들림 방지)
   const pillBase = "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-[13px] text-base transition-[border-color,background,color] duration-150";
   const pillActive = "border-mint-deep bg-[rgba(76,255,157,0.3)] text-ink font-bold";
@@ -21,6 +25,7 @@ export default function SignupForm() {
   const doSignup = async () => {
     if(password == confirmPassword) {
       await signup(id, password, username, memberType);
+      router.push("/login");
     }
     else {
       alert("비밀번호 안맞음");
