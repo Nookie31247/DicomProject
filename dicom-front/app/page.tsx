@@ -21,7 +21,7 @@ export default function Home() {
       {/* ───────────── Hero ───────────── */}
       <section className="grid grid-cols-[1.15fr_0.85fr] items-center gap-12 bg-paper px-[clamp(24px,5vw,62px)] pt-16 pb-22 max-[900px]:grid-cols-1 max-[560px]:px-5 max-[560px]:pt-10 max-[560px]:pb-14">
         <div className="max-w-155 max-[900px]:order-1">
-          <p className="eyebrow text-[22px] tracking-[-0.01em] mb-4.5 max-[560px]:text-[18px]">
+          <p className="eyebrow text-2xl tracking-[-0.01em] mb-4.5 max-[560px]:text-lg">
             DICOM 파일을 보다 간편하게!
           </p>
 
@@ -29,7 +29,7 @@ export default function Home() {
             {heroPoints.map((text) => (
               <li
                 key={text}
-                className="relative pl-5.5 text-[27px] font-semibold leading-[1.4] text-ink before:absolute before:left-0 before:top-3.25 before:h-2 before:w-2 before:rounded-xs before:bg-mint before:content-[''] max-[900px]:text-[22px] max-[560px]:text-[19px]"
+                className="relative pl-5.5 text-3xl font-semibold leading-[1.4] text-ink before:absolute before:left-0 before:top-3.25 before:h-2 before:w-2 before:rounded-xs before:bg-mint before:content-[''] max-[900px]:text-2xl max-[560px]:text-xl"
               >
                 {text}
               </li>
@@ -39,13 +39,13 @@ export default function Home() {
           <div className="flex gap-4.5 max-[560px]:flex-wrap">
             <Link
               href="/login"
-              className="btn btn-big text-[21px] px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
+              className="btn btn-big text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
             >
               로그인
             </Link>
             <Link
               href="/signup"
-              className="btn btn-big text-paper bg-slate hover:-translate-y-0.5 hover:bg-[#0f1722] text-[21px] px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
+              className="btn btn-big text-paper bg-slate hover:-translate-y-0.5 hover:bg-[#0f1722] text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
             >
               시작하기
             </Link>
@@ -74,7 +74,7 @@ export default function Home() {
             backgroundSize: "26px 26px",
           }}
         />
-        <p className="relative m-0 max-w-180 text-center text-[34px] font-semibold text-ink-soft max-[560px]:text-[22px]">
+        <p className="relative m-0 max-w-180 text-center text-4xl font-semibold text-ink-soft max-[560px]:text-2xl">
           여기에 서비스 소개(홍보) 내용을 작성합니다
         </p>
       </section>
