@@ -24,11 +24,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // 임시로 로그인 여부를 저장 (추후 전역 상태나 서버 사이드 인증 정보로 대체 가능)
-  const isLogin = true;
-
-  const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
-
   return (
     <html
       lang="ko"
@@ -39,14 +34,7 @@ export default function RootLayout({
           <Link href="/" className="font-bold no-underline text-3xl tracking-[-0.01em] text-ink">
             DICOM!
           </Link>
-          {isLogin ? (
-            <NavUser />
-          ) : (
-            <nav className="flex gap-10 max-[560px]:gap-5.5">
-              <Link href="/#how-it-works" className={navLinkClass}>사용방법</Link>
-              <Link href="/#faq" className={navLinkClass}>FAQ</Link>
-            </nav>
-          )}
+          <NavUser />
         </header>
         {children}
       </body>
