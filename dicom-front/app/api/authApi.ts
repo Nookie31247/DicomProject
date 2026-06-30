@@ -1,7 +1,7 @@
 import {apiFetch} from "@/app/api/apiFetch";
 
 
-// 로그인
+// 1. 로그인 (클라이언트 요청)
 export async function login(userId: string, password: string) {
   return apiFetch("/api/users/login", {
     method: 'POST',
@@ -10,7 +10,7 @@ export async function login(userId: string, password: string) {
   })
 }
 
-// 회원가입
+// 2. 회원가입 (클라이언트 요청)
 export async function signup(userId: string, password: string, name: string, userType: string) {
   return apiFetch("/api/users/signup", {
     method: 'POST',
@@ -19,10 +19,47 @@ export async function signup(userId: string, password: string, name: string, use
   })
 }
 
-// 로그아웃
-export async function logout(userId: string, password: string, name: string, userType: string) {
+// 3. 로그아웃 (클라이언트 요청)
+export async function logout() {
   return apiFetch("/api/users/logout", {
     method: 'POST',
-    headers: { "Authorization": `Bearer ${token}` },
+    credentials: 'include'
+  })
+}
+
+// 4. 아이디 중복 확인 (클라이언트 요청)
+export async function checkId(userId: string) {
+  return apiFetch("/api/users/check-id", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId })
+  })
+}
+
+// 5. 비밀번호 수정 (클라이언트 요청)
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  return apiFetch("/api/users/change-password", {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, currentPassword, newPassword })
+  })
+}
+
+// 6. 회원탈퇴 (클라이언트 요청)
+export async function deleteUser(password: string) {
+  return apiFetch("/api/users/delete", {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password})
+  })
+}
+
+// 7. 회원정보 불러오기
+export async function getUserInfo() {
+  return apiFetch("/api/users/info", {
+    method: 'GET',
+    credentials: 'include'
   })
 }

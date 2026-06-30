@@ -14,6 +14,11 @@ spring:
       connection-timeout: 30000
       idle-timeout: 300000
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   jpa:
     show-sql: true
     hibernate:
