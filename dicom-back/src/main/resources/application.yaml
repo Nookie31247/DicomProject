@@ -1,3 +1,29 @@
 spring:
   application:
     name: dicom-back
+
+  datasource:
+    url: jdbc:mysql://${RDS_HOST:localhost}:${RDS_PORT:3306}/${RDS_NAME:testdb}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${RDS_USER:root}
+    password: ${RDS_PASS:pacs_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
+jwt:
+  secret-key: ${JWT_SECRET_KEY:66eI6rCA7LigIOuvuO2DgOy8gCDrgpjro6jsubTrr7jrhbgg66+47L2U7Yag}

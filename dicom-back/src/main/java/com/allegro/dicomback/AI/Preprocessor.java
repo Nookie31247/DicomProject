@@ -1,4 +1,4 @@
-package com.allegro.dicomback;
+package com.allegro.dicomback.AI;
 
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;

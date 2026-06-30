@@ -1,9 +1,10 @@
-package com.allegro.dicomback;
+package com.allegro.dicomback.service;
 
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import com.allegro.dicomback.AI.Preprocessor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
