@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  pacs-server:
+    image: orthancteam/orthanc
+    container_name: orthanc_pacs
+    ports:
+      - "8042:8042" # 웹 관리자 화면 및 DICOMweb REST API 포트 (Next.js/Spring 연결용)
+      - "4242:4242" # DICOM 통신 포트 (C-STORE, C-FIND 등 장비 연결용)
+    environment:
+      # Orthanc 내부 설정을 가볍게 주입
+      ORTHANC__NAME: "Hanul_Hospital_PACS"
+      ORTHANC__DICOM_WEB__ENABLED: "true" # DICOMweb(QIDO, WADO, STOW) 활성화
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true" # 외부(Next.js, Spring)에서 접속 허용
+
+      ORTHANC__ORTHANC_EXPLORER_2__ENABLE: "true" #최신 사용자 웹 인터페이스(UI) 플러그인을 활성화
+
+    volumes:
+      - orthanc-db:/var/lib/orthanc/db
+
+  pacs-db:
+    image: mysql:8.0
+    container_name: pacs
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "pacs_password"
+      MYSQL_DATABASE: "pacs"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  orthanc-db:
+  mysql-data:
