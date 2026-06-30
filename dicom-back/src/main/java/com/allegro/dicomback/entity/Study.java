@@ -59,4 +59,8 @@ public class Study {
     // 검색 설명
     @Column(name = "description")
     private String description;
+
+    //orthancSeriesId-> orthanc의 해시값을 받아서 Study 다운로드 용도으로 사용
+    @Column(name = "orthancStudyId")
+    private String orthancStudyId;
 }

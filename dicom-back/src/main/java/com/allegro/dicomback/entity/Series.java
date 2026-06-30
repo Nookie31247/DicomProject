@@ -39,4 +39,8 @@ public class Series {
     public void delete() {
         this.delFlag = 1;
     }
+
+    //orthancSeriesId-> orthanc의 해시값을 받아서 Series 다운로드 용도으로 사용
+    @Column(name = "orthancSeriesId")
+    private String orthancSeriesId;
 }
