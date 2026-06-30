@@ -1,0 +1,117 @@
+package com.allegro.dicomback.service;
+
+import com.allegro.dicomback.dto.OrthancSeriesDto;
+import com.allegro.dicomback.dto.OrthancStudyDto;
+import com.allegro.dicomback.entity.Patient;
+import com.allegro.dicomback.entity.Series;
+import com.allegro.dicomback.entity.Study;
+import com.allegro.dicomback.repository.PatientRepository;
+import com.allegro.dicomback.repository.SeriesRepository;
+import com.allegro.dicomback.repository.StudyRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class DicomSyncHelperService {
+    private final StudyRepository studyRepository;
+    private final SeriesRepository seriesRepository;
+    private final PatientRepository patientRepository;
+    private final RestTemplate restTemplate;
+
+    private final String ORTHANC_URL = "http://localhost:8042";
+
+    @Transactional
+    public void syncStudy(String studyUuid) {
+        log.info("-> syncStudy 진입: {}", studyUuid); // 추가
+
+        try {
+            OrthancStudyDto dto = restTemplate.getForObject(ORTHANC_URL + "/studies/" + studyUuid + "?expand=true", OrthancStudyDto.class);
+            if (dto == null) {
+                log.warn("DTO가 null입니다. UUID: {}", studyUuid);
+                return;
+            }
+
+            if(dto.getMainDicomTags() == null) {
+                log.warn("MainDicomTags가 null입니다. UUID: {}", studyUuid);
+                return;
+            }
+
+            log.info("조회된 StudyInstanceUID: {}", dto.getMainDicomTags().getStudyInstanceUID());
+
+            String patientId = dto.getPatientMainDicomTags().getPatientID();
+            Patient patient = patientRepository.findById(patientId)
+                    .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
+
+            // 1. Study Upsert
+            String studyUid = dto.getMainDicomTags().getStudyInstanceUID();
+            Study study = studyRepository.findByStudyInstanceUID(studyUid)
+                    .orElse(Study.builder().studyInstanceUID(studyUid).build());
+
+            study.setPatient(patient);
+            study.setOrthancStudyId(dto.getID());
+            study.setStudyDateTime(convertToLocalDateTime(dto.getMainDicomTags().getStudyDate(), dto.getMainDicomTags().getStudyTime()));
+            study.setDescription(dto.getMainDicomTags().getStudyDescription());
+            study.setAccessionNumber(dto.getMainDicomTags().getAccessionNumber());
+            study.setTotalSeriesCount(dto.getSeries() != null ? dto.getSeries().size() : 0);
+
+            studyRepository.save(study);
+
+            // 2. Series Upsert 루프
+            if (dto.getSeries() != null) {
+                int totalImagesInStudy = 0;
+
+                for (String seriesUid : dto.getSeries()) {
+                    OrthancSeriesDto sDto = null;
+
+                    try {
+                        // 각 시리즈별 상세 정보 조회 (Orthanc API 호출)
+                        sDto = restTemplate.getForObject(ORTHANC_URL + "/series/" + seriesUid + "?expand=true", OrthancSeriesDto.class);
+                    } catch (Exception e) {
+                        log.error("Failed to sync series {}: {}", seriesUid, e.getMessage());
+                    }
+
+                    if (sDto == null) continue;
+
+                    String sUid = sDto.getMainDicomTags().getSeriesInstanceUID();
+                    Series series = seriesRepository.findBySeriesInstanceUID(sUid)
+                            .orElse(Series.builder().seriesInstanceUID(sUid).study(study).build());
+
+                    series.setOrthancSeriesId(sDto.getID());
+                    log.info("Series 번호: {}", sDto.getID());
+                    series.setSeriesNum(sDto.getMainDicomTags().getSeriesNumber());
+                    series.setModality(sDto.getMainDicomTags().getModality());
+                    series.setBodyPart(sDto.getMainDicomTags().getBodyPartExamined());
+
+                    // 이미지 개수 저장
+                    int instanceCount = (sDto.getInstances() != null) ? sDto.getInstances().size() : 0;
+                    series.setTotalInstanceCount(instanceCount);
+
+                    seriesRepository.save(series);
+                    totalImagesInStudy += instanceCount;
+                }
+
+                // Study의 총 이미지 카운트 업데이트
+                study.setTotalInstanceCount(totalImagesInStudy);
+                studyRepository.save(study);
+                log.info("저장 완료: {}", studyUid);
+            }
+        } catch (Exception e) {
+            log.error("저장 실패: {}", studyUuid, e);
+            throw e;
+        }
+    }
+
+    private LocalDateTime convertToLocalDateTime(String dateStr, String timeStr) {
+        if (dateStr == null || dateStr.length() < 8) return LocalDateTime.now();
+        String time = (timeStr != null && !timeStr.isEmpty()) ? timeStr.split("\\.")[0] : "000000";
+        return LocalDateTime.parse(dateStr + time, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    }
+}
