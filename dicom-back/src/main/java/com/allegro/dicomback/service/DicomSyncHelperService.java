@@ -64,6 +64,20 @@ public class DicomSyncHelperService {
 
             studyRepository.save(study);
 
+            log.info("기존 환자 PTime: {}", patient.getPTime());
+            log.info("새로 계산된 StudyDateTime: {}", study.getStudyDateTime());
+
+            if(study.getStudyDateTime() == null) {
+                log.info("검사 날짜가 null입니다.");
+                return;
+            }
+
+            // 저장된 studies 테이블을 바탕으로 환자 최근 검사일 업데이트
+            patient.setPTime(study.getStudyDateTime());
+            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getPId(), patient.getPTime());
+
+            patientRepository.save(patient);
+
             // 2. Series Upsert 루프
             if (dto.getSeries() != null) {
                 int totalImagesInStudy = 0;

@@ -14,9 +14,6 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
     // 검사 설명(Description) 검색 (정상 데이터만)
     List<Study> findByDescriptionContainingAndDelFlag(String description, Integer delFlag);
 
-    // 장비 종류(Modality: CT, MR 등) 검색 (정상 데이터만)
-    List<Study> findByModalityAndDelFlag(String modality, Integer delFlag);
-
     // 검사 날짜 기간 검색
     List<Study> findByStudyDateTimeBetweenAndDelFlag(LocalDateTime start, LocalDateTime end, Integer delFlag);
 
