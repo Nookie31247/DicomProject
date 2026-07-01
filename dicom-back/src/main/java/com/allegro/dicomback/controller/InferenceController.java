@@ -1,5 +1,6 @@
-package com.allegro.dicomback;
+package com.allegro.dicomback.controller;
 
+import com.allegro.dicomback.service.InferenceService;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.io.DicomInputStream;

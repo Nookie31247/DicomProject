@@ -1,82 +1,13 @@
-"use client";
-
-import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { currentUser } from "@/mock-data";
+import ChangePw from "@/app/mypage/ChangePw";
+import Withdraw from "@/app/mypage/Withdraw";
+import {getUserInfo} from "@/app/api/authApi";
+import {cookies} from "next/headers";
 
-const roleLabel = (r: "doctor" | "researcher") =>
-  r === "doctor" ? "의사" : "연구자";
-
-export default function MyPage() {
-  const router = useRouter();
-
-  // 비밀번호 수정 영역 토글 + 입력 상태
-  const [editingPw, setEditingPw] = useState(false);
-  const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
-  const [pwMessage, setPwMessage] = useState<{
-    type: "error" | "ok";
-    text: string;
-  } | null>(null);
-
-  // 회원 탈퇴 모달 상태
-  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
-  const [withdrawPassword, setWithdrawPassword] = useState("");
-  const [withdrawError, setWithdrawError] = useState("");
-
-  function resetPwForm() {
-    setPw({ current: "", next: "", confirm: "" });
-    setPwMessage(null);
-  }
-
-  function openEdit() {
-    resetPwForm();
-    setEditingPw(true);
-  }
-
-  function cancelEdit() {
-    setEditingPw(false);
-    resetPwForm();
-  }
-
-  function submitPw(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!pw.current || !pw.next || !pw.confirm) {
-      setPwMessage({ type: "error", text: "모든 항목을 입력해 주세요." });
-      return;
-    }
-    if (pw.next !== pw.confirm) {
-      setPwMessage({ type: "error", text: "새 비밀번호가 일치하지 않습니다." });
-      return;
-    }
-    // 인증 미구현: 실제 변경은 추후 백엔드 연동.
-    setEditingPw(false);
-    setPw({ current: "", next: "", confirm: "" });
-    setPwMessage({ type: "ok", text: "비밀번호가 변경되었습니다. (목업)" });
-  }
-
-  function handleOpenWithdrawModal() {
-    setWithdrawPassword("");
-    setWithdrawError("");
-    setIsWithdrawModalOpen(true);
-  }
-
-  function handleWithdrawSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!withdrawPassword) {
-      setWithdrawError("비밀번호를 입력해주세요.");
-      return;
-    }
-    // 인증 로직 미구현: 실제 탈퇴는 추후 백엔드 연동.
-    setIsWithdrawModalOpen(false);
-    alert("회원 탈퇴가 처리되었습니다.");
-    router.push("/");
-  }
-
-  // 비밀번호 입력 필드 공통 스타일
-  const pwInput =
-    "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
-  const pwFieldLabel = "text-base font-semibold text-ink";
+export default async function MyPage() {
+  const cookieList = await cookies();
+  const token = cookieList.get("token")?.value;
+  const userdata = await getUserInfo(token);
 
   return (
     <div className="page">
@@ -96,7 +27,7 @@ export default function MyPage() {
             마이페이지
           </h1>
           <p className="m-0 mb-8 text-lg text-ink-soft">
-            {currentUser.name}님의 계정 정보입니다.
+            {userdata.username}님의 계정 정보입니다.
           </p>
 
           {/* ── 회원 정보 ── */}
@@ -104,174 +35,32 @@ export default function MyPage() {
             <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
               <dt className="text-base font-semibold text-ink-soft">아이디</dt>
               <dd className="m-0 text-base font-semibold text-ink">
-                {currentUser.userId}
+                {userdata.userId}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
+              <dt className="text-base font-semibold text-ink-soft">가입일자</dt>
+              <dd className="m-0 text-base font-semibold text-ink">
+                {userdata.registerDay}
               </dd>
             </div>
             <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
               <dt className="text-base font-semibold text-ink-soft">회원유형</dt>
               <dd className="m-0 text-base font-semibold text-ink">
                 <span className="inline-flex items-center rounded-full bg-[rgba(76,255,157,0.18)] px-3.25 py-1 text-sm font-bold text-mint-deep">
-                  {roleLabel(currentUser.role)}
+                  {userdata.userRole}
                 </span>
               </dd>
             </div>
-            {currentUser.role === "doctor" && (
-              <div className="grid grid-cols-[160px_1fr] items-center gap-4 px-5.5 py-4 max-[560px]:grid-cols-1 max-[560px]:items-start max-[560px]:gap-1.25">
-                <dt className="text-base font-semibold text-ink-soft">
-                  의사 면허번호
-                </dt>
-                <dd className="m-0 text-base font-semibold text-ink">
-                  {currentUser.licenseNumber}
-                </dd>
-              </div>
-            )}
           </dl>
 
           {/* ── 비밀번호 변경 ── */}
-          <section>
-            <h2 className="m-0 mb-4 text-xl font-bold tracking-[-0.01em] text-ink">
-              비밀번호 변경
-            </h2>
-
-            {editingPw ? (
-              <form
-                className="flex max-w-105 flex-col gap-4"
-                onSubmit={submitPw}
-              >
-                <label className="flex flex-col gap-2">
-                  <span className={pwFieldLabel}>현재 비밀번호</span>
-                  <input
-                    type="password"
-                    value={pw.current}
-                    onChange={(e) =>
-                      setPw((s) => ({ ...s, current: e.target.value }))
-                    }
-                    placeholder="현재 비밀번호를 입력하세요"
-                    autoComplete="current-password"
-                    className={pwInput}
-                  />
-                </label>
-                <label className="flex flex-col gap-2">
-                  <span className={pwFieldLabel}>새 비밀번호</span>
-                  <input
-                    type="password"
-                    value={pw.next}
-                    onChange={(e) =>
-                      setPw((s) => ({ ...s, next: e.target.value }))
-                    }
-                    placeholder="새 비밀번호를 입력하세요"
-                    autoComplete="new-password"
-                    className={pwInput}
-                  />
-                </label>
-                <label className="flex flex-col gap-2">
-                  <span className={pwFieldLabel}>새 비밀번호 확인</span>
-                  <input
-                    type="password"
-                    value={pw.confirm}
-                    onChange={(e) =>
-                      setPw((s) => ({ ...s, confirm: e.target.value }))
-                    }
-                    placeholder="새 비밀번호를 다시 입력하세요"
-                    autoComplete="new-password"
-                    className={pwInput}
-                  />
-                </label>
-
-                <div className="mt-1 flex gap-3 max-[560px]:flex-col">
-                  <button
-                    type="submit"
-                    className="cursor-pointer rounded-xl border-none bg-mint px-7 py-3 text-base font-semibold text-slate transition-[background,transform] duration-150 hover:-translate-y-px hover:bg-[#3fe88c] max-[560px]:w-full"
-                  >
-                    확인
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="cursor-pointer rounded-xl border-[1.5px] border-line bg-paper px-7 py-3 text-base font-semibold text-ink-soft transition-[background,transform,border-color] duration-150 hover:border-ink-soft hover:text-ink max-[560px]:w-full"
-                  >
-                    취소
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button
-                type="button"
-                onClick={openEdit}
-                className="cursor-pointer rounded-xl border-none bg-slate px-6 py-[13px] text-base font-semibold text-paper transition-[background,transform] duration-150 hover:-translate-y-px hover:bg-[#0f1722]"
-              >
-                비밀번호 수정
-              </button>
-            )}
-
-            {pwMessage && (
-              <p
-                className={`mt-3.5 text-sm font-semibold ${
-                  pwMessage.type === "error"
-                    ? "text-[#d92d20]"
-                    : "text-mint-deep"
-                }`}
-              >
-                {pwMessage.text}
-              </p>
-            )}
-          </section>
+          <ChangePw/>
 
           {/* ── 회원 탈퇴 ── */}
-          <div className="mt-9 border-t border-line pt-6.5">
-            <button
-              type="button"
-              onClick={handleOpenWithdrawModal}
-              className="cursor-pointer rounded-xl border-[1.5px] border-[#f1c7c9] bg-transparent px-5.5 py-[11px] text-base font-semibold text-[#d92d20] transition-[background,border-color] duration-150 hover:border-[#d92d20] hover:bg-[#fef3f2]"
-            >
-              회원탈퇴
-            </button>
-          </div>
+          <Withdraw/>
         </div>
       </section>
-
-      {/* ── 회원 탈퇴 모달 ── */}
-      {isWithdrawModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-paper rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-ink mb-2">회원 탈퇴</h3>
-              <p className="text-sm text-ink-soft mb-6 leading-relaxed">
-                안전한 탈퇴를 위해 현재 비밀번호를 입력해주세요. <br />
-                탈퇴 시 모든 데이터가 즉시 삭제되며 복구할 수 없습니다.
-              </p>
-              
-              <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-4">
-                <input
-                  type="password"
-                  value={withdrawPassword}
-                  onChange={(e) => setWithdrawPassword(e.target.value)}
-                  placeholder="현재 비밀번호를 입력하세요"
-                  className={pwInput}
-                  autoFocus
-                />
-                {withdrawError && <p className="text-sm font-semibold text-[#d92d20] -mt-2">{withdrawError}</p>}
-                
-                <div className="mt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsWithdrawModalOpen(false)}
-                    className="flex-1 cursor-pointer rounded-xl border-[1.5px] border-line bg-paper py-3 text-base font-semibold text-ink-soft transition-[background,border-color] duration-150 hover:border-ink-soft hover:text-ink"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 cursor-pointer rounded-xl border-none bg-[#d92d20] py-3 text-base font-semibold text-white transition-[background,transform] duration-150 hover:bg-[#b01e14] hover:-translate-y-px"
-                  >
-                    탈퇴하기
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
