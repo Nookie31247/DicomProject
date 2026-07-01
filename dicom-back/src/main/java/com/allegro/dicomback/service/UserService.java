@@ -89,10 +89,10 @@ public class UserService {
 
     // 회원탈퇴
     @Transactional
-    public void deleteUser(DeleteUserRequest request) {
+    public void deleteUser(String token, DeleteUserRequest request) {
 
         // 유저 정보 조회
-        User user = findActiveUser(request.userId());
+        User user = findActiveUser(jwtTokenProvider.getUserId(token));
 
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());

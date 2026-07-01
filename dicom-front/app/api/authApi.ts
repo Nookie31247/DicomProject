@@ -52,7 +52,7 @@ export async function deleteUser(password: string) {
     method: 'DELETE',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password})
+    body: JSON.stringify({password})
   })
 }
 

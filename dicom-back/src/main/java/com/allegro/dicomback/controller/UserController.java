@@ -65,11 +65,14 @@ public class UserController {
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<Void> changePassword(
-            @CookieValue(name = "token") String token,
-            @RequestBody ChangePasswordRequest request
-    ) {
+    public ResponseEntity<Void> changePassword(@CookieValue(name = "token") String token, @RequestBody ChangePasswordRequest request) {
         userService.changePassword(token, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> Withdraw(@CookieValue(name = "token") String token, @RequestBody DeleteUserRequest request) {
+        userService.deleteUser(token, request);
         return ResponseEntity.noContent().build();
     }
 
