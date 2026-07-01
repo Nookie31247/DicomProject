@@ -68,23 +68,7 @@ public class DicomSyncHelperService {
             // 필요한 초기값을 명시적으로 지정해줌
             // 신규 생성 시에만 실행되는 분기
             Patient patient = patientRepository.findById(patientId)
-                    .orElseGet(() -> Patient.builder()
-                            .pId(patientId)
-                            .pStudyCount(0)
-                            .delFlag(0)
-                            .build());
-
-            // 신규, 기존 둘 다 공통으로 최신 태그 값으로 갱신.
-            patient.setPName(dto.getPatientMainDicomTags().getPatientName());
-            patient.setPBirth(parseBirthDate(dto.getPatientMainDicomTags().getPatientBirthDate()));
-
-            LocalDateTime studyDateTime = convertToLocalDateTime(dto.getMainDicomTags().getStudyDate(), dto.getMainDicomTags().getStudyTime());
-            patient.setPTime(studyDateTime);
-
-            patient = patientRepository.save(patient);
-            log.info("Patient upsert 완료: {}", patientId);
-
-
+                    .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
 
             // 1. Study Upsert
             String studyUid = dto.getMainDicomTags().getStudyInstanceUID();
@@ -93,12 +77,26 @@ public class DicomSyncHelperService {
 
             study.setPatient(patient);
             study.setOrthancStudyId(dto.getID());
-            study.setStudyDateTime(studyDateTime);
+            study.setStudyDateTime(convertToLocalDateTime(dto.getMainDicomTags().getStudyDate(), dto.getMainDicomTags().getStudyTime()));
             study.setDescription(dto.getMainDicomTags().getStudyDescription());
             study.setAccessionNumber(dto.getMainDicomTags().getAccessionNumber());
             study.setTotalSeriesCount(dto.getSeries() != null ? dto.getSeries().size() : 0);
 
             studyRepository.save(study);
+
+            log.info("기존 환자 PTime: {}", patient.getPTime());
+            log.info("새로 계산된 StudyDateTime: {}", study.getStudyDateTime());
+
+            if(study.getStudyDateTime() == null) {
+                log.info("검사 날짜가 null입니다.");
+                return;
+            }
+
+            // 저장된 studies 테이블을 바탕으로 환자 최근 검사일 업데이트
+            patient.setPTime(study.getStudyDateTime());
+            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getPId(), patient.getPTime());
+
+            patientRepository.save(patient);
 
             // 2. Series Upsert 루프
             if (dto.getSeries() != null) {
@@ -151,19 +149,5 @@ public class DicomSyncHelperService {
         if (dateStr == null || dateStr.length() < 8) return LocalDateTime.now();
         String time = (timeStr != null && !timeStr.isEmpty()) ? timeStr.split("\\.")[0] : "000000";
         return LocalDateTime.parse(dateStr + time, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-    }
-
-    //환자 생년월일 파싱
-    private LocalDateTime parseBirthDate(String dateStr) {
-        if (dateStr == null || dateStr.isBlank() || dateStr.equalsIgnoreCase("UNKNOWN")) {
-            return null;
-        }
-        try {
-            LocalDate date = LocalDate.parse(dateStr.trim(), DateTimeFormatter.ofPattern("yyyyMMdd"));
-            return date.atStartOfDay();
-        } catch (DateTimeParseException e) {
-            log.warn("생년월일 파싱 실패: {}", dateStr);
-            return null;
-        }
     }
 }

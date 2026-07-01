@@ -28,9 +28,6 @@ public class Study {
     @JoinColumn(name = "Doctor")
     private User doctor;
 
-    @Column(name = "Modality", length = 16)
-    private String modality;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PId", nullable = false)
     private Patient patient;
@@ -71,7 +68,7 @@ public class Study {
     @Column(name = "DelFlag", nullable = false)
     private Integer delFlag = 0;
 
-    // 소프트 삭제
+    // 소프트 삭제1
     public void delete() {
         this.delFlag = 1;
     }

@@ -58,7 +58,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // 요청 시 { "id": "[id값]" }으로 해야 인식 됨
     @PostMapping("/check-id")
     public ResponseEntity<CheckIdRes> checkId(@RequestBody IdCheckRequest request) {
         return ResponseEntity.ok(new CheckIdRes(userService.checkIdDuplicate(request.userId())));

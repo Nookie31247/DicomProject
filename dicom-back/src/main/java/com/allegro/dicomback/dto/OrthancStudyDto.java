@@ -32,8 +32,6 @@ public class OrthancStudyDto {
         private String studyDescription;
         @JsonProperty("AccessionNumber")
         private String accessionNumber;
-        @JsonProperty("Modality")
-        private String modality;
     }
 
     @Data

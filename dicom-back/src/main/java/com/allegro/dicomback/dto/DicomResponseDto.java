@@ -19,7 +19,6 @@ public class DicomResponseDto {
     // Study 목록 응답 DTO
     public record StudyDto(
             @JsonProperty("study-key") Long studyKey,
-            @JsonProperty("modality")String modality,
             @JsonProperty("description")String description,
             @JsonProperty("datetime")LocalDateTime dateTime,
             @JsonProperty("series-num")Number seriesNum,

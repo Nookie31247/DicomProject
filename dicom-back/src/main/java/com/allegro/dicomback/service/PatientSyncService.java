@@ -67,7 +67,7 @@ public class PatientSyncService {
                 .build();
     }
 
-    // 날짜만 파싱하는 헬퍼
+    // "19840119" -> LocalDateTime 변환 (시간은 00:00:00으로 세팅)
     private LocalDateTime parseBirthDate(String dateStr) {
         if (dateStr == null || dateStr.isBlank() || dateStr.equalsIgnoreCase("UNKNOWN")) {
             return null;
@@ -81,6 +81,7 @@ public class PatientSyncService {
         }
     }
 
+    // "20260624T084250" -> LocalDateTime 변환
     private LocalDateTime parseLastUpdate(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.isBlank()) {
             return LocalDateTime.now();
