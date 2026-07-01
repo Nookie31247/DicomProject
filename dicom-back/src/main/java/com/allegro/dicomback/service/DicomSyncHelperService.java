@@ -73,7 +73,7 @@ public class DicomSyncHelperService {
             // 1. Study Upsert
             String studyUid = dto.getMainDicomTags().getStudyInstanceUID();
             Study study = studyRepository.findByStudyInstanceUid(studyUid)
-                    .orElse(Study.builder().studyInstanceUID(studyUid).build());
+                    .orElse(Study.builder().studyInstanceUid(studyUid).build());
 
             study.setPatient(patient);
             study.setOrthancStudyId(dto.getID());

@@ -33,7 +33,7 @@ public class Study {
     private Patient patient;
 
     @Column(name = "StudyInstanceUID", unique = true, length = 128)
-    private String studyInstanceUID;
+    private String studyInstanceUid;
 
     @Column(name = "StudyDateTime")
     private LocalDateTime studyDateTime;
@@ -68,7 +68,7 @@ public class Study {
     @Column(name = "DelFlag", nullable = false)
     private Integer delFlag = 0;
 
-    // 소프트 삭제
+    // 소프트 삭제1
     public void delete() {
         this.delFlag = 1;
     }
