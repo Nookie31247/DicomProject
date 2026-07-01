@@ -37,12 +37,12 @@ export async function checkId(userId: string) {
 }
 
 // 5. 비밀번호 수정 (클라이언트 요청)
-export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+export async function changePassword(currentPassword: string, newPassword: string) {
   return apiFetch("/api/users/change-password", {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, currentPassword, newPassword })
+    body: JSON.stringify({currentPassword, newPassword })
   })
 }
 
@@ -56,10 +56,12 @@ export async function deleteUser(password: string) {
   })
 }
 
-// 7. 회원정보 불러오기
-export async function getUserInfo() {
+// 7. 회원정보 불러오기 (서버 요청, 쿠키값 수동으로 넣을 것)
+export async function getUserInfo(token: string | undefined) {
   return apiFetch("/api/users/info", {
     method: 'GET',
+    headers: { 'Cookie': `token=${token}` },
+    cache: 'no-store',
     credentials: 'include'
   })
 }

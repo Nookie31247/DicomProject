@@ -69,10 +69,9 @@ public class UserService {
 
     // 비밀번호 수정
     @Transactional
-    public void changePassword(ChangePasswordRequest request) {
-
+    public void changePassword(String token, ChangePasswordRequest request) {
         // 유저 정보 조회
-        User user = findActiveUser(request.userId());
+        User user = findActiveUser(jwtTokenProvider.getUserId(token));
 
         // 기존 비밀번호 검증
         validatePassword(request.currentPassword(), user.getUserPassword());
@@ -111,10 +110,11 @@ public class UserService {
     public UserResponseDto.UserInfoRes getUserInfo(String token) {
         String userId = jwtTokenProvider.getUserId(token);
         User user = findActiveUser(userId);
+        String username = user.getUserName();
         String userRole = user.getUserRole() == 1 ? "의료진" : "연구원";
         LocalDate date = user.getCreatedAt().toLocalDate();
 
-        return new UserResponseDto.UserInfoRes(userId, userRole, date);
+        return new UserResponseDto.UserInfoRes(userId, username, userRole, date);
     }
 
     // --- [공통] 유저 조회 (Private) ---

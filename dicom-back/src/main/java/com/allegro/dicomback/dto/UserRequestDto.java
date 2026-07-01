@@ -11,7 +11,7 @@ public class UserRequestDto {
     public record IdCheckRequest(String userId) {}
 
     // 비밀번호 수정
-    public record ChangePasswordRequest(String userId, String currentPassword, String newPassword) {}
+    public record ChangePasswordRequest(String currentPassword, String newPassword) {}
 
     // 회원탈퇴
     public record DeleteUserRequest(String userId, String password) {}

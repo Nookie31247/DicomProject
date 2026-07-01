@@ -20,7 +20,6 @@ spring:
       port: ${REDIS_PORT:6379}
 
   jpa:
-    show-sql: true
     hibernate:
       ddl-auto: update
     properties:
