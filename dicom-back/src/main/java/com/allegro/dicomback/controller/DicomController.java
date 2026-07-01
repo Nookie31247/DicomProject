@@ -3,7 +3,7 @@ package com.allegro.dicomback.controller;
 import com.allegro.dicomback.dto.DicomRequestDto;
 import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.service.DicomService;
-import com.allegro.dicomback.service.OrthancSyncService;
+//import com.allegro.dicomback.service.OrthancSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -111,23 +111,23 @@ public class DicomController {
                 .body(stream);
     }
 
-    //이미지 다운로드
-    @GetMapping("/images/download")
-    public ResponseEntity<Resource> downloadImages(
-            @RequestParam ("image-key") Long imageKey
-    ) {
-        Resource resource = dicomService.downloadImage(imageKey);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"image_" + imageKey + ".dcm\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
-    }
-    //Orthanc의 내용가져오기
-    private final OrthancSyncService orthancSyncService;
-
-    @PostMapping("/sync")
-    public ResponseEntity<String> sync() {
-        orthancSyncService.syncInstancesFromOrthanc();
-        return ResponseEntity.ok("동기화 성공");
-    }
+//    //이미지 다운로드
+//    @GetMapping("/images/download")
+//    public ResponseEntity<Resource> downloadImages(
+//            @RequestParam ("image-key") Long imageKey
+//    ) {
+//        Resource resource = dicomService.downloadImage(imageKey);
+//        return ResponseEntity.ok()
+//                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"image_" + imageKey + ".dcm\"")
+//                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+//                .body(resource);
+//    }
+//    //Orthanc의 내용가져오기(이제 안 쓸듯?)
+//    private final OrthancSyncService orthancSyncService;
+//
+//    @PostMapping("/sync")
+//    public ResponseEntity<String> sync() {
+//        orthancSyncService.syncInstancesFromOrthanc();
+//        return ResponseEntity.ok("동기화 성공");
+//    }
 }

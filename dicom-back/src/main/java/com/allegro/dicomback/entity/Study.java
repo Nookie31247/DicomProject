@@ -3,12 +3,15 @@ package com.allegro.dicomback.entity;
 import com.allegro.dicomback.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
-
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity
-@Table(name = "studies")
+@Table(
+        name = "studies",
+        indexes = {
+                @Index(name = "idx_study_uid", columnList = "StudyInstanceUID", unique = true)
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,7 +25,7 @@ public class Study {
     private Long studyKey;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "Doctor", nullable = false)
+    @JoinColumn(name = "Doctor")
     private User doctor;
 
     @Column(name = "Modality", length = 16)
@@ -38,15 +41,32 @@ public class Study {
     @Column(name = "StudyDateTime")
     private LocalDateTime studyDateTime;
 
+    @Column(name = "Description")
+    private String description;
+
+    @Column(name = "AccessionNumber")
+    private String accessionNumber;
+
+    // --- 통계 정보 추가 ---
+    @Column(name = "TotalSeriesCount")
+    private Integer totalSeriesCount; // 전체 시리즈 개수
+
+    @Column(name = "TotalInstanceCount")
+    private Integer totalInstanceCount; // 해당 시리즈 내의 이미지 개수
+
+    // 연구 데이터 사용 허가 여부(0: 금지, 1: 허용)
     @Builder.Default
     @Column(name = "AllowedResearch", nullable = false)
     private Byte allowedResearch = 0;
 
+    @Column(name = "OrthancStudyId")
+    private String orthancStudyId;
+
+    // 익명화 처리 완료 여부 혹은 익명화 가능 상태 (0: 미처리, 1: 처리됨/가능)
     @Builder.Default
     @Column(name = "AnonFlag", nullable = false)
     private Byte anonFlag = 0;
 
-    // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default
     @Column(name = "DelFlag", nullable = false)
     private Integer delFlag = 0;
@@ -55,12 +75,4 @@ public class Study {
     public void delete() {
         this.delFlag = 1;
     }
-
-    // 검색 설명
-    @Column(name = "description")
-    private String description;
-
-    //orthancSeriesId-> orthanc의 해시값을 받아서 Study 다운로드 용도으로 사용
-    @Column(name = "orthancStudyId")
-    private String orthancStudyId;
 }

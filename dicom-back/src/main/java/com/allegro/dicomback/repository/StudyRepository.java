@@ -4,6 +4,7 @@ import com.allegro.dicomback.entity.Study;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface StudyRepository extends JpaRepository<Study, Long> {
 
@@ -20,5 +21,5 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
     List<Study> findByStudyDateTimeBetweenAndDelFlag(LocalDateTime start, LocalDateTime end, Integer delFlag);
 
     // DICOM 고유 UID로 단건 검사 조회
-    Study findByStudyInstanceUid(String studyInstanceUID);
+    Optional<Study> findByStudyInstanceUid(String studyInstanceUID);
 }

@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:mysql://${RDS_HOST:localhost}:${RDS_PORT:3306}/${RDS_NAME:testdb}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: ${RDS_USER:root}
-    password: ${RDS_PASS:1234}
+    password: ${RDS_PASS:pacs_password}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
     hikari:
@@ -17,7 +17,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:

@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "series")
+@Table(name = "series", indexes = {
+        @Index(name = "idx_series_uid", columnList = "SeriesInstanceUID", unique = true),
+        @Index(name = "idx_study_key", columnList = "StudyKey") // FK도 인덱스 필수
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,6 +33,17 @@ public class Series {
     @Column(name = "BodyPart", length = 64)
     private String bodyPart;
 
+    @Column(name = "Modality", length = 16)
+    private String modality;
+
+    //orthancSeriesId-> orthanc의 해시값을 받아서 Series 다운로드 용도으로 사용
+    @Column(name = "OrthancSeriesId")
+    private String orthancSeriesId;
+
+    // --- 통계 정보 추가 ---
+    @Column(name = "TotalInstanceCount")
+    private Integer totalInstanceCount; // 해당 시리즈 내의 이미지 개수
+
     // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default
     @Column(name = "DelFlag", nullable = false)
@@ -39,8 +53,4 @@ public class Series {
     public void delete() {
         this.delFlag = 1;
     }
-
-    //orthancSeriesId-> orthanc의 해시값을 받아서 Series 다운로드 용도으로 사용
-    @Column(name = "orthancSeriesId")
-    private String orthancSeriesId;
 }
