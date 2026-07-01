@@ -26,7 +26,7 @@ public class UserController {
         ResponseCookie cookie = ResponseCookie.from("token", serviceRes.token())
                 .httpOnly(true)         // 브라우저가 쿠키를 읽을 수 없도록 설정
                 .secure(false)          // HTTP 환경에서만 전송 (일단 false로 해둠)
-                .path("/api")
+                .path("/")
                 .maxAge(3600 * 24)   // 쿠키 만료 시간: JWT 토큰 만료 시간과 맞춰서 설정 (24시간)
                 .sameSite("Lax")        // 다른 사이트에서 넘어올 때 안전한 요청만 쿠키를 허용하는 설정
                 .build();
@@ -48,7 +48,7 @@ public class UserController {
         ResponseCookie cookie = ResponseCookie.from("token", "")
                         .httpOnly(true)
                         .secure(false)
-                        .path("/api")
+                        .path("/")
                         .maxAge(0)
                         .sameSite("Lax")
                         .build();
@@ -65,9 +65,14 @@ public class UserController {
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest request) {
-        // 토큰 검증하는 로직 추가할 것
-        userService.changePassword(request); // 토큰 검증은 인터셉터나 시큐리티에서 처리 가정
+    public ResponseEntity<Void> changePassword(@CookieValue(name = "token") String token, @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(token, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> Withdraw(@CookieValue(name = "token") String token, @RequestBody DeleteUserRequest request) {
+        userService.deleteUser(token, request);
         return ResponseEntity.noContent().build();
     }
 

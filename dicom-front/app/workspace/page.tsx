@@ -109,26 +109,26 @@ export default function WorkspaceDashboardPage() {
 
   // ── Tailwind 스타일 변수 (globals.css에서 이관) ──
   const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
-  const wsPanelHeadClass = "flex shrink-0 items-start justify-between gap-3 pt-[18px] px-[18px] pb-4 border-b border-line";
-  const wsHeadLeftClass = "flex min-w-0 flex-1 flex-col gap-[5px]";
-  const wsPanelTitleClass = "m-0 font-bold text-[19px] text-ink tracking-[-0.01em]";
+  const wsPanelHeadClass = "flex shrink-0 items-start justify-between gap-3 pt-4.5 px-4.5 pb-4 border-b border-line";
+  const wsHeadLeftClass = "flex min-w-0 flex-1 flex-col gap-1.25";
+  const wsPanelTitleClass = "m-0 font-bold text-xl text-ink tracking-[-0.01em]";
   const wsCountClass = "font-semibold text-sm text-mint-deep";
-  const wsSubLabelClass = "text-left font-medium text-[13.5px] text-ink-soft leading-[1.4]";
+  const wsSubLabelClass = "text-left font-medium text-sm text-ink-soft leading-[1.4]";
   const patientRowBase = "flex w-full cursor-pointer items-center text-left gap-3 p-3 border-[1.5px] rounded-[14px] bg-transparent font-[inherit] transition-[background,border-color] duration-150 hover:bg-canvas";
   const patientRowActive = "bg-[rgba(76,255,157,0.14)] border-mint-deep";
   const patientRowInactive = "border-transparent";
-  const patientAvatarClass = "flex shrink-0 items-center justify-center rounded-full font-bold w-[38px] h-[38px] text-base text-slate bg-mint";
+  const patientAvatarClass = "flex shrink-0 items-center justify-center rounded-full font-bold w-9.5 h-9.5 text-base text-slate bg-mint";
   const patientMainClass = "flex min-w-0 flex-1 flex-col gap-[3px]";
   const patientNameClass = "font-semibold text-base text-ink";
   const patientSubClass = "overflow-hidden whitespace-nowrap text-ellipsis text-xs text-ink-soft";
-  const patientBadgeBase = "flex items-center justify-center font-bold shrink-0 min-w-6 h-6 px-[7px] rounded-xl text-[13px]";
+  const patientBadgeBase = "flex items-center justify-center font-bold shrink-0 min-w-6 h-6 px-1.5 rounded-xl text-sm";
   const patientBadgeDefault = "bg-canvas text-ink-soft";
   const patientBadgeActive = "bg-mint-deep text-paper";
   const colDescClass = "col-desc overflow-hidden whitespace-nowrap font-semibold text-ellipsis";
   const colDateClass = "col-date text-ink-soft";
   const colSeriesClass = "col-series text-right tabular-nums text-ink-soft";
   const colImagesClass = "col-images text-right tabular-nums text-ink-soft";
-  const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-[42px] px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
+  const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
   const modalityColors: Record<string, string> = {
     ct: "bg-[#2563eb]",
     mr: "bg-[#7c3aed]",
@@ -167,7 +167,7 @@ export default function WorkspaceDashboardPage() {
                     <input
                       type="text"
                       placeholder="환자 이름 또는 ID 검색"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[13px] text-slate-800 focus:outline-none focus:border-[#14b876]"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-[#14b876]"
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -192,7 +192,7 @@ export default function WorkspaceDashboardPage() {
                   {/* 오른쪽: 검색 버튼 */}
                   <button
                     type="button"
-                    className="w-[72px] bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-[14px] transition-colors flex items-center justify-center cursor-pointer"
+                    className="w-18 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
                     onClick={handleSearch}
                   >
                     검색
@@ -331,7 +331,7 @@ export default function WorkspaceDashboardPage() {
 
             {selectedPatient ? (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <div className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-[12.5px] tracking-[0.02em] text-ink-soft bg-canvas border-b border-line max-[560px]:hidden" style={{ gridTemplateColumns: studyGridColumns }}>
+                  <div className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-xs tracking-[0.02em] text-ink-soft bg-canvas border-b border-line max-[560px]:hidden" style={{ gridTemplateColumns: studyGridColumns }}>
                     <span></span>
                     <span className="col-modality">모달리티</span>
                     <span className={colDescClass}>검사 설명</span>
@@ -388,7 +388,7 @@ export default function WorkspaceDashboardPage() {
                   </ul>
                 </div>
             ) : (
-                <div className="flex flex-1 items-center justify-center text-ink-soft text-[15px] p-8">왼쪽에서 환자를 선택해 주세요.</div>
+                <div className="flex flex-1 items-center justify-center text-ink-soft text-base p-8">왼쪽에서 환자를 선택해 주세요.</div>
             )}
           </section>
         </section>
