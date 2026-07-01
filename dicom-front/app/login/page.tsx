@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
+import LoginForm from "./LoginForm";
 
 export const metadata: Metadata = {
   title: "로그인 — DICOM!",
 };
 
 export default function LoginPage() {
+
   return (
     <div className="page">
       {/* ───────────── Auth section ───────────── */}
@@ -24,31 +26,7 @@ export default function LoginPage() {
           <p className="eyebrow">다시 만나서 반가워요</p>
           <h1 className="font-bold text-4xl tracking-[-0.01em] m-0 mb-8 text-ink max-[560px]:text-3xl">로그인</h1>
 
-          <form className="flex flex-col gap-5">
-            <label className="field">
-              <span className="field-label">아이디</span>
-              <input
-                type="text"
-                name="username"
-                placeholder="아이디를 입력하세요"
-                autoComplete="username"
-              />
-            </label>
-
-            <label className="field">
-              <span className="field-label">비밀번호</span>
-              <input
-                type="password"
-                name="password"
-                placeholder="비밀번호를 입력하세요"
-                autoComplete="current-password"
-              />
-            </label>
-
-            <button className="btn btn-big w-full mt-2" type="button">
-              로그인
-            </button>
-          </form>
+          <LoginForm />
 
           <p className="text-center mt-7 text-base text-ink-soft">
             아직 계정이 없으신가요?{" "}

@@ -1,9 +1,8 @@
 package com.allegro.dicomback.dto;
 
-public class UserDto {
+public class UserRequestDto {
     // 로그인
     public record LoginRequest(String userId, String password) {}
-    public record TokenResponse(String token) {}
 
     // 회원가입
     public record SignupRequest(String userId, String password, String name, String userRole) {}
@@ -12,8 +11,8 @@ public class UserDto {
     public record IdCheckRequest(String userId) {}
 
     // 비밀번호 수정
-    public record ChangePasswordRequest(String userId, String currentPassword, String newPassword) {}
+    public record ChangePasswordRequest(String currentPassword, String newPassword) {}
 
     // 회원탈퇴
-    public record DeleteUserRequest(String userId, String password) {}
+    public record DeleteUserRequest(String password) {}
 }

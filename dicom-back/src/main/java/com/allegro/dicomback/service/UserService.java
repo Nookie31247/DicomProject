@@ -1,7 +1,8 @@
 package com.allegro.dicomback.service;
 
 import com.allegro.dicomback.config.JwtTokenProvider;
-import com.allegro.dicomback.dto.UserDto.*;
+import com.allegro.dicomback.dto.UserRequestDto.*;
+import com.allegro.dicomback.dto.UserResponseDto;
 import com.allegro.dicomback.entity.user.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
@@ -12,30 +13,32 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
-
     private final UserRepository userRepository;
-    private final RedisTemplate<String, String> RedisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    // 로그인
-    public TokenResponse login(LoginRequest request) {
+    public record LoginServiceRes(String token, String username) {}
 
+    // 로그인
+    public LoginServiceRes login(LoginRequest request) {
         // 유저 정보 조회
         User user = findActiveUser(request.userId());
 
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
 
-        // 토큰 발급 로직 실행
         String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserRole());
-        return new TokenResponse(token);
+        String username = user.getUserName();
+
+        return new LoginServiceRes(token, username);
     }
 
     // 회원가입
@@ -66,10 +69,9 @@ public class UserService {
 
     // 비밀번호 수정
     @Transactional
-    public void changePassword(ChangePasswordRequest request) {
-
+    public void changePassword(String token, ChangePasswordRequest request) {
         // 유저 정보 조회
-        User user = findActiveUser(request.userId());
+        User user = findActiveUser(jwtTokenProvider.getUserId(token));
 
         // 기존 비밀번호 검증
         validatePassword(request.currentPassword(), user.getUserPassword());
@@ -81,20 +83,16 @@ public class UserService {
     // 로그아웃 (블랙리스트 형식으로)
     @Transactional
     public void logout(String token) {
-        if(token != null && !token.isEmpty()) {
-            token = token.substring(7);
-        }
-
         String redisKey= "jwt:blacklist:" + token;
-        RedisTemplate.opsForValue().set(redisKey, "1", 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, "1", 24, TimeUnit.HOURS);
     }
 
     // 회원탈퇴
     @Transactional
-    public void deleteUser(DeleteUserRequest request) {
+    public void deleteUser(String token, DeleteUserRequest request) {
 
         // 유저 정보 조회
-        User user = findActiveUser(request.userId());
+        User user = findActiveUser(jwtTokenProvider.getUserId(token));
 
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
@@ -106,6 +104,17 @@ public class UserService {
     // 아이디 중복 확인
     public boolean checkIdDuplicate(String userId) {
         return userRepository.existsByUserId(userId);
+    }
+
+    // 유저 정보 조회
+    public UserResponseDto.UserInfoRes getUserInfo(String token) {
+        String userId = jwtTokenProvider.getUserId(token);
+        User user = findActiveUser(userId);
+        String username = user.getUserName();
+        String userRole = user.getUserRole() == 1 ? "의료진" : "연구원";
+        LocalDate date = user.getCreatedAt().toLocalDate();
+
+        return new UserResponseDto.UserInfoRes(userId, username, userRole, date);
     }
 
     // --- [공통] 유저 조회 (Private) ---

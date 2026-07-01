@@ -48,6 +48,7 @@ public class User {
     // private Hospital hospital;
 
     public void deactivate() {
+        this.userId = this.userId + "$deactivate";
         this.userStatus = false;
         this.deletedAt = LocalDateTime.now(); //탈퇴 시간 기록
     }
