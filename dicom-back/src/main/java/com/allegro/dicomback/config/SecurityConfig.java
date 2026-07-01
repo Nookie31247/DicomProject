@@ -3,7 +3,6 @@ package com.allegro.dicomback.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,7 +32,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider, RedisTemplate<String,String> redisTemplate) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
@@ -43,7 +42,9 @@ public class SecurityConfig {
                                 "/actuator/health",
                                 "/api/users/login",
                                 "/api/users/signup",
-                                "/api/users/check-id"
+                                "/api/users/check-id",
+                                "/api/dicom/**",
+                                "/api/admin/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

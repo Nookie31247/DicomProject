@@ -2,7 +2,8 @@ package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.dto.DicomRequestDto;
 import com.allegro.dicomback.dto.DicomResponseDto;
-//import com.allegro.dicomback.service.DicomService;
+import com.allegro.dicomback.service.DicomService;
+//import com.allegro.dicomback.service.OrthancSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -17,7 +18,7 @@ import java.util.List;
 @RequestMapping("/api/dicom")
 @RequiredArgsConstructor //의존성 주입
 public class DicomController {
-//    private final DicomService dicomService;
+    private final DicomService dicomService;
 
     //환자 목록 불러오기
     @GetMapping("/patients")
@@ -86,30 +87,30 @@ public class DicomController {
         return ResponseEntity.noContent().build();
     }
 
-//    //스터디 다운로드
-//    @GetMapping("/studies/download")
-//    public ResponseEntity<StreamingResponseBody> downloadStudies(
-//            @RequestParam("study-key") Long studyKey
-//    ) {
-//        StreamingResponseBody stream = dicomService.downloadSeriesAsZip(studyKey);
-//        return ResponseEntity.ok()
-//                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"study_" + studyKey + ".dcm\"")
-//                .contentType(MediaType.parseMediaType("application/zip"))
-//                .body(stream);
-//    }
-//
-//    //시리즈 다운로드
-//    @GetMapping("/series/download")
-//    public ResponseEntity<StreamingResponseBody> downloadSeries(
-//            @RequestParam ("series-key")  Long seriesKey
-//    ) {
-//        StreamingResponseBody stream = dicomService.downloadSeriesAsZip(seriesKey);
-//        return ResponseEntity.ok()
-//                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"series_" + seriesKey + ".dcm\"")
-//                .contentType(MediaType.parseMediaType("application/zip"))
-//                .body(stream);
-//    }
-//
+    //스터디 다운로드
+    @GetMapping("/studies/download")
+    public ResponseEntity<StreamingResponseBody> downloadStudies(
+            @RequestParam("study-key") Long studyKey
+    ) {
+        StreamingResponseBody stream = dicomService.downloadStudyAsZip(studyKey);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"study_" + studyKey + ".zip\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
+    }
+
+    //시리즈 다운로드
+    @GetMapping("/series/download")
+    public ResponseEntity<StreamingResponseBody> downloadSeries(
+            @RequestParam("series-key") Long seriesKey
+    ) {
+        StreamingResponseBody stream = dicomService.downloadSeriesAsZip(seriesKey);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"series_" + seriesKey + ".zip\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
+    }
+
 //    //이미지 다운로드
 //    @GetMapping("/images/download")
 //    public ResponseEntity<Resource> downloadImages(
@@ -120,5 +121,13 @@ public class DicomController {
 //                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"image_" + imageKey + ".dcm\"")
 //                .contentType(MediaType.APPLICATION_OCTET_STREAM)
 //                .body(resource);
+//    }
+//    //Orthanc의 내용가져오기(이제 안 쓸듯?)
+//    private final OrthancSyncService orthancSyncService;
+//
+//    @PostMapping("/sync")
+//    public ResponseEntity<String> sync() {
+//        orthancSyncService.syncInstancesFromOrthanc();
+//        return ResponseEntity.ok("동기화 성공");
 //    }
 }

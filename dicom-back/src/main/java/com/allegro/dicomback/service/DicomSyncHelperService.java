@@ -14,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 @Slf4j
 @Service
@@ -46,13 +48,31 @@ public class DicomSyncHelperService {
 
             log.info("조회된 StudyInstanceUID: {}", dto.getMainDicomTags().getStudyInstanceUID());
 
+//            String patientId = dto.getPatientMainDicomTags().getPatientID();
+//            Patient patient = patientRepository.findById(patientId)
+//                    .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
+
+
+            // 원본코드에는 Patient에 환자가 있어야 Study가 성공하기때문에 문제가 발생했으면
+            // 이미 Study에 정보가 이미 다 들어있는서 사실상 study들어가서 patient만 불러오는 구조에서 변경
+            // upsert(있으면 갱신, 없으면 생성) 패턴을 쓰는 이유
+            // findById()로 조회해 있으면 기존 Patient 엔티티를 그대로 가져와서 필드만 최신값으로 덮어써서 갱신하고
+            // 없으면 orElseGet()의 람다가 실행되어 새 Patient 객체를 builder로 새로 생성한다.
+            // 이렇게 하면 이 메서드가 몇 번을 재실행되든 PatientID에 대해 중복 row가 쌓이지 않고 항상 "최신 상태 1개"만 유지됨.
+            if (dto.getPatientMainDicomTags() == null || dto.getPatientMainDicomTags().getPatientID() == null) {
+                log.warn("PatientMainDicomTags가 없습니다. UUID: {}", studyUuid);
+                return;
+            }
+
             String patientId = dto.getPatientMainDicomTags().getPatientID();
+            // 필요한 초기값을 명시적으로 지정해줌
+            // 신규 생성 시에만 실행되는 분기
             Patient patient = patientRepository.findById(patientId)
                     .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
 
             // 1. Study Upsert
             String studyUid = dto.getMainDicomTags().getStudyInstanceUID();
-            Study study = studyRepository.findByStudyInstanceUID(studyUid)
+            Study study = studyRepository.findByStudyInstanceUid(studyUid)
                     .orElse(Study.builder().studyInstanceUID(studyUid).build());
 
             study.setPatient(patient);
@@ -95,8 +115,8 @@ public class DicomSyncHelperService {
                     if (sDto == null) continue;
 
                     String sUid = sDto.getMainDicomTags().getSeriesInstanceUID();
-                    Series series = seriesRepository.findBySeriesInstanceUID(sUid)
-                            .orElse(Series.builder().seriesInstanceUID(sUid).study(study).build());
+                    Series series = seriesRepository.findBySeriesInstanceUid(sUid)
+                            .orElse(Series.builder().seriesInstanceUid(sUid).study(study).build());
 
                     series.setOrthancSeriesId(sDto.getID());
                     log.info("Series 번호: {}", sDto.getID());
@@ -123,6 +143,8 @@ public class DicomSyncHelperService {
         }
     }
 
+    //DICOM의 Date/Time 표현 방식을 Java LocalDateTime으로 변환
+    //Dicom에서 받아온 데이터가 -> 20260912이기때문에 한번 변환한다.
     private LocalDateTime convertToLocalDateTime(String dateStr, String timeStr) {
         if (dateStr == null || dateStr.length() < 8) return LocalDateTime.now();
         String time = (timeStr != null && !timeStr.isEmpty()) ? timeStr.split("\\.")[0] : "000000";

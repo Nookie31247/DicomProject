@@ -25,7 +25,7 @@ public class Series {
     private Study study;
 
     @Column(name = "SeriesInstanceUID", unique = true, length = 128)
-    private String seriesInstanceUID;
+    private String seriesInstanceUid;
 
     @Column(name = "SeriesNum")
     private Integer seriesNum;
@@ -36,6 +36,7 @@ public class Series {
     @Column(name = "Modality", length = 16)
     private String modality;
 
+    //orthancSeriesId-> orthanc의 해시값을 받아서 Series 다운로드 용도으로 사용
     @Column(name = "OrthancSeriesId")
     private String orthancSeriesId;
 
@@ -43,6 +44,7 @@ public class Series {
     @Column(name = "TotalInstanceCount")
     private Integer totalInstanceCount; // 해당 시리즈 내의 이미지 개수
 
+    // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default
     @Column(name = "DelFlag", nullable = false)
     private Integer delFlag = 0;

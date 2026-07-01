@@ -18,5 +18,5 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
     List<Study> findByStudyDateTimeBetweenAndDelFlag(LocalDateTime start, LocalDateTime end, Integer delFlag);
 
     // DICOM 고유 UID로 단건 검사 조회
-    Optional<Study> findByStudyInstanceUID(String studyInstanceUID);
+    Optional<Study> findByStudyInstanceUid(String studyInstanceUID);
 }
