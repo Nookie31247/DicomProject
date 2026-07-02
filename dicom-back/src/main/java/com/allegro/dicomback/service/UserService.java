@@ -35,7 +35,7 @@ public class UserService {
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
 
-        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserRole());
+        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserRole(), user.getUserKey());
         String username = user.getUserName();
 
         return new LoginServiceRes(token, username);

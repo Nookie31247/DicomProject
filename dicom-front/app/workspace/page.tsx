@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { patients, studies } from "@/mock-data";
+import AddPatientModal from "@/app/components/search-dashboard/AddPatientModal";
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // ── 환자(Patient) 관련 상태 ──
   const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.["patient-id"]);
@@ -157,7 +160,7 @@ export default function WorkspaceDashboardPage() {
                     </h2>
                     <span className={wsCountClass}>{displayedPatients.length}명</span>
                   </div>
-                  <button type="button" className="btn btn-small" onClick={() => {}}>환자 추가</button>
+                  <button type="button" className="btn btn-small" onClick={() => setIsModalOpen(true)}>환자 추가</button>
                 </div>
 
                 {/* 검색 필터 UI */}
@@ -392,6 +395,12 @@ export default function WorkspaceDashboardPage() {
             )}
           </section>
         </section>
+        {isModalOpen && (
+            <AddPatientModal
+                onClose={() => setIsModalOpen(false)}
+                onRefresh={() => window.location.reload()} // 일단 새로고침으로 간단히 처리
+            />
+        )}
       </div>
   );
 }
