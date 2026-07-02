@@ -1,21 +1,34 @@
 package com.allegro.dicomback.service;
 
+import com.allegro.dicomback.dto.DicomResponseDto;
+import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Series;
 import com.allegro.dicomback.entity.Study;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
+import com.allegro.dicomback.repository.PatientRepository;
 import com.allegro.dicomback.repository.SeriesRepository;
 import com.allegro.dicomback.repository.StudyRepository;
 import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import com.allegro.dicomback.dto.DicomRequestDto.*;
+import com.allegro.dicomback.dto.DicomResponseDto.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -23,9 +36,12 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @Transactional(readOnly = true)
 public class DicomService {
 
+    // 레포지토리 의존성 주입하기
     //    private final ImageRepository imageRepository;
     private final SeriesRepository seriesRepository;
     private final StudyRepository studyRepository;
+    private final PatientRepository patientRepository;
+
     private final RestTemplate restTemplate = new RestTemplate();
     @Value("${orthanc.url:http://localhost:8042}")
     private String orthancUrl;
@@ -94,5 +110,57 @@ public class DicomService {
                 return null;
             });
         };
+    }
+
+
+    // ======================================== 이영무 추가 ======================================================
+
+    public List<PatientDto> getPatients(String start, String end, String search) {
+        List<Patient> patientList;
+        List<PatientDto> patientDtoList = new ArrayList<>();
+        LocalDateTime startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(3);
+        LocalDateTime endDay = LocalDateTime.now();
+
+        // 시작일, 종료일이 입력되지 않았을 때
+        if (!StringUtils.hasText(start) || !StringUtils.hasText(end)) {
+            // 모든 검색 결과를 다 전송하면 랙걸리니까, 기본값은 최근 3개월로 제한
+            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(3);
+            endDay = LocalDateTime.now();
+        }
+        // 시작일과 종료일이 모두 입력되었을 때
+        else {
+            try {
+                startDay = LocalDateTime.of(LocalDate.parse(start), LocalTime.MIN);
+                endDay = LocalDateTime.of(LocalDate.parse(end), LocalTime.MAX);
+            } catch (DateTimeParseException e) {
+                // TODO 여기 커스텀 에러 추가하기
+                System.out.println("날짜 형식이 안맞아요");
+            }
+        }
+
+        // 검색어가 있을 때
+        if(StringUtils.hasText(search)) {
+            // 여기서는 시작일, 종료일, 검색어 3가지 모두를 가지고 검색한다.
+            patientList = patientRepository.findByNameContainsAndRecentStudyBetween(search, startDay, endDay);
+        }
+        // 검색어가 없을 때
+        else {
+            // 여기서는 시작일과 종료일만 가지고 검색한다.
+            patientList = patientRepository.findByRecentStudyBetween(startDay, endDay);
+        }
+
+        for(Patient p : patientList) {
+            patientDtoList.add(new PatientDto(
+                    p.getId(),
+                    p.getName(),
+                    p.getBirth(),
+                    p.getSex(),
+                    p.getRecentStudy(),
+                    p.getStudyCount(),
+                    p.getHiddenFlag() == 1
+            ));
+        }
+
+        return patientDtoList;
     }
 }

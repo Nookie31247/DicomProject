@@ -14,10 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 @Slf4j
 @Service
@@ -84,7 +82,7 @@ public class DicomSyncHelperService {
 
             studyRepository.save(study);
 
-            log.info("기존 환자 PTime: {}", patient.getPTime());
+            log.info("기존 환자 PTime: {}", patient.getRecentStudy());
             log.info("새로 계산된 StudyDateTime: {}", study.getStudyDateTime());
 
             if(study.getStudyDateTime() == null) {
@@ -93,8 +91,8 @@ public class DicomSyncHelperService {
             }
 
             // 저장된 studies 테이블을 바탕으로 환자 최근 검사일 업데이트
-            patient.setPTime(study.getStudyDateTime());
-            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getPId(), patient.getPTime());
+            patient.setRecentStudy(study.getStudyDateTime());
+            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getId(), patient.getRecentStudy());
 
             patientRepository.save(patient);
 
