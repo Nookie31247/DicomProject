@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import initCornerstone from "@/app/lib/cornerstoneInit";
 import { dicomTagDictionary } from "./dicom-dictionary";
+import {getTextDecoder, getElementDisplayValue} from "./dicom-charset"
 
 interface DicomViewerProps {
   dicomUrls: string[];
@@ -95,17 +96,19 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
         // 메타데이터 추출
         if (image.data && image.data.elements) {
           const ds = image.data;
+          const decoder = getTextDecoder(ds);
           const allTags = Object.keys(ds.elements);
           const parsedMeta: Array<{ tag: string; name: string; value: string }> = [];
           
           for (const tag of allTags) {
             const formattedTag = `(${tag.substring(1, 5)},${tag.substring(5, 9)})`.toUpperCase();
-            let value = "";
-            try {
-              value = ds.string(tag);
-            } catch (e) {
-              // 무시 (파싱 불가 태그)
-            }
+            // let value = "";
+            // try {
+            //   value = ds.string(tag);
+            // } catch (e) {
+            //   // 무시 (파싱 불가 태그)
+            // }
+            const value = getElementDisplayValue(ds, tag, decoder);
             
             if (value && typeof value === "string" && value.trim() !== "") {
               const cleanValue = value.replace(/\0/g, "").trim();

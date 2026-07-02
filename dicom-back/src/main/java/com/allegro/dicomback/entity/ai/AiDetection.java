@@ -14,13 +14,14 @@ public class AiDetection {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "DetectionKey")
-    private Long detectionKey; // long(원시타입) 대신 Long(래퍼클래스) 권장
+    private Long detectionKey;
 
-    @Column(name = "ResultKey")
-    private Long resultKey;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ResultKey", nullable = false)
+    private AiResults aiResult;
 
-    @Column(name = "ImageKey")
-    private Long imageKey;
+    @Column(name = "InstanceId", length = 64, nullable = false)
+    private String instanceId;    // Orthanc instance UUID — "어느 이미지인지"의 새 식별자
 
     @Column(name = "Confidence")
     private Float confidence;

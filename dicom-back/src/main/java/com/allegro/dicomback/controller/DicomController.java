@@ -3,14 +3,16 @@ package com.allegro.dicomback.controller;
 import com.allegro.dicomback.dto.DicomRequestDto;
 import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.service.DicomService;
-//import com.allegro.dicomback.service.OrthancSyncService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import com.allegro.dicomback.service.DicomService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import reactor.netty.http.server.HttpServerResponse;
 
 import java.util.List;
 
@@ -42,11 +44,11 @@ public class DicomController {
         return ResponseEntity.ok().build();
     }
 
-    //이미지 목록 불러오기
-    @GetMapping("/images")
-    public ResponseEntity<List<DicomResponseDto.ImageDto>> getImages() {
-        return ResponseEntity.ok().build();
-    }
+//    //이미지 목록 불러오기
+//    @GetMapping("/images")
+//    public ResponseEntity<List<DicomResponseDto.ImageDto>> getImages() {
+//        return ResponseEntity.ok().build();
+//    }
 
     //데이터 익명화 허용하기 (Study 단위)
     @GetMapping("/studies/anonymization")
@@ -99,7 +101,15 @@ public class DicomController {
                 .body(stream);
     }
 
-    //시리즈 다운로드
+//    @GetMapping("/studies/download")
+//    public void downloadStudies(
+//            @RequestParam("study-key") Long studyKey,
+//            HttpServletResponse response
+//    ) {
+//        dicomService.downloadStudyAsZip(studyKey, response);
+//    }
+
+//    시리즈 다운로드
     @GetMapping("/series/download")
     public ResponseEntity<StreamingResponseBody> downloadSeries(
             @RequestParam("series-key") Long seriesKey
@@ -110,6 +120,15 @@ public class DicomController {
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .body(stream);
     }
+
+//    @GetMapping("/series/download")
+//    public void downloadSeries(
+//            @RequestParam("series-key") Long seriesKey,
+//            HttpServletResponse response
+//    ) {
+//        dicomService.downloadSeriesAsZip(seriesKey, response);
+//    }
+
 
 //    //이미지 다운로드
 //    @GetMapping("/images/download")
@@ -130,4 +149,35 @@ public class DicomController {
 //        orthancSyncService.syncInstancesFromOrthanc();
 //        return ResponseEntity.ok("동기화 성공");
 //    }
+
+    // DicomController.java
+    @GetMapping("/series/{seriesKey}/instances")
+    public ResponseEntity<List<String>> getInstancesOfSeries(@PathVariable("seriesKey") Long seriesKey) {
+        return ResponseEntity.ok(dicomService.getInstanceIdsBySeries(seriesKey));
+    }
+
+    //Study 상세
+    @GetMapping("/studies/{studyKey}")
+    public ResponseEntity<DicomResponseDto.StudyDto> getStudyDetail(@PathVariable Long studyKey) {
+        return ResponseEntity.ok(dicomService.getStudyDetail(studyKey));
+    }
+
+    //Study에 속한 Series 목록
+    @GetMapping("/studies/{studyKey}/series")
+    public ResponseEntity<List<DicomResponseDto.SeriesDto>> getSeriesOfStudy(@PathVariable Long studyKey) {
+        return ResponseEntity.ok(dicomService.getSeriesByStudy(studyKey));
+    }
+
+    //인스턴스 raw DICOM 스트리밍
+    @GetMapping("/series/{seriesKey}/instances/{instanceId}/file")
+    public ResponseEntity<StreamingResponseBody> getInstanceFile(
+            @PathVariable Long seriesKey,
+            @PathVariable String instanceId
+    ) {
+        StreamingResponseBody stream = dicomService.getInstanceFile(seriesKey, instanceId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/dicom"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + instanceId + ".dcm\"")
+                .body(stream);
+    }
 }

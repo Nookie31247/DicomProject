@@ -123,6 +123,7 @@ public class DicomSyncHelperService {
                     series.setSeriesNum(sDto.getMainDicomTags().getSeriesNumber());
                     series.setModality(sDto.getMainDicomTags().getModality());
                     series.setBodyPart(sDto.getMainDicomTags().getBodyPartExamined());
+                    series.setSeriesDescription(sDto.getMainDicomTags().getSeriesDescription());
 
                     // 이미지 개수 저장
                     int instanceCount = (sDto.getInstances() != null) ? sDto.getInstances().size() : 0;

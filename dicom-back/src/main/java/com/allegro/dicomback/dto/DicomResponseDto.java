@@ -24,7 +24,9 @@ public class DicomResponseDto {
             @JsonProperty("series-num")Number seriesNum,
             @JsonProperty("images-num")Number imagesNum,
             @JsonProperty("allow-research")boolean allowedResearch,
-            @JsonProperty("hidden")boolean hidden
+            @JsonProperty("hidden")boolean hidden,
+            @JsonProperty("patient-name")String patientName,      // 추가
+            @JsonProperty("patient-birth")LocalDateTime patientBirth
     ) {}
 
     // Series 목록 응답 DTO
@@ -34,6 +36,8 @@ public class DicomResponseDto {
             @JsonProperty("datetime")LocalDateTime dateTime,
             @JsonProperty("series-num")Number seriesNum,
             @JsonProperty("bodypart")String  bodyPart,
+            @JsonProperty("images-num")Number imagesNum,
+            @JsonProperty("SeriesDescription")String seriesDescription,
             @JsonProperty("hidden") boolean hidden
     ) {}
 

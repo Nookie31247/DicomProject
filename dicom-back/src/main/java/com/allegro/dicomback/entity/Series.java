@@ -30,6 +30,9 @@ public class Series {
     @Column(name = "SeriesNum")
     private Integer seriesNum;
 
+    @Column(name = "SeriesDescription")
+    private String seriesDescription;
+
     @Column(name = "BodyPart", length = 64)
     private String bodyPart;
 

@@ -222,7 +222,7 @@ export default function WorkspaceDashboardPage() {
                           <span className={patientMainClass}>
                       <span className={patientNameClass}>{p["patient-name"]}</span>
                       <span className={patientSubClass}>
-                        {sexLabel(p["patient-sex"])} · {p["patient-birth"]} · 최근 진료: {p["latest-study-datetime"]?.split('T')[0]}
+                        {sexLabel(p["patient-sex"])} · {p["patient-birth"] || "N/A"} · 최근 진료: {p["latest-study-datetime"]?.split('T')[0] || "N/A"}
                       </span>
                     </span>
                           <span className={`${patientBadgeBase} ${p["patient-id"] === selectedPatientId ? patientBadgeActive : patientBadgeDefault}`}>{p["study-count"]}</span>
@@ -361,15 +361,15 @@ export default function WorkspaceDashboardPage() {
                                   />
                                 </div>
                                 <span className="col-modality">
-                          <span className={`${modalityBadgeClass} ${modalityColors[it.modality.toLowerCase()] || "bg-slate"}`}>
-                            {it.modality}
+                          <span className={`${modalityBadgeClass} ${modalityColors[(it.modality || "").toLowerCase()] || "bg-slate"}`}>
+                            {it.modality || "N/A"}
                           </span>
                         </span>
-                                <span className={colDescClass}>{it.description}</span>
+                                <span className={colDescClass}>{it.description || "N/A"}</span>
                                 {/* ★ 수정 포인트 3: <span className="col-body">{it.bodyPart}</span> 제거됨 */}
-                                <span className={colDateClass}>{it.datetime.split("T")[0]}</span>
-                                <span className={colSeriesClass}>#{it["series-num"]}</span>
-                                <span className={colImagesClass}>{it["images-num"]}</span>
+                                <span className={colDateClass}>{it.datetime ? it.datetime.split("T")[0] : "N/A"}</span>
+                                <span className={colSeriesClass}>#{it["series-num"] ?? "N/A"}</span>
+                                <span className={colImagesClass}>{it["images-num"] ?? "N/A"}</span>
                                 <span
                                     className={`text-center font-bold ${
                                         it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
