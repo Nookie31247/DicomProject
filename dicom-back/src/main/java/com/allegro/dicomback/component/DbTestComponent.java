@@ -2,9 +2,7 @@ package com.allegro.dicomback.component;
 
 import com.allegro.dicomback.dto.UserRequestDto;
 import com.allegro.dicomback.entity.Patient;
-import com.allegro.dicomback.entity.user.User;
 import com.allegro.dicomback.repository.PatientRepository;
-import com.allegro.dicomback.repository.UserRepository;
 import com.allegro.dicomback.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;

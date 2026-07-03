@@ -1,11 +1,5 @@
 package com.allegro.dicomback.entity.anonymization;
 
-import com.allegro.dicomback.entity.Study;
-import com.allegro.dicomback.entity.user.User;
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
-
 //@Entity
 //@Table(name = "anonymization_studies")
 //@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

@@ -1,17 +1,19 @@
 package com.allegro.dicomback.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class DicomResponseDto {
 
     // 환자 목록 응답 DTO
     public record PatientDto(
-            @JsonProperty("patient-id")String pId,
+            @JsonProperty("patient-id")Long pId,
             @JsonProperty("patient-name")String pName,
-            @JsonProperty("patient-birth")LocalDateTime pBirth,
+            @JsonProperty("patient-birth")LocalDate pBirth,
             @JsonProperty("patient-sex")String pSex,
-            @JsonProperty("latest-study-datetime")LocalDateTime pDateTime,
+            @JsonProperty("latest-study-datetime") LocalDateTime pDateTime,
             @JsonProperty("study-count")Integer studyCount,
             @JsonProperty("hidden") boolean hidden
     ) {}

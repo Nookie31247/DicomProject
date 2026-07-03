@@ -86,7 +86,7 @@ public class DicomSyncHelperService {
 
             // 저장된 studies 테이블을 바탕으로 환자 최근 검사일 업데이트
             patient.setRecentStudy(study.getStudyDateTime());
-            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getId(), patient.getRecentStudy());
+            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getKey(), patient.getRecentStudy());
 
             patientRepository.save(patient);
 
@@ -110,7 +110,7 @@ public class DicomSyncHelperService {
                     Series series = seriesRepository.findBySeriesInstanceUid(sUid)
                             .orElse(Series.builder().seriesInstanceUid(sUid).study(study).build());
 
-                    series.setOrthancSeriesId(sDto.getID());
+                    series.setOrthancId(sDto.getID());
                     log.info("Series 번호: {}", sDto.getID());
                     series.setSeriesNum(sDto.getMainDicomTags().getSeriesNumber());
                     series.setModality(sDto.getMainDicomTags().getModality());

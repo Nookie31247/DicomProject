@@ -1,4 +1,4 @@
-package com.allegro.dicomback.entity.user;
+package com.allegro.dicomback.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,36 +16,32 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "UserKey")
-    private Long userKey;
+    @Column(name = "key")
+    private Long key;
 
-    @Column(name = "UserId", length = 50, nullable = false, unique = true)
+    @Column(name = "user_id", length = 50, nullable = false, unique = true)
     private String userId;
 
-    @Builder.Default
-    @Column(name = "UserRole", nullable = false, columnDefinition = "TINYINT")
-    private Integer userRole = 1;
+    @Column(name = "user_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserType userType;
 
-    @Column(name = "UserPassword", nullable = false)
+    @Column(name = "user_password", nullable = false)
     private String userPassword;
 
-    @Column(name = "UserName", nullable = false)
+    @Column(name = "user_name", nullable = false)
     private String userName;
 
     @Builder.Default
-    @Column(name = "UserStatus", nullable = false, columnDefinition = "TINYINT(1)")
+    @Column(name = "user_status", nullable = false)
     private Boolean userStatus = true;
 
     @Builder.Default
-    @Column(name = "CreatedAt", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "DeletedAt")
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "HospitalId")
-    // private Hospital hospital;
 
     public void deactivate() {
         this.userId = this.userId + "$deactivate";

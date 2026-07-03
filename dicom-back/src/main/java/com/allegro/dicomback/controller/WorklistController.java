@@ -1,9 +1,7 @@
 package com.allegro.dicomback.controller;
 
-import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.PatientDto;
 import com.allegro.dicomback.entity.Patient;
-import com.allegro.dicomback.entity.user.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.UserRepository;
@@ -29,7 +27,7 @@ public class WorklistController {
     private Long getUserKey(String userId) {
         return userRepository.findByUserId(userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND))
-                .getUserKey();
+                .getKey();
     }
 
     // 의사가 담당 환자 목록 불러오기

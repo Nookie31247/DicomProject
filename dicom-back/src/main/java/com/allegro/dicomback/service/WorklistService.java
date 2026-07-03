@@ -1,9 +1,8 @@
 package com.allegro.dicomback.service;
 
 import com.allegro.dicomback.dto.PatientDto;
-import com.allegro.dicomback.dto.StudyAllocationDto;
 import com.allegro.dicomback.entity.*;
-import com.allegro.dicomback.entity.user.User;
+import com.allegro.dicomback.entity.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.*;

@@ -3,7 +3,8 @@ package com.allegro.dicomback.service;
 import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.UserRequestDto.*;
 import com.allegro.dicomback.dto.UserResponseDto;
-import com.allegro.dicomback.entity.user.User;
+import com.allegro.dicomback.entity.User;
+import com.allegro.dicomback.entity.UserType;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.UserRepository;
@@ -35,7 +36,7 @@ public class UserService {
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
 
-        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserRole(), user.getUserKey());
+        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserType().getTypeString(), user.getKey());
         String username = user.getUserName();
 
         return new LoginServiceRes(token, username);
@@ -49,19 +50,11 @@ public class UserService {
             throw new BaseException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
-        // userType은 UserRole(Integer)로 변환
-        // 의료진 = 1, 연구원 = 2
-        Integer role = switch (request.userRole()) {
-            case "의료진" -> 1;
-            case "연구원" -> 2;
-            default -> throw new BaseException(ErrorCode.INVALID_USER_TYPE);
-        };
-
         User user = User.builder()
                 .userId(request.userId())
                 .userPassword(passwordEncoder.encode(request.password()))
                 .userName(request.name())
-                .userRole(role)
+                .userType(UserType.fromTypeString(request.userType()))
                 .build();
 
         userRepository.save(user);
@@ -111,10 +104,10 @@ public class UserService {
         String userId = jwtTokenProvider.getUserId(token);
         User user = findActiveUser(userId);
         String username = user.getUserName();
-        String userRole = user.getUserRole() == 1 ? "의료진" : "연구원";
+        String userType = user.getUserType().getTypeString();
         LocalDate date = user.getCreatedAt().toLocalDate();
 
-        return new UserResponseDto.UserInfoRes(userId, username, userRole, date);
+        return new UserResponseDto.UserInfoRes(userId, username, userType, date);
     }
 
     // --- [공통] 유저 조회 (Private) ---

@@ -1,9 +1,5 @@
 package com.allegro.dicomback.entity;
 
-import com.allegro.dicomback.entity.user.User;
-import jakarta.persistence.*;
-import lombok.*;
-
 //@Entity
 //@Table(name = "doctor_worklist")
 //@Getter

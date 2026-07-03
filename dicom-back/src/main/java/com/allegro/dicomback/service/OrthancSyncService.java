@@ -4,7 +4,7 @@
 //import com.allegro.dicomback.entity.Patient;
 //import com.allegro.dicomback.entity.Series;
 //import com.allegro.dicomback.entity.Study;
-//import com.allegro.dicomback.entity.user.User;
+//import com.allegro.dicomback.entity.User;
 //import com.allegro.dicomback.repository.*;
 //import lombok.RequiredArgsConstructor;
 //import lombok.extern.slf4j.Slf4j;
@@ -103,7 +103,7 @@
 //                if (study == null) {
 //                    User defaultDoctor = userRepository.findByUserId("admin")
 //                            .orElseGet(() -> {
-//                                User sysUser = User.builder().userId("admin").userName("관리자").userPassword("1234").userRole(1).build();
+//                                User sysUser = User.builder().userId("admin").userName("관리자").userPassword("1234").userType(1).build();
 //                                return userRepository.save(sysUser);
 //                            });
 //
