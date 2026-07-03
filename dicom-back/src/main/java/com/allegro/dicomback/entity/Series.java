@@ -17,11 +17,11 @@ public class Series {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "SeriesKey")
-    private Long seriesKey;
+    @Column(name = "key")
+    private Long key;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "StudyKey", nullable = false)
+    @JoinColumn(name = "study", nullable = false)
     private Study study;
 
     @Column(name = "series_instance_uid", unique = true, length = 128)
@@ -46,10 +46,10 @@ public class Series {
     // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default
     @Column(name = "hidden_flag", nullable = false)
-    private Integer hiddenFlag = 0;
+    private Boolean hiddenFlag = false;
 
-    // 소프트 삭제
-    public void delete() {
-        this.hiddenFlag = 1;
+    // 시리즈 숨김 여부 설정
+    public void setHidden(boolean isHidden) {
+        this.hiddenFlag = isHidden;
     }
 }

@@ -47,11 +47,11 @@ public class Patient {
 
     // 담당의사 (외래키)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor_id",  nullable = false)
+    @JoinColumn(name = "doctor",  nullable = false)
     private User doctor;
 
     /// 환자 숨김 여부 설정(true: 숨김 설정, false: 숨김 해제)
-    public void setHiddenFlag(boolean isHidden) {
+    public void setHidden(boolean isHidden) {
         this.hiddenFlag = isHidden;
     }
 }

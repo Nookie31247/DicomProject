@@ -5,7 +5,6 @@ import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.UserRepository;
-import com.allegro.dicomback.service.WorklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

@@ -23,7 +23,7 @@ public class Study {
     private Long key;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "patient_id", nullable = false)
+    @JoinColumn(name = "patient", nullable = false)
     private Patient patient;
 
     @Column(name = "study_instance_uid", unique = true, length = 128)
@@ -44,18 +44,18 @@ public class Study {
 
     // 연구 데이터 사용 허가 여부(0: 금지, 1: 허용)
     @Builder.Default
-    @Column(name = "AllowedResearch", nullable = false)
-    private Byte allowedResearch = 0;
+    @Column(name = "allow_research", nullable = false)
+    private Boolean allowResearch = false;
 
     @Column(name = "orthanc_id")
     private String orthancId;
 
     @Builder.Default
     @Column(name = "hidden_flag", nullable = false)
-    private Integer hiddenFlag = 0;
+    private Boolean hiddenFlag = false;
 
-    // 소프트 삭제1
-    public void delete() {
-        this.hiddenFlag = 1;
+    // 스터디 숨김 여부 설정
+    public void setHidden(boolean isHidden) {
+        this.hiddenFlag = isHidden;
     }
 }

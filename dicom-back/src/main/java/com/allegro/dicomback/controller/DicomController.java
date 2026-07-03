@@ -31,8 +31,14 @@ public class DicomController {
     }
 
     //스터디 목록 불러오기
+    // 필터링 기능 추가하기
     @GetMapping("/studies")
-    public ResponseEntity<List<StudyDto>> getStudies() {
+    public ResponseEntity<List<StudyDto>> getStudies(
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end,
+            @RequestParam String pid,
+            @RequestParam(required = false) String search
+    ) {
         return ResponseEntity.ok().build();
     }
 
