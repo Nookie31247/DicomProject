@@ -14,10 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 @Slf4j
 @Service
@@ -53,12 +51,6 @@ public class DicomSyncHelperService {
 //                    .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
 
 
-            // 원본코드에는 Patient에 환자가 있어야 Study가 성공하기때문에 문제가 발생했으면
-            // 이미 Study에 정보가 이미 다 들어있는서 사실상 study들어가서 patient만 불러오는 구조에서 변경
-            // upsert(있으면 갱신, 없으면 생성) 패턴을 쓰는 이유
-            // findById()로 조회해 있으면 기존 Patient 엔티티를 그대로 가져와서 필드만 최신값으로 덮어써서 갱신하고
-            // 없으면 orElseGet()의 람다가 실행되어 새 Patient 객체를 builder로 새로 생성한다.
-            // 이렇게 하면 이 메서드가 몇 번을 재실행되든 PatientID에 대해 중복 row가 쌓이지 않고 항상 "최신 상태 1개"만 유지됨.
             if (dto.getPatientMainDicomTags() == null || dto.getPatientMainDicomTags().getPatientID() == null) {
                 log.warn("PatientMainDicomTags가 없습니다. UUID: {}", studyUuid);
                 return;
@@ -84,7 +76,7 @@ public class DicomSyncHelperService {
 
             studyRepository.save(study);
 
-            log.info("기존 환자 PTime: {}", patient.getPTime());
+            log.info("기존 환자 PTime: {}", patient.getRecentStudy());
             log.info("새로 계산된 StudyDateTime: {}", study.getStudyDateTime());
 
             if(study.getStudyDateTime() == null) {
@@ -93,8 +85,8 @@ public class DicomSyncHelperService {
             }
 
             // 저장된 studies 테이블을 바탕으로 환자 최근 검사일 업데이트
-            patient.setPTime(study.getStudyDateTime());
-            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getPId(), patient.getPTime());
+            patient.setRecentStudy(study.getStudyDateTime());
+            log.info("환자 {}의 최신 진료일 업데이트 완료: {}", patient.getId(), patient.getRecentStudy());
 
             patientRepository.save(patient);
 

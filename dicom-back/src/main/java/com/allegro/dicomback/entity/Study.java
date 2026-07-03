@@ -29,7 +29,7 @@ public class Study {
     private User doctor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PId", nullable = false)
+    @JoinColumn(name = "id", nullable = false)
     private Patient patient;
 
     @Column(name = "StudyInstanceUID", unique = true, length = 128)

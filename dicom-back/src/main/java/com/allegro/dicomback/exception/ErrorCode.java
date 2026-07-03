@@ -11,6 +11,9 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_003", "이미 존재하는 아이디입니다."),
     INVALID_USER_TYPE(HttpStatus.BAD_REQUEST, "USER_004", "올바르지 않은 회원 유형입니다."),
 
+    // 환자 연동 관련
+    PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PATIENT_001", "환자를 찾을 수 없습니다."),
+
     // DICOM/데이터 관련 (2xxx)
     STUDY_NOT_FOUND(HttpStatus.NOT_FOUND, "DICOM_001", "해당 스터디를 찾을 수 없습니다."),
     SERIES_NOT_FOUND(HttpStatus.NOT_FOUND, "DICOM_003", "해당 시리즈를 찾을 수 없습니다."),

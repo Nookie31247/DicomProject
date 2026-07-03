@@ -31,7 +31,7 @@ public class JwtTokenProvider {
     }
 
     // 토큰 생성 (userId와 role을 담음)
-    public String createToken(String userId, Integer role) {
+    public String createToken(String userId, Integer role, Long userKey) {
         Date now = new Date();
 
         // 토큰 유효기간: 24시간
@@ -39,6 +39,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .subject(userId)
+                .claim("userKey", userKey)
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + EXPIRE_TIME))
@@ -74,5 +75,10 @@ public class JwtTokenProvider {
     // 5. 토큰에서 권한(Role) 추출
     public Integer getRole(String token) {
         return getClaims(token).get("role", Integer.class);
+    }
+
+    // UserKey 추출 메서드
+    public Long getUserKey(String token) {
+        return getClaims(token).get("userKey", Long.class);
     }
 }
