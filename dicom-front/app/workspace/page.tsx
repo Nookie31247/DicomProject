@@ -1,27 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { patients, studies } from "@/mock-data";
+import { studies } from "@/mock-data";
+import * as apiDicom from "@/app/api/apiDicom";
+import AddPatientModal from "@/app/components/search-dashboard/AddPatientModal";
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
 
-  // ── 환자(Patient) 관련 상태 ──
-  const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.["patient-id"]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [myPatients, setMyPatients] = useState<any[]>([]);
+
+  // 1. 서버에서 환자 목록 가져오기
+  const fetchMyPatients = async () => {
+    try {
+      const response = await apiDicom.getMyPatients();
+      setMyPatients(response.data);
+    } catch (error) {
+      console.error("환자 목록 로드 실패:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyPatients();
+  }, []);
+
+  // ── 상태 ──
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [checkedPatientIds, setCheckedPatientIds] = useState<Set<string>>(new Set());
   const [showHiddenPatients, setShowHiddenPatients] = useState(false);
-
-  // ── 검사(Study/DICOM) 관련 상태 ──
   const [checkedStudyIds, setCheckedStudyIds] = useState<Set<string>>(new Set());
   const [showHiddenStudies, setShowHiddenStudies] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
-  // ==========================================
-  // 1. 환자 목록 컨트롤 로직
-  // ==========================================
+  // ── 로직 ──
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id);
-    setCheckedStudyIds(new Set()); // 환자 변경 시 검사 선택 초기화
+    setCheckedStudyIds(new Set());
   };
 
   const togglePatientCheck = (id: string) => {
@@ -32,54 +48,13 @@ export default function WorkspaceDashboardPage() {
     });
   };
 
-  const executePatientAction = (logMessage: string) => {
-    console.log(logMessage, Array.from(checkedPatientIds));
-    setCheckedPatientIds(new Set());
-  };
-
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [appliedFilters, setAppliedFilters] = useState({ keyword: "", start: "", end: "" });
-
-  const handleSearch = () => {
-    setAppliedFilters({ keyword: searchKeyword, start: startDate, end: endDate });
-  };
-
-  const toggleShowHiddenPatients = () => {
-    setShowHiddenPatients((prev) => !prev);
-    setCheckedPatientIds(new Set());
-  };
-
-  const displayedPatients = patients.filter(p => {
-    if (p.hidden !== showHiddenPatients) return false;
-    
-    if (appliedFilters.keyword) {
-      const kw = appliedFilters.keyword.toLowerCase();
-      if (!p["patient-name"].toLowerCase().includes(kw) && !p["patient-id"].toLowerCase().includes(kw)) {
-        return false;
-      }
-    }
-    
-    if (appliedFilters.start) {
-      if (!p["latest-study-datetime"]) return false;
-      const studyDate = p["latest-study-datetime"].split("T")[0];
-      if (studyDate < appliedFilters.start) return false;
-    }
-    
-    if (appliedFilters.end) {
-      if (!p["latest-study-datetime"]) return false;
-      const studyDate = p["latest-study-datetime"].split("T")[0];
-      if (studyDate > appliedFilters.end) return false;
-    }
-    
-    return true;
+  const displayedPatients = myPatients.filter((p) => {
+    const kw = searchKeyword.toLowerCase();
+    return p.pName?.toLowerCase().includes(kw) || p.pId?.toLowerCase().includes(kw);
   });
-  const selectedPatient = patients.find((p) => p["patient-id"] === selectedPatientId) ?? null;
 
-  // ==========================================
-  // 2. 검사(DICOM) 목록 컨트롤 로직
-  // ==========================================
+  const selectedPatient = myPatients.find((p) => p.pId === selectedPatientId) ?? null;
+
   const toggleStudyCheck = (id: string) => {
     setCheckedStudyIds((prev) => {
       const next = new Set(prev);
@@ -88,26 +63,11 @@ export default function WorkspaceDashboardPage() {
     });
   };
 
-  const executeStudyAction = (logMessage: string) => {
-    console.log(logMessage, Array.from(checkedStudyIds));
-    setCheckedStudyIds(new Set());
-  };
-
-  const toggleShowHiddenStudies = () => {
-    setShowHiddenStudies((prev) => !prev);
-    setCheckedStudyIds(new Set());
-  };
-
   const displayedStudies = !selectedPatient
       ? []
       : studies.filter(s => s["patient-id"] === selectedPatientId && s.hidden === showHiddenStudies);
 
-  // ==========================================
-  // 기타 헬퍼 및 스타일
-  // ==========================================
-  const sexLabel = (s: "M" | "F") => (s === "M" ? "남" : "여");
-
-  // ── Tailwind 스타일 변수 (globals.css에서 이관) ──
+  // ── 스타일 변수 ──
   const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
   const wsPanelHeadClass = "flex shrink-0 items-start justify-between gap-3 pt-4.5 px-4.5 pb-4 border-b border-line";
   const wsHeadLeftClass = "flex min-w-0 flex-1 flex-col gap-1.25";
@@ -129,78 +89,24 @@ export default function WorkspaceDashboardPage() {
   const colSeriesClass = "col-series text-right tabular-nums text-ink-soft";
   const colImagesClass = "col-images text-right tabular-nums text-ink-soft";
   const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
-  const modalityColors: Record<string, string> = {
-    ct: "bg-[#2563eb]",
-    mr: "bg-[#7c3aed]",
-    cr: "bg-[#0e7490]",
-    us: "bg-[#c2410c]",
-    pt: "bg-[#be185d]",
-  };
-
-  // ★ 수정 포인트 1: 기존 "30px 84px 1.6fr 1fr 1fr 70px 70px 100px" 에서 검사 부위에 해당하는 1fr 제거
-  const studyGridColumns = "30px 84px 1.6fr 1fr 70px 70px 100px";
+  const modalityColors: Record<string, string> = { ct: "bg-[#2563eb]", mr: "bg-[#7c3aed]", cr: "bg-[#0e7490]", us: "bg-[#c2410c]", pt: "bg-[#be185d]" };
+  const studyGridColumns = "30px 84px 1.6fr 1fr 1fr 70px 70px 100px";
 
   return (
       <div className="page">
-        {/* ───────────── Workspace ───────────── */}
-        <section className="grid flex-1 items-stretch gap-5 pt-6 px-[clamp(20px,4vw,48px)] pb-8 min-h-0 h-[calc(100vh-93px)] transition-[grid-template-columns] duration-200 max-[1100px]:grid-cols-1 max-[1100px]:h-auto max-[1100px]:auto-rows-[minmax(280px,auto)] max-[560px]:px-4 max-[560px]:pt-4.5 max-[560px]:pb-7 max-[560px]:gap-3.5"
-                 style={{ gridTemplateColumns: "480px 1fr" }}>
+        <section className="grid flex-1 items-stretch gap-5 pt-6 px-[clamp(20px,4vw,48px)] pb-8 min-h-0 h-[calc(100vh-93px)]" style={{ gridTemplateColumns: "480px 1fr" }}>
 
-          {/* ── 1. 환자 목록 패널 ── */}
+          {/* 1. 환자 목록 */}
           <aside className={`${wsPanelClass} flex flex-col`}>
             <div className={wsPanelHeadClass}>
               <div className={`${wsHeadLeftClass} w-full`}>
-                <div className="flex items-center justify-between w-full gap-2">
-                  <div className="flex items-center gap-2">
-                    <h2 className={wsPanelTitleClass}>
-                      {showHiddenPatients ? "숨긴 환자 목록" : "환자 목록"}
-                    </h2>
-                    <span className={wsCountClass}>{displayedPatients.length}명</span>
-                  </div>
-                  <button type="button" className="btn btn-small" onClick={() => {}}>환자 추가</button>
+                <div className="flex items-center justify-between w-full">
+                  <h2 className={wsPanelTitleClass}>환자 목록</h2>
+                  <button type="button" className="btn btn-small" onClick={() => setIsModalOpen(true)}>환자 추가</button>
                 </div>
-
-                {/* 검색 필터 UI */}
-                <div className="flex gap-2 mt-2 items-stretch">
-                  {/* 왼쪽: 검색창 & 날짜 */}
-                  <div className="flex flex-col flex-1 gap-2">
-                    <input
-                      type="text"
-                      placeholder="환자 이름 또는 ID 검색"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-[#14b876]"
-                      value={searchKeyword}
-                      onChange={(e) => setSearchKeyword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    />
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="date"
-                        className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                      <span className="text-slate-400">-</span>
-                      <input
-                        type="date"
-                        className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* 오른쪽: 검색 버튼 */}
-                  <button
-                    type="button"
-                    className="w-18 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
-                    onClick={handleSearch}
-                  >
-                    검색
-                  </button>
-                </div>
+                <input className="w-full mt-2 p-2 border rounded-xl text-sm" placeholder="이름 또는 ID 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} />
               </div>
             </div>
-
             <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-2.5">
               {displayedPatients.length > 0 ? (
                   displayedPatients.map((p) => (
@@ -233,99 +139,19 @@ export default function WorkspaceDashboardPage() {
                   <li className="p-4 text-center text-slate-500 text-sm">
                     표시할 환자가 없습니다.
                   </li>
-              )}
+              ))}
             </ul>
-
-            <div className="ws-panel-footer p-3 border-t border-[#eee] flex gap-2 flex-wrap">
-              <button
-                  type="button"
-                  onClick={() => setCheckedPatientIds(new Set())}
-                  disabled={checkedPatientIds.size === 0}
-                  className="px-2 py-1 text-xs cursor-pointer"
-              >
-                선택 해제
-              </button>
-              <button
-                  type="button"
-                  onClick={() => executePatientAction("백엔드로 전송할 환자 ID 리스트:")}
-                  disabled={checkedPatientIds.size === 0}
-                  className="px-2 py-1 text-xs cursor-pointer"
-              >
-                {showHiddenPatients ? "숨기기 해제" : "숨기기"}
-              </button>
-              <button
-                  type="button"
-                  onClick={toggleShowHiddenPatients}
-                  className="px-2 py-1 text-xs cursor-pointer ml-auto"
-              >
-                {showHiddenPatients ? "일반 환자 보기" : "숨긴 환자 보기"}
-              </button>
-            </div>
           </aside>
 
-          {/* ── 2. 검사(DICOM) 목록 패널 ── */}
+          {/* 2. 검사 목록 */}
           <section className={`${wsPanelClass} flex flex-col`}>
             <div className={wsPanelHeadClass}>
               <div className={`${wsHeadLeftClass} w-full`}>
-                <div className="flex items-center justify-between w-full gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className={wsPanelTitleClass}>
-                        {showHiddenStudies ? "숨긴 검사 목록" : "검사 목록"}
-                      </h2>
-                      <span className={wsCountClass}>{displayedStudies.length}건</span>
-                    </div>
-                    {selectedPatient ? (
-                        <span className={wsSubLabelClass}>
-                      {selectedPatient["patient-name"]} · {sexLabel(selectedPatient["patient-sex"])} · {selectedPatient["patient-birth"]}
-                    </span>
-                    ) : (
-                        <span className={wsSubLabelClass}>환자를 선택하세요</span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    {selectedPatient && (
-                        <div className="flex gap-2">
-                          <button
-                              type="button"
-                              onClick={() => setCheckedStudyIds(new Set())}
-                              disabled={checkedStudyIds.size === 0}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            선택 해제
-                          </button>
-                          <button
-                              type="button"
-                              onClick={() => executeStudyAction("백엔드로 전송할 검사 ID(숨기기) 리스트:")}
-                              disabled={checkedStudyIds.size === 0}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            {showHiddenStudies ? "숨기기 해제" : "숨기기"}
-                          </button>
-                          <button
-                              type="button"
-                              onClick={toggleShowHiddenStudies}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            {showHiddenStudies ? "일반 파일 보기" : "숨긴 파일 보기"}
-                          </button>
-                          <button
-                              type="button"
-                              onClick={() => executeStudyAction("연구 목적 활용 허용할 검사 ID 리스트:")}
-                              disabled={checkedStudyIds.size === 0}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            연구 목적 활용 허용
-                          </button>
-                        </div>
-                    )}
-
-                    <button type="button" className="btn btn-medium whitespace-nowrap">
-                      파일 추가
-                    </button>
-                  </div>
+                <div className="flex items-center justify-between w-full">
+                  <h2 className={wsPanelTitleClass}>검사 목록</h2>
+                  <button type="button" className="btn btn-medium">파일 추가</button>
                 </div>
+                {selectedPatient && <span className={wsSubLabelClass}>{selectedPatient.pname} 선택됨</span>}
               </div>
             </div>
 
@@ -392,6 +218,7 @@ export default function WorkspaceDashboardPage() {
             )}
           </section>
         </section>
+        {isModalOpen && <AddPatientModal onClose={() => setIsModalOpen(false)} onRefresh={fetchMyPatients} />}
       </div>
   );
 }

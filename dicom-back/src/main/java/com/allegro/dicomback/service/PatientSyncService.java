@@ -57,13 +57,13 @@ public class PatientSyncService {
 
         return Patient.builder()
                 // 엔티티의 pId(PK)에 DICOM PatientID를 넣습니다.
-                .pId(tags.getPatientId() != null ? tags.getPatientId() : "UNKNOWN_ID")
-                .pName(tags.getPatientName())
-                .pBirth(birthDate)
-                .pSex(tags.getPatientSex())
-                .pTime(lastUpdate)
-                .pStudyCount(dto.getStudies() != null ? dto.getStudies().size() : 0)
-                .delFlag(0)
+                .id(tags.getPatientId() != null ? tags.getPatientId() : "UNKNOWN_ID")
+                .name(tags.getPatientName())
+                .birth(birthDate)
+                .sex(tags.getPatientSex())
+                .recentStudy(lastUpdate)
+                .studyCount(dto.getStudies() != null ? dto.getStudies().size() : 0)
+                .hiddenFlag(0)
                 .build();
     }
 

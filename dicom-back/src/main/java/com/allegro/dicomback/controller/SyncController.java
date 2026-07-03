@@ -31,6 +31,7 @@ public class SyncController {
     @PostMapping("/patients")
     public ResponseEntity<String> syncPatients() {
         patientSyncService.syncPatientsFromOrthanc();
+
         return ResponseEntity.ok("환자 정보 동기화가 성공적으로 완료되었습니다.");
     }
 

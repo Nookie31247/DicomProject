@@ -34,30 +34,36 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) throws Exception {
+//        http.csrf(AbstractHttpConfigurer::disable)
+//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers(HttpMethod.OPTIONS).permitAll()
+//                        .requestMatchers(
+//                                "/actuator/health",
+//                                "/api/users/login",
+//                                "/api/users/signup",
+//                                "/api/users/check-id",
+//                                "/api/dicom/**",
+//                                "/api/admin/**"
+//                        ).permitAll()
+//                        .anyRequest().authenticated()
+//                )
+//                .cors(cors -> cors.configurationSource(request -> {
+//                    var corsConfiguration = new CorsConfiguration();
+//                    corsConfiguration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+//                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//                    corsConfiguration.setAllowedHeaders(List.of("*"));
+//                    corsConfiguration.setAllowCredentials(true);
+//                    return corsConfiguration;
+//                }));
+
+        // TODO 배포 시 무조건 설정 변경할 것
+        // 테스트용 보안 검사 안하는 설정
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS).permitAll()
-                        .requestMatchers(
-                                "/actuator/health",
-                                "/api/users/login",
-                                "/api/users/signup",
-                                "/api/users/check-id",
-                                "/api/dicom/**",
-                                "/api/admin/**",
-                                "/api/ai/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
-                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfiguration.setAllowedHeaders(List.of("*"));
-                    corsConfiguration.setAllowCredentials(true);
-                    return corsConfiguration;
-                }));
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
         return http.build();
     }

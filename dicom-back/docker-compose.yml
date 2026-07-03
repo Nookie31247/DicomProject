@@ -2,19 +2,26 @@ version: '3.8'
 
 services:
   pacs-server:
-    image: orthancteam/orthanc
+    image: orthancteam/orthanc:latest # 굳이 full 안 쓰고 기본 latest 써도 충분함!
     container_name: orthanc_pacs
     ports:
-      - "8042:8042" # 웹 관리자 화면 및 DICOMweb REST API 포트 (Next.js/Spring 연결용)
-      - "4242:4242" # DICOM 통신 포트 (C-STORE, C-FIND 등 장비 연결용)
+      - "8042:8042" # 웹 UI 및 DICOMweb REST API 포트
+      - "4242:4242" # DICOM 통신 포트
     environment:
-      # Orthanc 내부 설정을 가볍게 주입
       ORTHANC__NAME: "Hanul_Hospital_PACS"
-      ORTHANC__DICOM_WEB__ENABLED: "true" # DICOMweb(QIDO, WADO, STOW) 활성화
-      ORTHANC__AUTHENTICATION_ENABLED: "false"
-      ORTHANC__REMOTE_ACCESS_ALLOWED: "true" # 외부(Next.js, Spring)에서 접속 허용
 
-      ORTHANC__ORTHANC_EXPLORER_2__ENABLE: "true" #최신 사용자 웹 인터페이스(UI) 플러그인을 활성화
+      # DICOMweb 플러그인 활성화
+      DICOM_WEB_PLUGIN_ENABLED: "true"
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+
+      # Orthanc Explorer 2 플러그인 활성화
+      ORTHANC_EXPLORER_2_PLUGIN_ENABLED: "true"
+      ORTHANC__ORTHANC_EXPLORER2__ENABLE: "true"
+      ORTHANC__ORTHANC_EXPLORER2__IS_DEFAULT_ORTHANC_UI: "true" # 루트(/) 접속 시 구형 UI 대신 새 UI로 리다이렉트
+
+      # 외부 연동(Next.js / Spring)을 위한 접근 제어
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
 
     volumes:
       - orthanc-db:/var/lib/orthanc/db

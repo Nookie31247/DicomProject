@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface StudyRepository extends JpaRepository<Study, Long> {
 
     // 특정 환자의 검사 목록 조회 (정상 데이터만)
-    List<Study> findByPatient_pIdAndDelFlag(String pId, Integer delFlag);
+    List<Study> findByPatient_idAndDelFlag(String pId, Integer delFlag);
 
     // 검사 설명(Description) 검색 (정상 데이터만)
     List<Study> findByDescriptionContainingAndDelFlag(String description, Integer delFlag);

@@ -1,7 +1,7 @@
 package com.allegro.dicomback.controller;
 
-import com.allegro.dicomback.dto.DicomRequestDto;
-import com.allegro.dicomback.dto.DicomResponseDto;
+import com.allegro.dicomback.dto.DicomRequestDto.*;
+import com.allegro.dicomback.dto.DicomResponseDto.*;
 import com.allegro.dicomback.service.DicomService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,31 +24,31 @@ public class DicomController {
 
     //환자 목록 불러오기
     @GetMapping("/patients")
-    public ResponseEntity<List<DicomResponseDto.PatientDto>> getPatients(
+    public ResponseEntity<List<PatientDto>> getPatients(
             @RequestParam(required = false) String start,
             @RequestParam(required = false) String end,
             @RequestParam(required = false) String search
     ) {
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(dicomService.getPatients(start, end, search));
     }
 
     //스터디 목록 불러오기
     @GetMapping("/studies")
-    public ResponseEntity<List<DicomResponseDto.StudyDto>> getStudies() {
+    public ResponseEntity<List<StudyDto>> getStudies() {
         return ResponseEntity.ok().build();
     }
 
     //시리즈 목록 불러오기
     @GetMapping("/series")
-    public ResponseEntity<List<DicomResponseDto.SeriesDto>> getSeries() {
+    public ResponseEntity<List<SeriesDto>> getSeries() {
         return ResponseEntity.ok().build();
     }
 
-//    //이미지 목록 불러오기
-//    @GetMapping("/images")
-//    public ResponseEntity<List<DicomResponseDto.ImageDto>> getImages() {
-//        return ResponseEntity.ok().build();
-//    }
+    //이미지 목록 불러오기
+    @GetMapping("/images")
+    public ResponseEntity<List<ImageDto>> getImages() {
+        return ResponseEntity.ok().build();
+    }
 
     //데이터 익명화 허용하기 (Study 단위)
     @GetMapping("/studies/anonymization")
@@ -61,7 +61,7 @@ public class DicomController {
     //환자 목록 숨기기/보이기 설정
     @PostMapping("/patients/hide")
     public ResponseEntity<Void> hidePatients(@RequestBody
-            List<DicomRequestDto.PatientHideDto> request
+            List<PatientHideDto> request
     ) {
         return ResponseEntity.noContent().build();
     }
@@ -69,14 +69,14 @@ public class DicomController {
     // 스터디 목록 숨기기/보이기 설정
     @PostMapping("/studies/hide")
     public ResponseEntity<Void> hideStudies(
-            @RequestBody List<DicomRequestDto.StudyHideDto> request) {
+            @RequestBody List<StudyHideDto> request) {
         return ResponseEntity.noContent().build();
     }
 
     //시리즈 목록 숨기기/보이기 설정
     @PostMapping("/series/hide")
     public ResponseEntity<Void> hideSeries(
-            @RequestBody List<DicomRequestDto.SeriesHideDto> request) {
+            @RequestBody List<SeriesHideDto> request) {
         return ResponseEntity.noContent().build();
     }
 
@@ -84,7 +84,7 @@ public class DicomController {
     //이미지 목록 숨기기/보이기 설정
     @PostMapping("/images/hide")
     public ResponseEntity<Void> hideImages(
-            @RequestBody List<DicomRequestDto.ImageHideDto> request
+            @RequestBody List<ImageHideDto> request
     ) {
         return ResponseEntity.noContent().build();
     }
