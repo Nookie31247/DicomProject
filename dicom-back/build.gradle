@@ -17,11 +17,13 @@ java {
 repositories {
     mavenCentral()
     maven {url= uri("https://maven.dcm4che.org/")} //dcm4che 저장소
+    maven { url 'https://raw.githubusercontent.com/nroduit/mvn-repo/master/' }
 }
 
 dependencies {
     implementation("org.dcm4che:dcm4che-core:5.31.2")
     implementation("org.dcm4che:dcm4che-imageio:5.31.2") //이미지 변환영 라이브러리
+    implementation("org.dcm4che:dcm4che-imageio-opencv:5.31.2") //이미지를  압축하거나 화면에 띄우기 위해 인코딩
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'   // WebClient 사용을 위한 WebFlux

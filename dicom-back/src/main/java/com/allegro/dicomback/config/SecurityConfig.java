@@ -45,7 +45,8 @@ public class SecurityConfig {
                                 "/api/users/signup",
                                 "/api/users/check-id",
                                 "/api/dicom/**",
-                                "/api/admin/**"
+                                "/api/admin/**",
+                                "/api/ai/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -217,4 +217,22 @@ public class DicomService {
             return null;
         });
     }
+
+    // AI 추론용: 인스턴스 하나의 raw DICOM byte[] 조회
+    public byte[] getInstanceBytes(Long seriesKey, String instanceId) {
+        Series series = seriesRepository.findById(seriesKey)
+                .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
+
+        if (series.getOrthancSeriesId() == null) {
+            throw new BaseException(ErrorCode.SERIES_NOT_SYNCED);
+        }
+
+        List<String> validInstanceIds = getInstanceIdsBySeries(seriesKey);
+        if (!validInstanceIds.contains(instanceId)) {
+            throw new BaseException(ErrorCode.IMAGE_NOT_FOUND);
+        }
+
+        String url = orthancUrl + "/instances/" + instanceId + "/file";
+        return restTemplate.getForObject(url, byte[].class);
+    }
 }

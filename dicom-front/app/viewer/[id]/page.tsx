@@ -192,9 +192,7 @@ export default function ViewerPage() {
                 <section className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] relative h-full p-4">
                     <div className="main-viewer-zone flex flex-1 justify-center items-center h-full w-full relative min-h-0">
                         {dicomUrls.length > 0 ? (
-                            <DicomViewer dicomUrls={dicomUrls}>
-                                <button type="button" className="btn btn-small shadow-md">AI 판독</button>
-                            </DicomViewer>
+                            <DicomViewer dicomUrls={dicomUrls} />
                         ) : (
                             <div className="text-slate-400 text-sm">시리즈를 선택하면 이미지가 표시됩니다.</div>
                         )}
