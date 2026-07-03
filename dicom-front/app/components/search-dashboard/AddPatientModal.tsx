@@ -58,15 +58,14 @@ export default function AddPatientModal({ onClose, onRefresh }: { onClose: () =>
 
                 <div className="max-h-[300px] overflow-y-auto border-t">
                     {results.length > 0 ? results.map((p) => (
-                        <div key={p.pId} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+                        <div key={p.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
                             <div>
-                                {/* 백엔드에서 반환하는 필드명(pName, pId 등)을 정확히 사용 */}
-                                <p className="font-bold">{p.pname} <span className="text-sm font-normal text-slate-500">({p.pid})</span></p>
-                                <p className="text-xs text-slate-400">{p.pbirth} / {p.psex}</p>
+                                <p className="font-bold">{p.name} <span className="text-sm font-normal text-slate-500">({p.id})</span></p>
+                                <p className="text-xs text-slate-400">{p.birth} / {p.sex}</p>
                             </div>
                             <button
-                                onClick={() => handleAddPatient(p.pid)}
-                                className="text-mint-deep font-bold border border-mint-deep px-3 py-1 rounded-lg hover:bg-mint-deep hover:text-white"
+                                onClick={() => handleAddPatient(p.id)}
+                                className="text-mint-deep font-bold border borfder-mint-deep px-3 py-1 rounded-lg hover:bg-mint-deep hover:text-white"
                             >
                                 추가
                             </button>

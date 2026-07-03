@@ -1,7 +1,6 @@
 package com.allegro.dicomback.service;
 
 import com.allegro.dicomback.dto.PatientDto;
-import com.allegro.dicomback.dto.StudyAllocationDto;
 import com.allegro.dicomback.entity.*;
 import com.allegro.dicomback.entity.user.User;
 import com.allegro.dicomback.exception.BaseException;
@@ -27,7 +26,7 @@ public class WorklistService {
     public List<Patient> findUnassignedPatients(Long userKey, String keyword) {
         // 1. 이름이나 ID로 환자 검색 (keyword를 pId 혹은 pName에 활용)
         // 여기서는 간단하게 이름 검색을 예시로 듭니다.
-        List<Patient> allPatients = patientRepository.findBypName(keyword);
+        List<Patient> allPatients = patientRepository.findByNameContains(keyword);
 
         if(allPatients.isEmpty()) {
             patientRepository.findById(keyword).ifPresent(allPatients::add);
@@ -35,21 +34,21 @@ public class WorklistService {
 
         // 2. 검색된 환자 중, 해당 의사가 이미 담당 중인 환자는 제외
         return allPatients.stream()
-                .filter(patient -> !doctorWorklistRepository.existsByDoctor_UserKeyAndPatient_pId(userKey, patient.getPId()))
+                .filter(patient -> !doctorWorklistRepository.existsByDoctor_UserKeyAndPatient_Id(userKey, patient.getId()))
                 .toList();
     }
 
     // findUnassignedPatients()로 나온 환자를 의사가 추가하는 기능
     @Transactional
-    public void addPatientToWorklist(Long userKey, String pId) {
+    public void addPatientToWorklist(Long userKey, String id) {
         // 1. 이미 등록된 환자인지 확인 (중복 등록 방지)
-        boolean exists = doctorWorklistRepository.existsByDoctor_UserKeyAndPatient_pId(userKey, pId);
+        boolean exists = doctorWorklistRepository.existsByDoctor_UserKeyAndPatient_Id(userKey, id);
 
         if (!exists) {
             // 2. 의사와 환자 엔티티 조회
             User doctor = userRepository.findById(userKey)
                     .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
-            Patient patient = patientRepository.findById(pId)
+            Patient patient = patientRepository.findById(id)
                     .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
 
             // 3. 엔티티 생성 및 저장

@@ -12,12 +12,12 @@ public record PatientDto(
 ) {
     public static PatientDto fromEntity(Patient patient) {
         return new PatientDto(
-                patient.getPId(),
-                patient.getPName(),
-                patient.getPBirth() != null ? patient.getPBirth().toString() : null,
-                patient.getPSex(),
-                patient.getPTime() != null ? patient.getPTime().toString() : null,
-                patient.getPStudyCount()
+                patient.getId(),
+                patient.getName(),
+                patient.getBirth() != null ? patient.getBirth().toString() : null,
+                patient.getSex(),
+                patient.getRecentStudy() != null ? patient.getRecentStudy().toString() : null,
+                patient.getStudyCount()
         );
     }
 }

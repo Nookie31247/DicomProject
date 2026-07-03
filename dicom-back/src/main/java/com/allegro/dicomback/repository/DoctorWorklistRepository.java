@@ -1,9 +1,7 @@
 package com.allegro.dicomback.repository;
 
 import com.allegro.dicomback.entity.DoctorWorklist;
-import com.allegro.dicomback.entity.Patient;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -28,5 +26,5 @@ public interface DoctorWorklistRepository extends JpaRepository<DoctorWorklist, 
     List<DoctorWorklist> findByDoctor_UserKey(Long userKey);
 
     // 특정 의사가 해당 환자를 담당하고 있는지 확인
-    boolean existsByDoctor_UserKeyAndPatient_pId(Long userKey, String pId);
+    boolean existsByDoctor_UserKeyAndPatient_Id(Long userKey, String pId);
 }

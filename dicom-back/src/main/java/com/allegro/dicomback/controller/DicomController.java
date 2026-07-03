@@ -1,6 +1,7 @@
 package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.dto.DicomRequestDto.*;
+import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
 import com.allegro.dicomback.service.DicomService;
 import jakarta.servlet.http.HttpServletResponse;

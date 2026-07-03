@@ -2,7 +2,6 @@ package com.allegro.dicomback.service;
 
 import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.entity.Patient;
-import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Series;
 import com.allegro.dicomback.entity.Study;
 import com.allegro.dicomback.exception.BaseException;
@@ -181,8 +180,8 @@ public class DicomService {
                 study.getTotalInstanceCount(),
                 study.getAllowedResearch() != null && study.getAllowedResearch() == 1,
                 study.getDelFlag() != null && study.getDelFlag() == 1,
-                patient.getPName(),
-                patient.getPBirth()
+                patient.getName(),
+                patient.getBirth()
         );
     }
 
