@@ -47,7 +47,7 @@ public class DicomService {
 
     // ======================================== 이영무 추가 ======================================================
 
-    public List<PatientDto> getPatients(String start, String end, String search) {
+    public List<PatientDto> getPatients(Long doctorKey, String start, String end, String search) {
         List<Patient> patientList;
         List<PatientDto> patientDtoList = new ArrayList<>();
         LocalDateTime startDay;
@@ -74,12 +74,12 @@ public class DicomService {
         // 검색어가 있을 때
         if(StringUtils.hasText(search)) {
             // 여기서는 시작일, 종료일, 검색어 3가지 모두를 가지고 검색한다.
-            patientList = patientRepository.findByNameContainsAndRecentStudyBetween(search, startDay, endDay);
+            patientList = patientRepository.findByDoctorKeyAndNameContainingAndRecentStudyBetween(doctorKey, search, startDay, endDay);
         }
         // 검색어가 없을 때
         else {
             // 여기서는 시작일과 종료일만 가지고 검색한다.
-            patientList = patientRepository.findByRecentStudyBetween(startDay, endDay);
+            patientList = patientRepository.findByDoctorKeyAndRecentStudyBetween(doctorKey, startDay, endDay);
         }
 
         for(Patient p : patientList) {
@@ -97,7 +97,7 @@ public class DicomService {
         return patientDtoList;
     }
 
-    public List<StudyDto> getStudies(Long patientKey, String start, String end, String search) {
+    public List<StudyDto> getStudies(Long doctorKey, Long patientKey, String start, String end, String search) {
         List<Study> studyList;
         LocalDateTime startDay;
         LocalDateTime endDay;
@@ -122,7 +122,7 @@ public class DicomService {
 
         // 검색어가 있으면 검색어를 포함하여 검색하는 쿼리를 날리고
         if (StringUtils.hasText(search)) {
-            studyList = studyRepository.findByPatient_KeyAndStudyDateTimeBetweenAndDescriptionContains(
+            studyList = studyRepository.findByPatient_KeyAndStudyDateTimeBetweenAndDescriptionContaining(
                     patientKey,
                     startDay,
                     endDay,
@@ -140,6 +140,10 @@ public class DicomService {
 
         if (studyList.isEmpty()) {
             return List.of();
+        }
+
+        if (!patientRepository.findByKey() {
+            throw new BaseException(ErrorCode.INVALID_TOKEN);
         }
 
         // 시리즈와 이미지의 개수를 구하기 위해 스터디 키를 가져온다.
@@ -176,6 +180,8 @@ public class DicomService {
                 })
                 .toList();
     }
+
+
 
 
 

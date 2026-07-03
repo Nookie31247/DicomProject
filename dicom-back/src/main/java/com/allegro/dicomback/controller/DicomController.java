@@ -1,5 +1,6 @@
 package com.allegro.dicomback.controller;
 
+import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.DicomRequestDto.*;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
 import com.allegro.dicomback.service.DicomService;
@@ -19,21 +20,26 @@ import java.util.List;
 @RequiredArgsConstructor //의존성 주입
 public class DicomController {
     private final DicomService dicomService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     //환자 목록 불러오기
     @GetMapping("/patients")
     public ResponseEntity<List<PatientDto>> getPatients(
+            @CookieValue(name = "token") String token,
             @RequestParam(required = false) String start,
             @RequestParam(required = false) String end,
             @RequestParam(required = false) String search
     ) {
-        return ResponseEntity.ok(dicomService.getPatients(start, end, search));
+        return ResponseEntity.ok(
+                dicomService.getPatients(jwtTokenProvider.getUserKey(token), start, end, search)
+        );
     }
 
     //스터디 목록 불러오기
     // 필터링 기능 추가하기
     @GetMapping("/studies")
     public ResponseEntity<List<StudyDto>> getStudies(
+            @CookieValue(name = "token") String token,
             @RequestParam(required = false) String start,
             @RequestParam(required = false) String end,
             @RequestParam String pid,
