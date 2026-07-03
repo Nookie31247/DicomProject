@@ -19,4 +19,7 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
 
     // DICOM 고유 UID로 단건 검사 조회
     Optional<Study> findByStudyInstanceUid(String studyInstanceUID);
+
+    // 검사(Study)와 연결된 PId(환자 고유 번호)를 기반으로 환자 정보 리스트(List<Study>) 조회.
+//    List<Study> findByPatient_PId(String pId);
 }
