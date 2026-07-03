@@ -1,14 +1,13 @@
 package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.config.JwtTokenProvider;
-import com.allegro.dicomback.dto.StudyAllocationDto;
+import com.allegro.dicomback.dto.PatientDto;
 import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.user.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.UserRepository;
 import com.allegro.dicomback.service.WorklistService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,39 +24,34 @@ public class WorklistController {
 
     private final WorklistService worklistService;
     private final UserRepository userRepository;
-    private final JwtTokenProvider jwtTokenProvider;
 
-    // 5. [신규 추가] 의사가 담당하지 않은 환자 검색 (이름 또는 ID 기준)
+    // 공통 UserKey 추출 로직
+    private Long getUserKey(String userId) {
+        return userRepository.findByUserId(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND))
+                .getUserKey();
+    }
+
+    // 의사가 담당 환자 목록 불러오기
+    @GetMapping("/patients")
+    public ResponseEntity<List<PatientDto>> getMyPatients(@AuthenticationPrincipal String userId) {
+        return ResponseEntity.ok(worklistService.getPatientsByDoctor(getUserKey(userId)));
+    }
+
+    // 의사가 담당하지 않은 환자 검색 (이름 또는 ID 기준)
     @GetMapping("/patients/search")
     public ResponseEntity<List<Patient>> searchUnassignedPatients(
             @AuthenticationPrincipal String userId,
             @RequestParam String keyword) {
-
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
-
-        // 1. 토큰에서 userKey 추출
-//        String token = request.getHeader("Authorization").substring(7);
-//        Long userKey = jwtTokenProvider.getUserKey(token);
-
-        // 2. 서비스 호출
-        List<Patient> result = worklistService.findUnassignedPatients(user.getUserKey(), keyword);
-
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(worklistService.findUnassignedPatients(getUserKey(userId), keyword));
     }
 
+    // 의사가 담당 환자를 등록
     @PostMapping("/patients/add")
     public ResponseEntity<String> addPatient(
             @AuthenticationPrincipal String userId,
             @RequestParam String pId) {
-
-        // 1. userId로 userKey 조회
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
-
-        // 2. 서비스 호출
-        worklistService.addPatientToWorklist(user.getUserKey(), pId);
-
+        worklistService.addPatientToWorklist(getUserKey(userId), pId);
         return ResponseEntity.ok("환자가 성공적으로 추가되었습니다.");
     }
 

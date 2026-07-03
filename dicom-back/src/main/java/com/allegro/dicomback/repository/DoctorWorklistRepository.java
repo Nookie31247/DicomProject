@@ -24,6 +24,9 @@ public interface DoctorWorklistRepository extends JpaRepository<DoctorWorklist, 
 //    // 의사와 환자는 매핑되어 있는데, 아직 검사가 할당되지 않은(null) 행이 있는지 확인
 //    boolean existsByDoctor_UserKeyAndPatient_PIdAndStudyIsNull(Long userKey, String pId);
 
+    // 의사의 UserKey를 통해 DoctorWorklist를 찾아 그 안의 Patient를 리스트로 반환
+    List<DoctorWorklist> findByDoctor_UserKey(Long userKey);
+
     // 특정 의사가 해당 환자를 담당하고 있는지 확인
     boolean existsByDoctor_UserKeyAndPatient_pId(Long userKey, String pId);
 }

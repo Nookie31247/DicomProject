@@ -1,5 +1,6 @@
 package com.allegro.dicomback.service;
 
+import com.allegro.dicomback.dto.PatientDto;
 import com.allegro.dicomback.dto.StudyAllocationDto;
 import com.allegro.dicomback.entity.*;
 import com.allegro.dicomback.entity.user.User;
@@ -22,6 +23,7 @@ public class WorklistService {
     private final PatientRepository patientRepository;
     private final StudyRepository studyRepository;
 
+    // 로그인한 의사에게 등록되지 않은 환자 리스트를 찾아 반환
     public List<Patient> findUnassignedPatients(Long userKey, String keyword) {
         // 1. 이름이나 ID로 환자 검색 (keyword를 pId 혹은 pName에 활용)
         // 여기서는 간단하게 이름 검색을 예시로 듭니다.
@@ -37,6 +39,7 @@ public class WorklistService {
                 .toList();
     }
 
+    // findUnassignedPatients()로 나온 환자를 의사가 추가하는 기능
     @Transactional
     public void addPatientToWorklist(Long userKey, String pId) {
         // 1. 이미 등록된 환자인지 확인 (중복 등록 방지)
@@ -56,6 +59,13 @@ public class WorklistService {
                     .study(null) // 초기에는 검사 없이 환자만 등록
                     .build());
         }
+    }
+
+    // 로그인한 의사가 담당하는 환자 리스트를 반환
+    public List<PatientDto> getPatientsByDoctor(Long userKey) {
+        return doctorWorklistRepository.findByDoctor_UserKey(userKey)
+                .stream().map(worklist -> PatientDto.fromEntity(worklist.getPatient()))
+                .toList();
     }
 
 
