@@ -5,44 +5,28 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "studies",
-        indexes = {
-                @Index(name = "idx_study_uid", columnList = "StudyInstanceUID", unique = true)
-        })
+@Table(name = "studies")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Study {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "key")
     private Long key;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "patient", nullable = false)
-    private Patient patient;
+    @JoinColumn(name = "patient_key", nullable = false)
+    private Patient patientKey;
 
-    @Column(name = "study_instance_uid", unique = true, length = 128)
-    private String studyInstanceUid;
-
-    @Column(name = "study_date_time")
-    private LocalDateTime studyDateTime;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @Column(name = "description")
     private String description;
 
-//    // --- 통계 정보 추가 ---
-//    @Column(name = "TotalSeriesCount")
-//    private Integer totalSeriesCount; // 전체 시리즈 개수
-//
-//    @Column(name = "TotalInstanceCount")
-//    private Integer totalInstanceCount; // 해당 시리즈 내의 이미지 개수
-
-    // 연구 데이터 사용 허가 여부(0: 금지, 1: 허용)
     @Builder.Default
     @Column(name = "allow_research", nullable = false)
     private Boolean allowResearch = false;

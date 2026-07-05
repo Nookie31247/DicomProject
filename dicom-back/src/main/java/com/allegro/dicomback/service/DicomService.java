@@ -122,28 +122,26 @@ public class DicomService {
 
         // 검색어가 있으면 검색어를 포함하여 검색하는 쿼리를 날리고
         if (StringUtils.hasText(search)) {
-            studyList = studyRepository.findByPatient_KeyAndStudyDateTimeBetweenAndDescriptionContaining(
+            studyList = studyRepository.findStudiesWithoutSearch(
+                    doctorKey,
+                    patientKey,
+                    startDay,
+                    endDay
+            );
+        }
+        // 검색어가 없으면 검색어를 포함하지 않는 쿼리를 날린다.
+        else {
+            studyList = studyRepository.findStudiesWithSearch(
+                    doctorKey,
                     patientKey,
                     startDay,
                     endDay,
                     search
             );
         }
-        // 검색어가 없으면 검색어를 포함하지 않는 쿼리를 날린다.
-        else {
-            studyList = studyRepository.findByPatient_KeyAndStudyDateTimeBetween(
-                    patientKey,
-                    startDay,
-                    endDay
-            );
-        }
 
         if (studyList.isEmpty()) {
             return List.of();
-        }
-
-        if (!patientRepository.findByKey() {
-            throw new BaseException(ErrorCode.INVALID_TOKEN);
         }
 
         // 시리즈와 이미지의 개수를 구하기 위해 스터디 키를 가져온다.
@@ -171,7 +169,7 @@ public class DicomService {
                     return new StudyDto(
                             study.getKey(),
                             study.getDescription(),
-                            study.getStudyDateTime(),
+                            study.getCreatedAt(),
                             seriesNum,
                             imagesNum,
                             study.getAllowResearch(),
@@ -181,7 +179,17 @@ public class DicomService {
                 .toList();
     }
 
-
+    public List<SeriesDto> getSeries(Long doctorKey, Long studyKey) {
+        List<Series> seriesList = seriesRepository.getSeries(doctorKey, studyKey);
+        List<SeriesDto> seriesDtoList = new ArrayList<>();
+        seriesList.forEach(s -> {
+           seriesDtoList.add(new SeriesDto(
+              s.getKey(),
+              s.getSeriesIndex(),
+              s.get
+           ));
+        });
+    }
 
 
 

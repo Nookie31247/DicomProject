@@ -47,8 +47,8 @@ public class Patient {
 
     // 담당의사 (외래키)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor",  nullable = false)
-    private User doctor;
+    @JoinColumn(name = "doctor_key",  nullable = false)
+    private User doctorKey;
 
     /// 환자 숨김 여부 설정(true: 숨김 설정, false: 숨김 해제)
     public void setHidden(boolean isHidden) {

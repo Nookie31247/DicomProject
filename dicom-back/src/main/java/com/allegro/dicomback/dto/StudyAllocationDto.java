@@ -21,7 +21,7 @@ public class StudyAllocationDto {
         return StudyAllocationDto.builder()
                 .studyKey(study.getKey())
                 .description(study.getDescription())
-                .studyDateTime(study.getStudyDateTime().toString())
+                .studyDateTime(study.getCreatedAt().toString())
                 .isAssigned(isAssigned)
                 .build();
     }

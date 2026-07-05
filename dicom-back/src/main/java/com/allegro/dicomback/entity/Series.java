@@ -3,11 +3,10 @@ package com.allegro.dicomback.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "series", indexes = {
-        @Index(name = "idx_series_uid", columnList = "SeriesInstanceUID", unique = true),
-        @Index(name = "idx_study_key", columnList = "StudyKey") // FK도 인덱스 필수
-})
+@Table(name = "series")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,14 +20,14 @@ public class Series {
     private Long key;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study", nullable = false)
-    private Study study;
+    @JoinColumn(name = "study_key", nullable = false)
+    private Study studyKey;
 
-    @Column(name = "series_instance_uid", unique = true, length = 128)
-    private String seriesInstanceUid;
+    @Column(name = "series_index")
+    private Integer seriesIndex;
 
-    @Column(name = "series_num")
-    private Integer seriesNum;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @Column(name = "body_part", length = 64)
     private String bodyPart;
@@ -40,8 +39,8 @@ public class Series {
     @Column(name = "orthanc_id")
     private String orthancId;
 
-    @Column(name = "total_instance_conut")
-    private Integer totalInstanceCount; // 해당 시리즈 내의 이미지 개수
+    @Column(name = "total_images_conut")
+    private Integer totalImagesCount; // 해당 시리즈 내의 이미지 개수
 
     // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default

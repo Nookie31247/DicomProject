@@ -25,4 +25,18 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     group by s.study.key
     """)
     List<SeriesAndImagesCount> getSeriesAndImagesCount(@Param("studyKeys") List<Long> studyKeys);
+
+    @Query(
+    """
+    select se
+    from Series se
+    join se.study st
+    join st.patient p
+    where p.doctor.key = :doctorKey
+        and st.key = :studyKey
+    """)
+    List<Series> getSeries(
+            @Param("doctorKey") Long doctorKey,
+            @Param("studyKey") Long studyKey
+    );
 }
