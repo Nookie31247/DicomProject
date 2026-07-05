@@ -12,12 +12,13 @@ import java.util.List;
 public interface StudyRepository extends JpaRepository<Study, Long> {
     // 검색어가 없을 때의 조회
     @Query("""
-        select s
+
+            select s
         from Study s
         join s.patientKey p
-        where p.doctor.key = :doctorKey
+        where p.doctorKey.key = :doctorKey
           and p.key = :patientKey
-          and s.studyDateTime between :start and :end
+          and s.createdAt between :start and :end
         """)
     List<Study> findStudiesWithoutSearch(
             @Param("doctorKey") Long doctorKey,
@@ -32,9 +33,9 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
         select s
         from Study s
         join s.patientKey p
-        where p.doctor.key = :doctorKey
+        where p.doctorKey.key = :doctorKey
           and p.key = :patientKey
-          and s.studyDateTime between :start and :end
+          and s.createdAt between :start and :end
           and lower(coalesce(s.description, '')) like lower(concat('%', :search, '%'))
         """)
     List<Study> findStudiesWithSearch(
@@ -45,5 +46,6 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             @Param("search") String search
     );
 
-    Long patient(Patient patient);
+    // 스터디 키로 스더티를 찾고, 의사 키로 검증
+    Study findByKeyAndPatientKey_DoctorKey_Key(Long studyKey, Long doctorKey);
 }

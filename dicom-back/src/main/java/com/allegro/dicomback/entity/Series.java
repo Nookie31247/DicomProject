@@ -23,8 +23,8 @@ public class Series {
     @JoinColumn(name = "study_key", nullable = false)
     private Study studyKey;
 
-    @Column(name = "series_index")
-    private Integer seriesIndex;
+    @Column(name = "series_num")
+    private Integer seriesNum;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

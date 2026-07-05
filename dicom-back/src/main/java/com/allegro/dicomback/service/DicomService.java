@@ -74,12 +74,12 @@ public class DicomService {
         // 검색어가 있을 때
         if(StringUtils.hasText(search)) {
             // 여기서는 시작일, 종료일, 검색어 3가지 모두를 가지고 검색한다.
-            patientList = patientRepository.findByDoctorKeyAndNameContainingAndRecentStudyBetween(doctorKey, search, startDay, endDay);
+            patientList = patientRepository.findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(doctorKey, search, startDay, endDay);
         }
         // 검색어가 없을 때
         else {
             // 여기서는 시작일과 종료일만 가지고 검색한다.
-            patientList = patientRepository.findByDoctorKeyAndRecentStudyBetween(doctorKey, startDay, endDay);
+            patientList = patientRepository.findByDoctorKey_KeyAndRecentStudyBetween(doctorKey, startDay, endDay);
         }
 
         for(Patient p : patientList) {
@@ -182,13 +182,26 @@ public class DicomService {
     public List<SeriesDto> getSeries(Long doctorKey, Long studyKey) {
         List<Series> seriesList = seriesRepository.getSeries(doctorKey, studyKey);
         List<SeriesDto> seriesDtoList = new ArrayList<>();
-        seriesList.forEach(s -> {
-           seriesDtoList.add(new SeriesDto(
-              s.getKey(),
-              s.getSeriesIndex(),
-              s.get
-           ));
-        });
+        seriesList.forEach(s -> seriesDtoList.add(new SeriesDto(
+                        s.getKey(),
+                        s.getSeriesNum(),
+                        s.getCreatedAt(),
+                        s.getSeriesNum(),
+                        s.getBodyPart(),
+                        s.getHiddenFlag()
+                ))
+        );
+
+        return seriesDtoList;
+
+    }
+
+    public void setAnonymization(Long doctorKey, Long studyKey) {
+        // 익명화 DB 만들면 여기에 관련 로직 추가할 것
+    }
+
+    public void setHidePatients(Long doctorKey, Long patientKey) {
+
     }
 
 

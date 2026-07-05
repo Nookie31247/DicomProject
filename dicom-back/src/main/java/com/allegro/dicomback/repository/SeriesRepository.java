@@ -17,12 +17,12 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     @Query(
     """
     select
-        s.study.key as studyKey,
+        s.studyKey.key as studyKey,
         count(s) as seriesNum,
-        coalesce(sum(s.totalInstanceCount), 0) as imagesNum
+        coalesce(sum(s.totalImagesCount), 0) as imagesNum
     from Series s
-    where s.study.key in :studyKeys
-    group by s.study.key
+    where s.studyKey.key in :studyKeys
+    group by s.studyKey.key
     """)
     List<SeriesAndImagesCount> getSeriesAndImagesCount(@Param("studyKeys") List<Long> studyKeys);
 
@@ -30,9 +30,9 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     """
     select se
     from Series se
-    join se.study st
-    join st.patient p
-    where p.doctor.key = :doctorKey
+    join se.studyKey st
+    join st.patientKey p
+    where p.doctorKey.key = :doctorKey
         and st.key = :studyKey
     """)
     List<Series> getSeries(

@@ -8,7 +8,8 @@ import java.util.List;
 public interface PatientRepository extends JpaRepository<Patient, String> {
 
     //최근 검사일 기준 조회
-    List<Patient> findByDoctorKeyAndRecentStudyBetween(Long doctorKey, LocalDateTime start, LocalDateTime end);
+    List<Patient> findByDoctorKey_KeyAndRecentStudyBetween(Long doctorKey, LocalDateTime start, LocalDateTime end);
 
-    List<Patient> findByDoctorKeyAndNameContainingAndRecentStudyBetween(Long doctorKey, String name, LocalDateTime start, LocalDateTime end);
+    List<Patient> findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(Long doctorKey, String name, LocalDateTime start, LocalDateTime end);
 }
+
