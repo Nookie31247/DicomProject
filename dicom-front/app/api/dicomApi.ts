@@ -47,7 +47,7 @@ const dicomApi = {
   },
 
   setStudyHide(list: HiddenStudyList[]) {
-    return apiFetch("/api/dicom/study/hide", {
+    return apiFetch("/api/dicom/studies/hide", {
       method: 'POST',
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(list),
@@ -64,7 +64,7 @@ const dicomApi = {
 }
 
 export interface HiddenPatientList {
-   "patient-id" : number;
+   "patient-key" : number;
    "hidden" : boolean;
 }
 
