@@ -1,65 +1,125 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { patients, studies, series as allSeries } from "@/mock-data";
+// import { patients, studies, series as allSeries } from "@/mock-data";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
+import { apiFetch } from "@/app/api/apiFetch";
+
+type StudyDto = {
+    "study-key": number;
+    description: string;
+    datetime: string;
+    "series-num": number;
+    // "images-num": number;
+    "allow-research": boolean;
+    hidden: boolean;
+    "patient-name": string;
+    "patient-birth": string;
+};
+
+type SeriesDto = {
+    "series-key": number;
+    "series-index": number;
+    datetime: string | null;
+    "series-num": number;
+    bodypart: string;
+    // "images-num": number;
+    SeriesDescription: string;
+    hidden: boolean;
+};
 
 export default function ViewerPage() {
     const params = useParams();
-    const studyIdFromUrl = params?.id as string;
+    const studyKey = Number(params?.id);
 
-    const currentStudy = studies.find((s) => s["study-key"] === studyIdFromUrl) ?? null;
-    const currentPatient = patients.find((p) => p["patient-id"] === currentStudy?.["patient-id"]) || patients[0];
+    const [study, setStudy] = useState<StudyDto | null>(null);
+    const [seriesList, setSeriesList] = useState<SeriesDto[]>([]);
+    const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
+    const [dicomUrls, setDicomUrls] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const seriesList = useMemo(() => {
-        if (!currentStudy) return [];
-        const filteredSeries = allSeries.filter((s) => s["study-key"] === currentStudy["study-key"]);
-        
-        if (filteredSeries.length > 0) {
-            return filteredSeries.map((s) => ({
-                id: s["series-key"],
-                seriesNumber: s["series-index"],
-                description: `${currentStudy.modality} Scan`,
-                images: s["images-num"],
-                date: s.datetime.replace("T", " ").split("Z")[0],
-                bodyPart: s.bodypart,
-            }));
-        }
-        return [];
-    }, [currentStudy]);
-
-    const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
-
-    // 초기 선택 로직
+    // 1. Study 상세 + Series 목록 로드
     useEffect(() => {
-        if (seriesList.length > 0 && !selectedSeriesId) {
-            setSelectedSeriesId(seriesList[0].id);
+        if (!studyKey || Number.isNaN(studyKey)) {
+            setError(`잘못된 접근입니다. (studyKey: ${params?.id})`);
+            setLoading(false);
+            return;
         }
-    }, [seriesList, selectedSeriesId]);
 
-    const handleSelectSeries = (id: string) => {
+        async function loadStudyAndSeries() {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const [studyData, seriesData]: [StudyDto, SeriesDto[]] = await Promise.all([
+                    apiFetch(`/api/dicom/studies/${studyKey}`, { credentials: "include" }),
+                    apiFetch(`/api/dicom/studies/${studyKey}/series`, { credentials: "include" }),
+                ]);
+
+                setStudy(studyData);
+                setSeriesList(seriesData);
+                setSelectedSeriesId(seriesData.length > 0 ? seriesData[0]["series-key"] : null);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : "스터디 정보를 불러오지 못했습니다.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadStudyAndSeries();
+    }, [studyKey]);
+
+    // 선택된 시리즈의 인스턴스 목록 -> 뷰어용 URL 배열 구성
+    useEffect(() => {
+        if (!selectedSeriesId) {
+            setDicomUrls([]);
+            return;
+        }
+
+        async function loadInstances() {
+            try {
+                const instanceIds: string[] = await apiFetch(
+                    `/api/dicom/series/${selectedSeriesId}/instances`,
+                    { credentials: "include" }
+                );
+
+                // DicomViewer가 fetch할 raw DICOM 스트리밍 URL 목록.
+                // apiFetch를 거치지 않고 상대경로 문자열만 조립 -> next.config.ts의 rewrites가
+                // /api/* 요청을 자동으로 백엔드(8080)로 프록시해줌.
+                const urls = instanceIds.map(
+                    (id) => `/api/dicom/series/${selectedSeriesId}/instances/${id}/file`
+                );
+                setDicomUrls(urls);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : "이미지 목록을 불러오지 못했습니다.");
+            }
+        }
+
+        loadInstances();
+    }, [selectedSeriesId]);
+
+    const handleSelectSeries = (id: number) => {
         setSelectedSeriesId(id);
     };
 
-    // ── Tailwind 스타일 변수 ──
-    const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
-    const modalityColors: Record<string, string> = {
-        ct: "bg-[#2563eb]",
-        mr: "bg-[#7c3aed]",
-        cr: "bg-[#0e7490]",
-        us: "bg-[#c2410c]",
-        pt: "bg-[#be185d]",
-    };
+    if (loading) {
+        return (
+            <div className="page flex h-screen items-center justify-center">
+                <p className="text-slate-500 text-sm">불러오는 중...</p>
+            </div>
+        );
+    }
 
-    // 샘플 1번부터 4번 파일 목록 (실제 연동 시에는 API에서 받아온 해당 시리즈의 인스턴스 URL 배열로 대체)
-    const dicomUrls = [
-      "/dicom/CT_brain_001.dcm",
-      "/dicom/CT_brain_002.dcm",
-      "/dicom/CT_brain_003.dcm",
-      "/dicom/CT_brain_004.dcm"
-    ];
+    if (error) {
+        return (
+            <div className="page flex h-screen items-center justify-center">
+                <p className="text-red-500 text-sm">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="page flex h-screen flex-col overflow-hidden">
@@ -78,37 +138,44 @@ export default function ViewerPage() {
                                 </Link>
                                 <h2 className="m-0 font-bold text-xl text-ink tracking-[-0.01em]">시리즈 목록</h2>
                             </div>
-                            {currentStudy && (
+                            {study && (
                                 <div className="text-base font-semibold text-slate-700 mt-1 mb-0.5 flex items-center gap-2">
-                                    <span className={`${modalityBadgeClass} ${modalityColors[currentStudy.modality.toLowerCase()] || "bg-slate"}`}>{currentStudy.modality}</span>
-                                    <span className="text-sm text-slate-500 font-normal">| {currentStudy.datetime.replace("T", " ").split("Z")[0]}</span>
+                                    <span className="text-sm text-slate-500 font-normal">
+                                        {study.description || "N/A"} · {study.datetime ? study.datetime.replace("T", " ").split("Z")[0] : "N/A"}
+                                    </span>
                                 </div>
                             )}
-                            <span className="text-left font-medium text-sm text-ink-soft leading-[1.4]">{currentPatient["patient-name"]} · {currentPatient["patient-birth"]}</span>
+                            {study && (
+                                <span className="text-left font-medium text-sm text-ink-soft leading-[1.4]">
+                                    {study["patient-name"] || "N/A"} · {study["patient-birth"] ? study["patient-birth"].split("T")[0] : "N/A"}
+                                </span>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                         <div className="gap-2.5 shrink-0 tracking-[0.02em] bg-canvas border-b border-line max-[560px]:hidden flex items-center px-4 py-3 text-sm font-bold text-slate-500">
                             <span className="w-16">시리즈</span>
+                            <span className="w-16">검사 설명</span>
                             <span className="flex-1 text-center">부위</span>
-                            <span className="w-16 text-right">영상 수</span>
+                            {/*<span className="w-16 text-right">영상 수</span>*/}
                         </div>
 
                         <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-1.5">
                             {seriesList.length > 0 ? (
                                 seriesList.map((ser) => (
-                                    <li key={ser.id}>
+                                    <li key={ser["series-key"]}>
                                         <button
                                             type="button"
-                                            onClick={() => handleSelectSeries(ser.id)}
+                                            onClick={() => handleSelectSeries(ser["series-key"])}
                                             className={`study-row gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] rounded-xl font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 flex items-center px-4 py-3 ${
-                                                ser.id === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent hover:bg-canvas"
+                                                ser["series-key"] === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent hover:bg-canvas"
                                             }`}
                                         >
-                                            <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
-                                            <span className="flex-1 text-center pl-2 truncate">{ser.bodyPart}</span>
-                                            <span className="w-16 text-right ">{ser.images}장</span>
+                                            <span className="w-16 font-mono text-[#14b876] font-bold">#{ser["series-num"] ?? "N/A"}</span>
+                                            <span className="w-16 truncate">{ser.SeriesDescription || "N/A"}</span>
+                                            <span className="flex-1 text-center pl-2 truncate">{ser.bodypart || "N/A"}</span>
+                                            {/*<span className="w-16 text-right">{ser["images-num"]}장</span>*/}
                                         </button>
                                     </li>
                                 ))
@@ -124,10 +191,11 @@ export default function ViewerPage() {
                 {/* 우측 메인 뷰어 패널 */}
                 <section className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] relative h-full p-4">
                     <div className="main-viewer-zone flex flex-1 justify-center items-center h-full w-full relative min-h-0">
-                        {/* selectedSeriesId에 따라 다른 URL 배열을 넘겨줄 수 있습니다. 현재는 데모용 고정 배열을 넘깁니다. */}
-                        <DicomViewer dicomUrls={dicomUrls}>
-                            <button type="button" className="btn btn-small shadow-md">AI 판독</button>
-                        </DicomViewer>
+                        {dicomUrls.length > 0 ? (
+                            <DicomViewer dicomUrls={dicomUrls} />
+                        ) : (
+                            <div className="text-slate-400 text-sm">시리즈를 선택하면 이미지가 표시됩니다.</div>
+                        )}
                     </div>
                 </section>
             </section>

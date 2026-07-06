@@ -2,7 +2,7 @@
 
 import {useRouter} from "next/navigation";
 import {type SubmitEvent, useState} from "react";
-import {deleteUser} from "@/app/api/authApi";
+import {deleteUser, logout} from "@/app/api/authApi";
 
 const pwInput = "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
 
@@ -30,6 +30,8 @@ export default function Withdraw() {
     await deleteUser(withdrawPassword);
     setIsWithdrawModalOpen(false);
     alert("회원 탈퇴가 처리되었습니다.");
+    await logout();
+    localStorage.removeItem("username");
     router.push("/");
   }
 
