@@ -3,6 +3,7 @@ package com.allegro.dicomback.repository;
 import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Study;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -46,6 +47,21 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             @Param("search") String search
     );
 
-    // 스터디 키로 스더티를 찾고, 의사 키로 검증
-    Study findByKeyAndPatientKey_DoctorKey_Key(Long studyKey, Long doctorKey);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+    """
+        update Study s
+        set s.hiddenFlag = :isHidden
+        where s.key in :studyKeys
+        and exists(
+            select 1 from Patient p
+            where p = s.patientKey
+            and p.doctorKey.key = :doctorKey
+        )
+    """)
+    int changeHiddenFlag(
+            @Param("doctorKey") Long doctorKey,
+            @Param("studyKeys") List<Long> studyKeys,
+            @Param("isHidden") boolean isHidden
+    );
 }

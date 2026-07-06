@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
+import com.allegro.dicomback.dto.DicomRequestDto.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -122,21 +123,21 @@ public class DicomService {
 
         // 검색어가 있으면 검색어를 포함하여 검색하는 쿼리를 날리고
         if (StringUtils.hasText(search)) {
-            studyList = studyRepository.findStudiesWithoutSearch(
-                    doctorKey,
-                    patientKey,
-                    startDay,
-                    endDay
-            );
-        }
-        // 검색어가 없으면 검색어를 포함하지 않는 쿼리를 날린다.
-        else {
             studyList = studyRepository.findStudiesWithSearch(
                     doctorKey,
                     patientKey,
                     startDay,
                     endDay,
                     search
+            );
+        }
+        // 검색어가 없으면 검색어를 포함하지 않는 쿼리를 날린다.
+        else {
+            studyList = studyRepository.findStudiesWithoutSearch(
+                    doctorKey,
+                    patientKey,
+                    startDay,
+                    endDay
             );
         }
 
@@ -200,8 +201,56 @@ public class DicomService {
         // 익명화 DB 만들면 여기에 관련 로직 추가할 것
     }
 
-    public void setHidePatients(Long doctorKey, Long patientKey) {
+    // 정보를 수정하는 메서드에는 @Transactional(readOnly = true)를 사용할 수 없다.
+    @Transactional
+    public void setHidePatients(Long doctorKey, List<PatientHideDto> requests) {
+        List<Long> hiddenPatients = new ArrayList<>();
+        List<Long> showPatients = new ArrayList<>();
+        requests.forEach(r -> {
+            if(r.hidden())
+                hiddenPatients.add(r.patientKey());
+            else
+                showPatients.add(r.patientKey());
+        });
 
+        if(!hiddenPatients.isEmpty())
+            patientRepository.changeHiddenFlag(doctorKey, hiddenPatients, true);
+        if(!showPatients.isEmpty())
+            patientRepository.changeHiddenFlag(doctorKey, showPatients, false);
+    }
+
+    @Transactional
+    public void setHideStudies(Long doctorKey, List<StudyHideDto> requests) {
+        List<Long> hiddenStudies = new ArrayList<>();
+        List<Long> showStudies = new ArrayList<>();
+        requests.forEach(r -> {
+            if(r.hidden())
+                hiddenStudies.add(r.studyKey());
+            else
+                showStudies.add(r.studyKey());
+        });
+
+        if(!hiddenStudies.isEmpty())
+            studyRepository.changeHiddenFlag(doctorKey, hiddenStudies, true);
+        if(!showStudies.isEmpty())
+            studyRepository.changeHiddenFlag(doctorKey, showStudies, false);
+    }
+
+    @Transactional
+    public void setHideSeries(Long doctorKey, List<SeriesHideDto> requests) {
+        List<Long> hiddenSeries = new ArrayList<>();
+        List<Long> showSeries = new ArrayList<>();
+        requests.forEach(r -> {
+            if(r.hidden())
+                hiddenSeries.add(r.seriesKey());
+            else
+                showSeries.add(r.seriesKey());
+        });
+
+        if(!hiddenSeries.isEmpty())
+            seriesRepository.changeHiddenFlag(doctorKey, hiddenSeries, true);
+        if(!showSeries.isEmpty())
+            seriesRepository.changeHiddenFlag(doctorKey, showSeries, false);
     }
 
 

@@ -46,8 +46,8 @@
 //
 //            log.info("조회된 StudyInstanceUID: {}", dto.getMainDicomTags().getStudyInstanceUID());
 //
-////            String patientId = dto.getPatientMainDicomTags().getPatientID();
-////            Patient patient = patientRepository.findById(patientId)
+////            String patientKey = dto.getPatientMainDicomTags().getPatientID();
+////            Patient patient = patientRepository.findById(patientKey)
 ////                    .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
 //
 //
@@ -56,10 +56,10 @@
 //                return;
 //            }
 //
-//            String patientId = dto.getPatientMainDicomTags().getPatientID();
+//            String patientKey = dto.getPatientMainDicomTags().getPatientID();
 //            // 필요한 초기값을 명시적으로 지정해줌
 //            // 신규 생성 시에만 실행되는 분기
-//            Patient patient = patientRepository.findById(patientId)
+//            Patient patient = patientRepository.findById(patientKey)
 //                    .orElseThrow(() -> new RuntimeException("환자 정보를 찾을 수 없습니다."));
 //
 //            // 1. Study Upsert

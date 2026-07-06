@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DicomRequestDto {
     //환자 목록 숨기기/보이기 설정
     public record PatientHideDto(
-            @JsonProperty("patient-id") String patientId,
+            @JsonProperty("patient-id") Long patientKey,
             @JsonProperty("hidden") boolean hidden
     ) {}
 

@@ -16,7 +16,7 @@ public class Series {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "key")
+    @Column(name = "id")
     private Long key;
 
     @ManyToOne(fetch = FetchType.LAZY)

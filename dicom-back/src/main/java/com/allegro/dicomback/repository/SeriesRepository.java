@@ -2,6 +2,7 @@ package com.allegro.dicomback.repository;
 
 import com.allegro.dicomback.entity.Series;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -38,5 +39,25 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     List<Series> getSeries(
             @Param("doctorKey") Long doctorKey,
             @Param("studyKey") Long studyKey
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+    """
+        update Series se
+        set se.hiddenFlag = :isHidden
+        where se.key in :seriesKeys
+        and exists (
+            select 1
+            from Study st
+            where st = se.studyKey
+            and st.patientKey.doctorKey.key = :doctorKey
+        )
+    """
+    )
+    int changeHiddenFlag(
+            @Param("doctorKey") Long doctorKey,
+            @Param("seriesKeys") List<Long> seriesKeys,
+            @Param("isHidden") boolean isHidden
     );
 }

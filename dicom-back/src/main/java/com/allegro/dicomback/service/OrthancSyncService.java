@@ -88,10 +88,10 @@
 //                // Orthanc가 파일을 바로 뱉어내는 API URL을 저장합니다.
 ////              String orthancDownloadUrl = ORTHANC_URL + "/instances/" + orthancId + "/archive";
 //
-//                String patientId = tags.get("PatientID");
-//                Patient patient = patientRepository.findById(patientId).orElseGet(() -> {
+//                String patientKey = tags.get("PatientID");
+//                Patient patient = patientRepository.findById(patientKey).orElseGet(() -> {
 //                    Patient p = Patient.builder()
-//                            .pId(patientId)
+//                            .pId(patientKey)
 //                            .pName(tags.get("PatientName"))
 //                            .pSex(tags.get("PatientSex"))
 //                            .build();
