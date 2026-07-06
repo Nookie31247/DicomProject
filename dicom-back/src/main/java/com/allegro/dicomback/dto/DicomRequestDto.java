@@ -21,19 +21,4 @@ public class DicomRequestDto {
             @JsonProperty("series-key") Long seriesKey,
             @JsonProperty("hidden") boolean hidden
     ) {}
-
-//    //스터디 다운로드 DTO 필요없음
-//    public record StudyDownloadDto(
-//            @JsonProperty("study-key") String studyKey
-//    ) {}
-//
-//    //시리즈 다운로드
-//    public record SeriesDownloadDto(
-//            @JsonProperty("series-key") String seriesKey
-//    ) {}
-//
-//    //이미지 다운로드
-//    public record ImageDownloadDto(
-//            @JsonProperty("image-key") String imageKey
-//    ) {}
 }
