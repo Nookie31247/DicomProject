@@ -18,7 +18,7 @@ import java.util.Arrays;
 @Component
 public class Preprocessor {
     // originalRows/originalCols:  640x640 모델 좌표를 원본 이미지 좌표로 되돌릴 때 필요
-    public record Tensor(float[] data, long[] shape, int originalRows, int originalCols) {
+    public record Tensor(float[] data, long[] shape, int originalRows, int originalCols, float scale, int padX, int padY) {
     }
 
     public Tensor preprocess(Path dicomPath, int size) throws Exception {
@@ -62,12 +62,12 @@ public class Preprocessor {
                                 double slope, double intercept, boolean signed,
                                 byte[] pixelBytes, int size) {
         // 프론트(JS 타입드 배열)와 DICOM 둘 다 기본이 little-endian이라 별도 변환 없이 그대로 읽으면 된다.
-        ShortBuffer sb = ByteBuffer.wrap(pixelBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
-
-        PixelSampler sampler = (x, y) -> {
-            short raw = sb.get(y * cols + x);
-            return signed ? raw : (raw & 0xFFFF);
-        };
+//        ShortBuffer sb = ByteBuffer.wrap(pixelBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
+//        PixelSampler sampler = (x, y) -> {
+//            short raw = sb.get(y * cols + x);
+//            return signed ? raw : (raw & 0xFFFF);
+//        };
+        PixelSampler sampler = buildSampler(pixelBytes, rows, cols, signed);
 
         double wc, ww;
         if (windowCenter != null && windowWidth != null) {
@@ -127,34 +127,49 @@ public class Preprocessor {
     // ③ ONNX 요구 규격에 맞게 Resize(Nearest Neighbor) 및 3채널(RGB) 복제
     // 목표: [1(배치), 3(채널), size(640), size(640)]
     private Tensor buildTensor(float[] windowed, int rows, int cols, int size) {
+        float scale= (float) Math.min((double) size/ rows,  (double) size / cols);
+        int scaledRows = Math.round(rows * scale);
+        int scaledCols = Math.round(cols * scale);
+
+        //가운데 정렬
+        int padY = (size - scaledRows) / 2;
+        int padX = (size - scaledCols) / 2;
+
         float[] resizedAndRGB = new float[3 * size * size];
+        float padValue = 114f /255f;  //Ultralytics 기본 letterbox 패딩 색(회색)과 동일하게 맞춤
+        Arrays.fill(resizedAndRGB, padValue);
 
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                // 원본 DICOM 크기에서 현재 (x, y)에 해당하는 픽셀 위치 매핑 (비율 계산)
-                int srcY = (int) (y * (double) rows / size);
-                int srcX = (int) (x * (double) cols / size);
+        int channelOffset = size * size;
 
-                // 원본 배열 범위를 넘지 않도록 방어 코드
-                srcY = Math.min(srcY, rows - 1);
-                srcX = Math.min(srcX, cols - 1);
+        for (int y = 0; y < scaledRows; y++) {
+            for (int x = 0; x < scaledCols; x++) {
+                int srcY= Math.min((int) (y/scale), rows-1);
+                int srcX= Math.min((int) (x/scale), cols-1);
 
-                // 윈도잉된 흑백 픽셀 값 하나 가져오기
                 float pixelValue = windowed[srcY * cols + srcX];
+                int dstX= x+padX;
+                int dstY= y+padY;
 
-                // NCHW 포맷으로 저장 (메모리에 RRR... GGG... BBB... 순서로 적재)
-                int channelOffset = size * size;
-
-                // R 채널 (인덱스 0)
-                resizedAndRGB[0 * channelOffset + (y * size) + x] = pixelValue;
-                // G 채널 (인덱스 1)
-                resizedAndRGB[1 * channelOffset + (y * size) + x] = pixelValue;
-                // B 채널 (인덱스 2)
-                resizedAndRGB[2 * channelOffset + (y * size) + x] = pixelValue;
+                resizedAndRGB[0 * channelOffset + dstY * size + dstX] = pixelValue;
+                resizedAndRGB[1 * channelOffset + dstY * size + dstX] = pixelValue;
+                resizedAndRGB[2 * channelOffset + dstY * size + dstX] = pixelValue;
             }
         }
 
         // Tensor Shape를 [1, 3, 640, 640]으로 명시하고, 원본 크기도 같이 반환
-        return new Tensor(resizedAndRGB, new long[]{1, 3, size, size}, rows, cols);
+        return new Tensor(resizedAndRGB, new long[]{1, 3, size, size}, rows, cols,scale,padX,padY);
+    }
+    private PixelSampler buildSampler(byte[] pixelBytes, int rows, int cols, boolean signed) {
+        int numPixels = rows * cols;
+        if (pixelBytes.length == numPixels) {
+            // 8bit (CR)
+            return (x, y) -> pixelBytes[y * cols + x] & 0xFF;
+        } else {
+            ShortBuffer sb = ByteBuffer.wrap(pixelBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
+            return (x, y) -> {
+                short raw = sb.get(y * cols + x);
+                return signed ? raw : (raw & 0xFFFF);
+            };
+        }
     }
 }

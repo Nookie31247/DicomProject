@@ -19,8 +19,11 @@ public class InferenceService {
 
     // YOLOv8/11 표준 입력 크기는 640x640
     private static final int YOLO_INPUT_SIZE = 640;
-    // AI가 CONFIDENCE_THRESHOLD의 수치만큼 확신할 때만 박스로 인정
-    private static final float CONFIDENCE_THRESHOLD = 0.1f;
+    // 모델마다 threshold가 달라서 AiModelRegistry.ModelRule이 값을 들고 다니게 바꿈.
+    // AiModelRegistry를 안 거치는 레거시 경로 전용 기본값
+    // 레거시 경로(/infer, /visualize)만 이 기본값을 그대로 씀.
+    // 디버그용 레거시 엔드포인트에서만 적용되는 별개의 기본값
+    private static final float DEFAULT_CONFIDENCE_THRESHOLD = 0.25f;
     // NMS: 두 박스가 이 비율 이상 겹치면 같은 대상으로 보고 낮은 확률 쪽을 제거
     private static final float NMS_IOU_THRESHOLD = 0.45f;
 
@@ -31,16 +34,17 @@ public class InferenceService {
     public record BoundingBox(float x_min, float y_min, float x_max, float y_max, float confidence) {}
 
     //  로컬 파일 경로로 추론, 640x640 좌표 그대로 반환 (/api/ai/infer, /api/ai/visualize 용)
+    // inferAndRescale()을 태워서 여기서 바로 원본 좌표로 반환
     public List<BoundingBox> infer(Path dicomPath, Path modelPath) throws Exception {
         var t = preprocessor.preprocess(dicomPath, YOLO_INPUT_SIZE);
-        return runModelAndDecode(t, modelPath);
+        return inferAndRescale(t, modelPath, DEFAULT_CONFIDENCE_THRESHOLD);
     }
 
     // 뷰어 연동용: Orthanc에서 받은 byte[]로 추론하고, 결과를 640 좌표가 아니라 원본 DICOM 이미지 픽셀 좌표로 변환해서 반환한다. 프론트는 이 좌표를 그대를 cornerstone.pixelToCanvas()에 넘긴다.
     // 압축 DICOM을 서버가 다시 디코딩해야 하므로 dcm4che-imageio-opencv가 필요함
     public List<BoundingBox> inferOnOriginalImage(byte[] dicomBytes, Path modelPath) throws Exception {
         var t = preprocessor.preprocess(dicomBytes, YOLO_INPUT_SIZE);
-        return inferAndRescale(t, modelPath);
+        return inferAndRescale(t, modelPath, DEFAULT_CONFIDENCE_THRESHOLD);
     }
 
     // 뷰어 연동용현재 사용: cornerstone가 이미 압축을 풀어놓은 픽셀 배열을 그대로 받아서 추론
@@ -48,26 +52,23 @@ public class InferenceService {
     // windowCenter/windowWidth는 null이면 preprocessRaw가 백분위수 기준으로 계산한다
     public List<BoundingBox> inferOnRawPixels(int rows, int cols, Double windowCenter, Double windowWidth,
                                               double slope, double intercept, boolean signed,
-                                              byte[] pixelBytes, Path modelPath) throws Exception {
+                                              byte[] pixelBytes, Path modelPath, float confidenceThreshold) throws Exception {
         var t = preprocessor.preprocessRaw(rows, cols, windowCenter, windowWidth, slope, intercept, signed,
                 pixelBytes, YOLO_INPUT_SIZE);
-        return inferAndRescale(t, modelPath);
+        return inferAndRescale(t, modelPath, confidenceThreshold);
     }
 
-    // 640x640 모델 좌표 결과를 원본 이미지 픽셀 좌표로 스케일 변환 (두 추론 경로가 공용으로 사용)
-    private List<BoundingBox> inferAndRescale(Preprocessor.Tensor t, Path modelPath) throws Exception {
-        List<BoundingBox> boxesIn640Space = runModelAndDecode(t, modelPath);
-
-        float scaleX = (float) t.originalCols() / YOLO_INPUT_SIZE;
-        float scaleY = (float) t.originalRows() / YOLO_INPUT_SIZE;
+    // 640x640 모델 좌표 결과를 원본 이미지 픽셀 좌표로 되돌린다 (letterbox 패딩/스케일 역산)
+    private List<BoundingBox> inferAndRescale(Preprocessor.Tensor t, Path modelPath, float confidenceThreshold) throws Exception {
+        List<BoundingBox> boxesIn640Space = runModelAndDecode(t, modelPath, confidenceThreshold);
 
         List<BoundingBox> rescaled = new ArrayList<>();
         for (BoundingBox b : boxesIn640Space) {
             rescaled.add(new BoundingBox(
-                    b.x_min() * scaleX,
-                    b.y_min() * scaleY,
-                    b.x_max() * scaleX,
-                    b.y_max() * scaleY,
+                    (b.x_min() - t.padX()) / t.scale(),
+                    (b.y_min() - t.padY()) / t.scale(),
+                    (b.x_max() - t.padX()) / t.scale(),
+                    (b.y_max() - t.padY()) / t.scale(),
                     b.confidence()
             ));
         }
@@ -75,7 +76,7 @@ public class InferenceService {
     }
 
     // 모델 로드 + 추론 + confidence 필터링 + NMS까지 처리하는 공통 로직
-    private List<BoundingBox> runModelAndDecode(Preprocessor.Tensor t, Path modelPath) throws Exception {
+    private List<BoundingBox> runModelAndDecode(Preprocessor.Tensor t, Path modelPath, float confidenceThreshold) throws Exception {
         List<BoundingBox> rawBoxes = new ArrayList<>();
 
         try (var env = OrtEnvironment.getEnvironment();
@@ -103,7 +104,7 @@ public class InferenceService {
                         }
                     }
 
-                    if (maxClassProb > CONFIDENCE_THRESHOLD) {
+                    if (maxClassProb > confidenceThreshold) {
                         float x_center = predictions[0][i];
                         float y_center = predictions[1][i];
                         float width = predictions[2][i];

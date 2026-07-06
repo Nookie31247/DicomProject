@@ -20,6 +20,19 @@ type AiBox = {
   confidence: number;
 };
 
+// modality/bodyPart만으로 모델을 하나로 못 좁혔을 때 서버가 후보 목록을 대신 내려주면 사용자가 직접 고르게 한다. (사실상 진짜 웬만해서 이게 안 나온다.)
+type AiModelChoice = {
+  key: string;
+  displayName: string;
+};
+
+// boxes/candidates/unsupportedReason 중 하나만 채워짐
+type DetectRawResponse = {
+  boxes: AiBox[] | null;
+  candidates: AiModelChoice[] | null;
+  unsupportedReason: string | null;
+};
+
 export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const cornerstoneRef = useRef<any>(null); // pixelToCanvas 계산에 동기적으로 재사용하기 위한 참조
@@ -35,6 +48,8 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
   const [aiBoxes, setAiBoxes] = useState<AiBox[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiCandidates, setAiCandidates] = useState<AiModelChoice[] | null>(null); // 모델 자동 선택이 애매할 때 사용자에게 보여줄 후보 목록
+  const [aiInfo, setAiInfo] = useState<string | null>(null); // 판독은 정상 완료됐지만 박스가 0개일 때(에러 아님) 안내 메시지
   const [renderTick, setRenderTick] = useState(0); // 줌/팬 등으로 캔버스가 다시 그려질 때마다 오버레이 좌표 재계산 트리거
 
   const isInitialized = useRef(false);
@@ -127,6 +142,8 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
         // 다른 이미지로 넘어가면 이전 이미지의 AI 판독 결과는 더 이상 유효하지 않으므로 초기화
         setAiBoxes([]);
         setAiError(null);
+        setAiCandidates(null);
+        setAiInfo(null);
 
         const cornerstone = (await import("cornerstone-core")).default;
         const element = elementRef.current;
@@ -256,7 +273,9 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
   // 화면에 이미 디코딩되어 떠 있는 cornerstone 이미지의 픽셀 배열을 그대로 백엔드로 보낸다.
   // 서버가 Orthanc에서 DICOM을 다시 받아 압축을 푸는 과정이 통째로 필요 없어져서
   // dcm4che-imageio-opencv/OpenCV 네이티브 의존성 없이도 AI 판독이 동작한다.
-  const handleAiDetect = async () => {
+
+  // modelKey: 서버가 modality/bodyPart만으로 모델을 하나로 못 좁혀서 candidates를 내려줬을 때 사용자가 그 중 하나를 직접 골라 재요청할 때만 채워서 보낸다. 처음 호출할 땐 항상 undefined.
+  const handleAiDetect = async (modelKey?: string) => {
     const cornerstone = cornerstoneRef.current;
     const element = elementRef.current;
     if (!cornerstone || !element) return;
@@ -269,6 +288,8 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
 
     setAiLoading(true);
     setAiError(null);
+    setAiCandidates(null);
+    setAiInfo(null);
     try {
       const pixelData = image.getPixelData(); // Int16Array | Uint16Array | Uint8Array
       const signed = pixelData instanceof Int16Array;
@@ -282,7 +303,12 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
       const windowCenter = hasWindowTags ? ds.floatString("x00281050", 0) : null;
       const windowWidth = hasWindowTags ? ds.floatString("x00281051", 0) : null;
 
-      const boxes: AiBox[] = await apiFetch("/api/ai/detect-raw", {
+      // Modality(0008,0060)/BodyPartExamined(0018,0015)는 서버의 AiModelRegistry가 어떤 onnx 모델을 자동으로 고를지 판단하는 데 사용
+      // 모달리티와 몸파트가 둘 다 없으면 undefined로 보내고 지원 안 함으로 응답하게 둔다
+      const modality = ds?.string?.("x00080060") || null;
+      const bodyPart = ds?.string?.("x00180015") || null;
+
+      const res: DetectRawResponse = await apiFetch("/api/ai/detect-raw", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -295,9 +321,26 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
           intercept: image.intercept ?? 0,
           signed,
           pixelDataBase64: pixelDataToBase64(pixelData),
+          modality,
+          bodyPart,
+          modelKey: modelKey ?? null,
         }),
       });
-      setAiBoxes(boxes);
+
+      if (res.unsupportedReason) {
+        setAiError(res.unsupportedReason);
+        setAiBoxes([]);
+      } else if (res.candidates && res.candidates.length > 0) {
+        // 자동으로 하나로 못 좁혀짐 - 사용자가 직접 고르게 선택지를 보여준다
+        setAiCandidates(res.candidates);
+      } else {
+        const boxes = res.boxes ?? [];
+        setAiBoxes(boxes);
+        // 에러는 아니지만 판독 결과 박스가 0개인 경우 작동(아무것도 안 나오면 사용자가 헷갈림)
+        if (boxes.length === 0) {
+          setAiInfo("이상 소견이 발견되지 않았습니다.");
+        }
+      }
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "AI 판독에 실패했습니다.");
       setAiBoxes([]);
@@ -405,7 +448,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
               <button
                 type="button"
                 className="btn btn-small shadow-md"
-                onClick={handleAiDetect}
+                onClick={() => handleAiDetect()}
                 disabled={aiLoading || !isLoaded}
               >
                 {aiLoading ? "판독 중..." : "AI 판독"}
@@ -418,9 +461,32 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
                 초기화
               </button>
             </div>
+            {/* modality/bodyPart만으로 모델을 하나로 못 좁혔을 때 사용자가 직접 모델을 선택 */}
+            {aiCandidates && aiCandidates.length > 0 && (
+              <div className="flex flex-col gap-1 bg-black/70 rounded p-2 max-w-40">
+                <span className="text-white text-[11px] font-semibold">판독 모델 선택:</span>
+                {aiCandidates.map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    className="btn btn-small shadow-md text-left"
+                    onClick={() => handleAiDetect(c.key)}
+                    disabled={aiLoading}
+                  >
+                    {c.displayName}
+                  </button>
+                ))}
+              </div>
+            )}
             {aiError && (
               <span className="bg-red-500/80 text-white text-[11px] px-2 py-1 rounded max-w-40">
                 {aiError}
+              </span>
+            )}
+            {/* 에러는 아니지만 판독 결과가 0건일 때 조용히 넘어가면 판독 자체가 안 된 건지 헷갈리므로 안내 */}
+            {aiInfo && (
+              <span className="bg-black/70 text-white text-[11px] px-2 py-1 rounded max-w-40">
+                {aiInfo}
               </span>
             )}
           </div>

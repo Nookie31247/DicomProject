@@ -1,5 +1,6 @@
 package com.allegro.dicomback.controller;
 
+import com.allegro.dicomback.AI.AiModelRegistry;
 import com.allegro.dicomback.AI.DicomPixelReader;
 import com.allegro.dicomback.service.DicomService;
 import com.allegro.dicomback.service.InferenceService;
@@ -26,18 +27,20 @@ import java.util.List;
 public class InferenceController {
     private final InferenceService service;
     private final DicomService dicomService;
+    private final AiModelRegistry modelRegistry;
 
-    @Value("${ai.model-path:models/best.onnx}")
+    @Value("${ai.model-path:models/CR_pneumonia_yolov8n.onnx}")
     private String modelPath;
 
-    InferenceController(InferenceService s, DicomService dicomService) {
+    InferenceController(InferenceService s, DicomService dicomService, AiModelRegistry modelRegistry) {
         this.service = s;
         this.dicomService = dicomService;
+        this.modelRegistry = modelRegistry;
     }
 
     @PostMapping("/infer")
     public List<InferenceService.BoundingBox> infer(@RequestBody InferRequest req) throws Exception {
-        return service.infer(Path.of(req.dicomPath()), Path.of("models/best.onnx"));
+        return service.infer(Path.of(req.dicomPath()), Path.of("models/CR_pneumonia_yolov8n.onnx"));
     }
     record InferRequest(String dicomPath) {}
 
@@ -58,17 +61,45 @@ public class InferenceController {
                 .toList();
     }
 
-    // 현재 뷰어가 실제로 호출하는 경로: 프론트(cornerstone)가 화면에 띄우면서 이미 압축을 풀어놓은 픽셀 배열을 그대로 받는다. 서버는 DICOM을 다시 디코딩하지 않으므로 OpenCV/Weasis 네이티브
+    // 현재 뷰어가 실제로 호출하는 경로: 프론트가 화면에 띄우면서 이미 압축을 풀어놓은 픽셀 배열을 그대로 받는다.
+    // modality(+bodyPart)로 AiModelRegistry가 어떤 onnx를 쓸지 자동으로 고른다.
+    // - 확정되면 바로 추론해서 boxes를 채워 반환
+    // - 애매하면(같은 modality를 여러 모델이 공유하는데 bodyPart로도 못 좁힐 때(솔직히 혹시 몰라서 넣은거지 이럴일은 없을듯?)) candidates만 채워 반환 → 프론트가 선택 UI를 띄움
+    // - 아예 지원 안 하면(태그 없음/미등록 modality) unsupportedReason만 채워 반환
+    // modelKey가 요청에 실려오면(사용자가 candidates 중 하나를 직접 골랐을 때) 자동 판단을 건너뛰고 그 모델을 강제로 사용(아까말한 대로 솔직히 안 할 것 같음)
     @PostMapping("/detect-raw")
-    public List<BoxDto> detectRaw(@RequestBody RawDetectRequest req) throws Exception {
+    public DetectRawResponse detectRaw(@RequestBody RawDetectRequest req) throws Exception {
+        AiModelRegistry.ModelRule rule;
+
+        if (req.modelKey() != null && !req.modelKey().isBlank()) {
+            rule = modelRegistry.findByKey(req.modelKey())
+                    .orElse(null);
+            if (rule == null) {
+                return new DetectRawResponse(null, null, "알 수 없는 모델 key입니다: " + req.modelKey());
+            }
+        } else {
+            var result = modelRegistry.resolve(req.modality(), req.bodyPart());
+
+            if (result instanceof AiModelRegistry.Unsupported u) {
+                return new DetectRawResponse(null, null, u.reason());
+            }
+            if (result instanceof AiModelRegistry.Ambiguous a) {
+                var choices = a.candidates().stream()
+                        .map(r -> new ModelChoiceDto(r.key(), r.displayName()))
+                        .toList();
+                return new DetectRawResponse(null, choices, null);
+            }
+            rule = ((AiModelRegistry.Resolved) result).rule();
+        }
+
         byte[] pixelBytes = java.util.Base64.getDecoder().decode(req.pixelDataBase64());
         List<InferenceService.BoundingBox> boxes = service.inferOnRawPixels(
                 req.rows(), req.cols(),
                 req.windowCenter(), req.windowWidth(),
                 req.slope(), req.intercept(),
-                req.signed(), pixelBytes, Path.of(modelPath));
+                req.signed(), pixelBytes, rule.modelPath(), rule.confidenceThreshold());
 
-        return boxes.stream()
+        var boxDtos = boxes.stream()
                 .map(b -> new BoxDto(
                         b.x_min(),
                         b.y_min(),
@@ -77,11 +108,14 @@ public class InferenceController {
                         b.confidence()
                 ))
                 .toList();
+        return new DetectRawResponse(boxDtos, null, null);
     }
 
     // 프론트 cornerstone image 객체에서 그대로 뽑아 보낸다.
     // windowCenter/windowWidth는 nullable(Double)이다 - 프론트는  데이터셋에(0028,1050)/(0028,1051) 태그의 유무 판단있 있으면 그 값을 그대로 보내고
     // 없으면 null을 보낸다. 서버는 null일 때만 Preprocessor.preprocessRaw의 백분위수 fallback을 쓴다.
+    // modality/bodyPart: AiModelRegistry가 자동으로 모델을 고르는 데 쓴다.
+    // modelKey: candidates 중 사용자가 직접 골랐을 때만 채워서 보낸다 . 그 외엔 null
     public record RawDetectRequest(
             int rows,
             int cols,
@@ -90,8 +124,22 @@ public class InferenceController {
             double slope,
             double intercept,
             boolean signed,
-            String pixelDataBase64
+            String pixelDataBase64,
+            String modality,
+            String bodyPart,
+            String modelKey
     ) {}
+
+    // detect-raw 응답: boxes(성공)
+    // candidates(모델 선택 필요)
+    // unsupportedReason(지원 안 함)
+    public record DetectRawResponse(
+            List<BoxDto> boxes,
+            List<ModelChoiceDto> candidates,
+            String unsupportedReason
+    ) {}
+
+    public record ModelChoiceDto(String key, String displayName) {}
 
     public record BoxDto(
             @JsonProperty("x") float x,
@@ -103,7 +151,10 @@ public class InferenceController {
 
     @GetMapping(value = "/visualize", produces = MediaType.IMAGE_JPEG_VALUE)
     public byte[] visualize(@RequestParam String dicomPath) throws Exception {
-        List<InferenceService.BoundingBox> boxes = service.infer(Path.of(dicomPath), Path.of("models/best.onnx"));
+
+        //infer에서 원본 Dicom 픽셀 좌표를 받아옴
+        //createDicomImage()가 만드는 img도 가로: cols, 세로 rows로 변환(원본 크기로 그리기
+        List<InferenceService.BoundingBox> boxes = service.infer(Path.of(dicomPath), Path.of("models/CR_pneumonia_yolov8n.onnx"));
 
         BufferedImage img = createDicomImage(Path.of(dicomPath));
 
@@ -113,13 +164,18 @@ public class InferenceController {
         g.setFont(new Font("Arial", Font.BOLD, 20));
 
         for (var b : boxes) {
-            double scaleX = (double) img.getWidth() / 640.0;
-            double scaleY = (double) img.getHeight() / 640.0;
+//            double scaleX = (double) img.getWidth() / 640.0;
+//            double scaleY = (double) img.getHeight() / 640.0;
+//
+//            int x = (int) (b.x_min() * scaleX);
+//            int y = (int) (b.y_min() * scaleY);
+//            int w = (int) ((b.x_max() - b.x_min()) * scaleX);
+//            int h = (int) ((b.y_max() - b.y_min()) * scaleY);
 
-            int x = (int) (b.x_min() * scaleX);
-            int y = (int) (b.y_min() * scaleY);
-            int w = (int) ((b.x_max() - b.x_min()) * scaleX);
-            int h = (int) ((b.y_max() - b.y_min()) * scaleY);
+            int x=(int) b.x_min();
+            int y=(int) b.y_min();
+            int w=(int) (b.x_max() - b.x_min());
+            int h=(int) (b.y_max() - b.y_min());
 
             g.drawRect(x, y, w, h);
             g.drawString(String.format("%.1f%%", b.confidence() * 100), x, y - 5);
