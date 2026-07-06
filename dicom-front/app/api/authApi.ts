@@ -11,11 +11,11 @@ export async function login(userId: string, password: string) {
 }
 
 // 2. 회원가입 (클라이언트 요청)
-export async function signup(userId: string, password: string, name: string, userRole: string) {
+export async function signup(userId: string, password: string, name: string, userType: string) {
   return apiFetch("/api/users/signup", {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, password, name, userRole})
+    body: JSON.stringify({ userId, password, name, userType})
   })
 }
 
