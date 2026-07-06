@@ -34,7 +34,7 @@ export default function SignupForm() {
 
   const validateId = (id: string) => {
     if (id.length === 0) return "";
-    if (id.length < 4) return "아이디는 4자 이상 입력해주세요.";
+    if (id.length < 4 || id.length > 25) return "아이디는 4자 이상 25자 이하로 입력해주세요.";
     if (!/^[a-zA-Z0-9]+$/.test(id)) return "아이디는 영문과 숫자만 가능합니다.";
     if (!/[a-zA-Z]/.test(id)) return "영문이 최소 1자 포함되어야 합니다.";
     return "사용 가능한 아이디입니다.";

@@ -10,6 +10,7 @@ public enum ErrorCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "USER_002", "비밀번호가 일치하지 않습니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_003", "이미 존재하는 아이디입니다."),
     INVALID_USER_TYPE(HttpStatus.BAD_REQUEST, "USER_004", "올바르지 않은 회원 유형입니다."),
+    INVALID_ID_LENGTH(HttpStatus.BAD_REQUEST, "USER_005", "아이디의 길이가 초과되었습니다."),
 
     // 환자 연동 관련
     PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PATIENT_001", "환자를 찾을 수 없습니다."),

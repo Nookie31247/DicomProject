@@ -38,12 +38,12 @@ export async function checkId(userId: string) {
 
 // 5. 비밀번호 수정 (클라이언트 요청)
 export async function changePassword(currentPassword: string, newPassword: string) {
-  return apiFetch("/api/users/change-password", {
+  return await apiFetch("/api/users/change-password", {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({currentPassword, newPassword })
-  })
+  });
 }
 
 // 6. 회원탈퇴 (클라이언트 요청)

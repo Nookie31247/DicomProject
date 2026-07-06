@@ -4,6 +4,12 @@ const BASE_URL = typeof window === 'undefined'
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const response = await fetch(BASE_URL + path, options);
+
+  // No Content (204) 일 때는 그냥 리턴
+  if(response.status === 204) {
+    return null;
+  }
+
   const contentType = response.headers.get("Content-Type");
   const text = await response.text();
   const data = contentType?.includes("application/json")
@@ -15,7 +21,10 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     const message = (data && typeof data === "object" && "message" in data)
         ? data.message
         : `요청 실패 (status: ${response.status})`;
-    throw new Error(message);
+
+    const error = new Error(message);
+    Object.assign(error, { status: response.status });
+    throw error;
   }
 
   return data;

@@ -49,6 +49,11 @@ public class UserService {
             throw new BaseException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
+        // 아이디 길이 체크
+        if(request.userId().length() < 4 || request.userId().length() > 25) {
+            throw new BaseException(ErrorCode.INVALID_ID_LENGTH);
+        }
+
         // userType은 UserRole(Integer)로 변환
         // 의료진 = 1, 연구원 = 2
         Integer role = switch (request.userRole()) {
