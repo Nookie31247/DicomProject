@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface PatientRepository extends JpaRepository<Patient, String> {
+public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     // 검사 기간으로 검색
     List<Patient> findByDoctorKey_KeyAndRecentStudyBetween(Long doctorKey, LocalDateTime start, LocalDateTime end);
