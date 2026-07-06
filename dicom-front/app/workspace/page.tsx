@@ -147,27 +147,6 @@ export default function WorkspaceDashboardPage() {
                 {selectedPatient && <span className={wsSubLabelClass}>{selectedPatient.pname} 선택됨</span>}
               </div>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-xs text-ink-soft bg-canvas border-b border-line" style={{ gridTemplateColumns: studyGridColumns }}>
-                <span></span><span>모달리티</span><span className={colDescClass}>검사 설명</span><span className="col-body">검사 부위</span><span className={colDateClass}>검사 일자</span><span className={colSeriesClass}>시리즈</span><span className={colImagesClass}>영상 수</span><span>연구 활용</span>
-              </div>
-              <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-1.5">
-                {displayedStudies.map((it) => (
-                    <li key={it["study-key"]}>
-                      <div className="study-row grid items-center gap-2.5 w-full cursor-pointer p-3.5 border-b" style={{ gridTemplateColumns: studyGridColumns }}>
-                        <input type="checkbox" checked={checkedStudyIds.has(it["study-key"])} onChange={() => toggleStudyCheck(it["study-key"])} />
-                        <span className={modalityBadgeClass + " " + modalityColors[it.modality.toLowerCase()]}>{it.modality}</span>
-                        <span className={colDescClass}>{it.description}</span>
-                        <span className={colDateClass}>{it.datetime.split("T")[0]}</span>
-                        <span className={colSeriesClass}>{it["series-num"]}</span>
-                        <span className={colImagesClass}>{it["images-num"]}</span>
-                        <span className={it["allow-research"] ? "text-green-600" : "text-red-600"}>{it["allow-research"] ? "예" : "아니오"}</span>
-                      </div>
-                    </li>
-                ))}
-              </ul>
-            </div>
-
             {selectedPatient ? (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   <div className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-xs tracking-[0.02em] text-ink-soft bg-canvas border-b border-line max-[560px]:hidden" style={{ gridTemplateColumns: studyGridColumns }}>
