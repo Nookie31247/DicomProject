@@ -40,6 +40,16 @@ interface patientType {
   hidden: boolean;
 }
 
+interface studyType {
+  key: number;
+  description: string;
+  datetime: string;
+  seriesNum: number;
+  imagesNum: number;
+  allowResearch: boolean;
+  hidden: boolean;
+}
+
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
 
@@ -49,10 +59,10 @@ export default function WorkspaceDashboardPage() {
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [checkedPatientIds, setCheckedPatientIds] = useState<Set<number>>(new Set());
   const [showHiddenPatients, setShowHiddenPatients] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState("");
+  const [patientSearchKeyword, setPatientSearchKeyword] = useState("");
 
   // 서버에서 환자 목록 가져오기
-  const fetchPatients = async (search: string | null = searchKeyword) => {
+  const fetchPatients = async (search: string | null = patientSearchKeyword) => {
       const res = await dicomApi.getPatients(null, null, search);
 
       const pList: patientType[] = res.map((item) => ({
@@ -68,16 +78,13 @@ export default function WorkspaceDashboardPage() {
       setPatients(pList);
     };
 
-  useEffect(() => {
-    fetchPatients(null);
-  }, []);
-
-  // 선택한 환자 목록 변수에 저장하기
+  // 환자 선택하기 (선택한 환자는 하이라이팅되며, 환자의 스터디가 로딩된다.)
   const handleSelectPatient = (id: number) => {
     setSelectedPatientId(id);
     setCheckedStudyIds(new Set());
   };
 
+  // 환자 체크박스로 선택하기
   const togglePatientCheck = (id: number) => {
     setCheckedPatientIds((prev) => {
       const next = new Set(prev);
@@ -87,6 +94,28 @@ export default function WorkspaceDashboardPage() {
   };
 
   const selectedPatient = patients.find((p) => p.key === selectedPatientId) ?? null;
+
+  // ================================== 스터디 영역 =========================================
+  const [studies, setStudies] = useState<studyType[]>([]);
+  const [checkedStudyIds, setCheckedStudyIds] = useState<Set<string>>(new Set());
+  const [showHiddenStudies, setShowHiddenStudies] = useState(false);
+
+  // 서버에서 스터디 목록 가져오기
+  const fetchStudies = async () => {
+    const res = await dicomApi.getStudies(1, null, null, null);
+
+    const sList: studyType[] = res.map((item) => ({
+      key: item["study-key"],
+      description: item["description"],
+      datetime: item["datetime"],
+      seriesNum: item["series-num"],
+      imagesNum: item["images-num"],
+      allowResearch: item["allow-research"],
+      hidden: item["hidden"],
+    }));
+
+    setStudies(sList);
+  };
 
   const toggleStudyCheck = (id: number) => {
     setCheckedStudyIds((prev) => {
@@ -101,11 +130,9 @@ export default function WorkspaceDashboardPage() {
       : studies.filter(s => s["patient-id"] === selectedPatientId && s.hidden === showHiddenStudies);
 
 
-  // ================================== 스터디 영역 =========================================
-  const [checkedStudyIds, setCheckedStudyIds] = useState<Set<string>>(new Set());
-  const [showHiddenStudies, setShowHiddenStudies] = useState(false);
-
-
+  useEffect(() => {
+    fetchPatients(null);
+  }, []);
 
   return (
       <div className="page">
@@ -119,7 +146,7 @@ export default function WorkspaceDashboardPage() {
                   <h2 className={wsPanelTitleClass}>환자 목록</h2>
                   <button type="button" className="btn btn-small" onClick={() => setIsAddPatientModalOpen(true)}>환자 추가</button>
                 </div>
-                <input className="w-full mt-2 p-2 border rounded-xl text-sm" placeholder="이름 또는 ID 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} />
+                <input className="w-full mt-2 p-2 border rounded-xl text-sm" placeholder="이름 또는 ID 검색" value={patientSearchKeyword} onChange={(e) => setPatientSearchKeyword(e.target.value)} />
               </div>
             </div>
             <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-2.5">
