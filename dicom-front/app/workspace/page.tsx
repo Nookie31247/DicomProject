@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { studies } from "@/mock-data";
-import * as apiDicom from "@/app/api/apiDicom";
+import * as apiDicom from "../api/dicomApi";
 import AddPatientModal from "@/app/components/search-dashboard/AddPatientModal";
 
 export default function WorkspaceDashboardPage() {

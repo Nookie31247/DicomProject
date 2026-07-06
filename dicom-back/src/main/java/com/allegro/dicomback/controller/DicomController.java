@@ -40,11 +40,11 @@ public class DicomController {
             @CookieValue(name = "token") String token,
             @RequestParam(required = false) String start,
             @RequestParam(required = false) String end,
-            @RequestParam Long pid,
+            @RequestParam(name = "patient-key") Long patientKey,
             @RequestParam(required = false) String search
     ) {
         Long doctorKey = jwtTokenProvider.getUserKey(token);
-        return ResponseEntity.ok(dicomService.getStudies(doctorKey, pid, start, end, search));
+        return ResponseEntity.ok(dicomService.getStudies(doctorKey, patientKey, start, end, search));
     }
 
     //시리즈 목록 불러오기

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DicomRequestDto {
     //환자 목록 숨기기/보이기 설정
     public record PatientHideDto(
-            @JsonProperty("patient-id") Long patientKey,
+            @JsonProperty("patient-key") Long patientKey,
             @JsonProperty("hidden") boolean hidden
     ) {}
 
@@ -19,12 +19,6 @@ public class DicomRequestDto {
     //시리즈 목록 숨기기/보이기 설정
     public record SeriesHideDto(
             @JsonProperty("series-key") Long seriesKey,
-            @JsonProperty("hidden") boolean hidden
-    ) {}
-
-    //이미지 목록 숨기기/보이기 설정
-    public record ImageHideDto(
-            @JsonProperty("image-key") Long imageKey,
             @JsonProperty("hidden") boolean hidden
     ) {}
 
