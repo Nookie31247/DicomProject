@@ -1,6 +1,6 @@
 package com.allegro.dicomback.repository;
 
-import com.allegro.dicomback.entity.user.User;
+import com.allegro.dicomback.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
@@ -16,5 +16,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 로그인 및 회원 보안 인증용 조회
     Optional<User> findByUserId(String userId);
 
-    List<User> findByUserStatus(boolean userStatus);
 }

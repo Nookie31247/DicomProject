@@ -109,7 +109,7 @@ public class DbTest {
 
     private void printPatientInfo(List<Patient> patients) {
         for(Patient patient : patients) {
-            System.out.println(patient.getId() + ": " + patient.getName() + " (" + patient.getRecentStudy() + ")");
+            System.out.println(patient.getKey() + ": " + patient.getName() + " (" + patient.getRecentStudy() + ")");
         }
     }
 }

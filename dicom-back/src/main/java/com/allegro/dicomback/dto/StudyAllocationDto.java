@@ -19,9 +19,9 @@ public class StudyAllocationDto {
     // Study 엔티티로부터 DTO를 생성하는 정적 메서드
     public static StudyAllocationDto fromEntity(Study study, boolean isAssigned) {
         return StudyAllocationDto.builder()
-                .studyKey(study.getStudyKey())
+                .studyKey(study.getKey())
                 .description(study.getDescription())
-                .studyDateTime(study.getStudyDateTime().toString())
+                .studyDateTime(study.getCreatedAt().toString())
                 .isAssigned(isAssigned)
                 .build();
     }

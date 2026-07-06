@@ -1,75 +1,92 @@
 package com.allegro.dicomback.component;
 
+import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.UserRequestDto;
 import com.allegro.dicomback.entity.Patient;
-import com.allegro.dicomback.entity.user.User;
+import com.allegro.dicomback.entity.Series;
+import com.allegro.dicomback.entity.Study;
+import com.allegro.dicomback.entity.User;
 import com.allegro.dicomback.repository.PatientRepository;
+import com.allegro.dicomback.repository.SeriesRepository;
+import com.allegro.dicomback.repository.StudyRepository;
 import com.allegro.dicomback.repository.UserRepository;
+import com.allegro.dicomback.service.DicomService;
 import com.allegro.dicomback.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class DbTestComponent implements CommandLineRunner {
-    private final PatientRepository pRepo;
+    private final PatientRepository patientRepository;
+    private final StudyRepository studyRepository;
+    private final SeriesRepository seriesRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @Override
     public void run(String... args) throws Exception {
-        userService.signup(new UserRequestDto.SignupRequest("test", "test", "테스트", "의료진"));
+        userService.signup(new UserRequestDto.SignupRequest("test", "test", "테스트이름", "의료진"));
+        User doctor = userRepository.findByUserId("test").orElseThrow();
 
-        List<Patient> samples = List.of(
-            Patient.builder()
-                .id("1234")
+        Patient patient1 = Patient.builder()
+                .doctorKey(doctor)
                 .name("홍길동")
-                .birth(LocalDateTime.of(1999, 12, 24, 0, 0))
+                .birth(LocalDate.of(1999, 12, 24))
                 .sex("M")
                 .recentStudy(LocalDateTime.of(2026, 3, 29, 15, 27))
                 .studyCount(3)
-                .build(),
+                .build();
 
-            Patient.builder()
-                .id("1235")
+        Patient patient2 = Patient.builder()
+                .doctorKey(doctor)
                 .name("김철수")
-                .birth(LocalDateTime.of(1985, 5, 14, 0, 0))
+                .birth(LocalDate.of(1985, 5, 14))
                 .sex("M")
                 .recentStudy(LocalDateTime.of(2026, 4, 12, 9, 30))
                 .studyCount(1)
-                .build(),
+                .build();
 
-            Patient.builder()
-                .id("1236")
-                .name("이영희")
-                .birth(LocalDateTime.of(1992, 8, 21, 0, 0))
-                .sex("F")
-                .recentStudy(LocalDateTime.of(2026, 5, 1, 14, 15))
-                .studyCount(5)
-                .build(),
+        patientRepository.save(patient1);
+        patientRepository.save(patient2);
 
-            Patient.builder()
-                .id("1237")
-                .name("김민수")
-                .birth(LocalDateTime.of(1970, 11, 3, 0, 0))
-                .sex("M")
-                .recentStudy(LocalDateTime.of(2026, 6, 15, 11, 0))
-                .studyCount(2)
-                .build(),
+        Study study1 = Study.builder()
+                .patientKey(patient1)
+                .description("스터디설명1")
+                .createdAt(LocalDateTime.of(2026, 6, 3, 0,  0))
+                .build();
 
-            Patient.builder()
-                .id("1238")
-                .name("최수지")
-                .birth(LocalDateTime.of(2005, 2, 10, 0, 0))
-                .sex("F")
-                .recentStudy(LocalDateTime.of(2026, 7, 2, 10, 45))
-                .studyCount(0)
-                .build()
-        );
+        Study study2 = Study.builder()
+                .patientKey(patient1)
+                .description("스터디설명2")
+                .createdAt(LocalDateTime.of(2026, 6, 25, 0,  0))
+                .build();
+        studyRepository.save(study1);
+        studyRepository.save(study2);
 
-        pRepo.saveAll(samples);
+
+        Series series1 = Series.builder()
+                .studyKey(study1)
+                .seriesNum(10)
+                .bodyPart("CHEST")
+                .totalImagesCount(100)
+                .modality("MR")
+                .build();
+
+        Series series2 = Series.builder()
+                .studyKey(study1)
+                .seriesNum(20)
+                .bodyPart("HEAD")
+                .totalImagesCount(200)
+                .modality("CT")
+                .build();
+
+        seriesRepository.save(series1);
+        seriesRepository.save(series2);
     }
 }

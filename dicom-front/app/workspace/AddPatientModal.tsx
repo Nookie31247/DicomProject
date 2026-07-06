@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 // apiDicom 모듈 전체를 가져옵니다.
-import * as apiDicom from "@/app/api/apiDicom";
+import * as apiDicom from "../api/dicomApi";
 
 export default function AddPatientModal({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void }) {
     const [keyword, setKeyword] = useState("");

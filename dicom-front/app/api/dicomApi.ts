@@ -1,0 +1,81 @@
+import {apiFetch} from "@/app/api/apiFetch";
+
+const dicomApi = {
+  getPatients(start: string | null, end: string | null, search:string | null) {
+    const params = new URLSearchParams();
+    if (search !== null && search !== "") {
+      params.append('search', search);
+    }
+    if (start !== null && start !== "" && end !== null && end !== "") {
+      params.append('start', start);
+      params.append('end', end);
+    }
+
+    const queryString = params.toString();
+
+    return apiFetch(
+      queryString
+        ? `/api/dicom/patients?${queryString}`
+        : `/api/dicom/patients`
+    );
+  },
+
+  getStudies(patientKey: number, start: string | null, end: string | null, search:string | null) {
+    const params = new URLSearchParams();
+    if (search !== null && search !== "") {
+      params.append('search', search);
+    }
+    if (start !== null && start !== "" && end !== null && end !== "") {
+      params.append('start', start);
+      params.append('end', end);
+    }
+    params.append("patient-key", patientKey.toString());
+    const queryString = params.toString();
+    return apiFetch(`/api/dicom/studies?${queryString}`);
+  },
+
+  getSeries(studyKey: number) {
+    return apiFetch(`/api/dicom/studies?study-key=${studyKey}`);
+  },
+
+  setPatientHide(list: HiddenPatientList[]) {
+    return apiFetch("/api/dicom/patients/hide", {
+      method: 'POST',
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(list),
+    });
+  },
+
+  setStudyHide(list: HiddenStudyList[]) {
+    return apiFetch("/api/dicom/study/hide", {
+      method: 'POST',
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(list),
+    });
+  },
+
+  setSeriesHide(list: HiddenSeriesList[]) {
+    return apiFetch("/api/dicom/series/hide", {
+      method: 'POST',
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(list),
+    });
+  },
+}
+
+export interface HiddenPatientList {
+   "patient-key" : number;
+   "hidden" : boolean;
+}
+
+export interface HiddenStudyList {
+  "study-key" : number;
+  "hidden" : boolean;
+}
+
+export interface HiddenSeriesList {
+  "series-key" : number;
+  "hidden" : boolean;
+}
+
+export default dicomApi;
