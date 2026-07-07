@@ -57,12 +57,14 @@ public class DbTestComponent implements CommandLineRunner {
 
         Study study1 = Study.builder()
                 .patientKey(patient1)
+                .uid("1.2.410.200018.7.100.1.201608221411119450437")
                 .description("스터디설명1")
                 .createdAt(LocalDateTime.of(2026, 6, 3, 0,  0))
                 .build();
 
         Study study2 = Study.builder()
                 .patientKey(patient1)
+                .uid("1.2.410.200018.7.100.1.201608221411119450437")
                 .description("스터디설명2")
                 .createdAt(LocalDateTime.of(2026, 6, 25, 0,  0))
                 .build();
@@ -72,6 +74,7 @@ public class DbTestComponent implements CommandLineRunner {
 
         Series series1 = Series.builder()
                 .studyKey(study1)
+                .uid("1.2.392.200036.9116.4.1.6116.40033.7002")
                 .seriesNum(10)
                 .bodyPart("CHEST")
                 .totalImagesCount(100)
@@ -80,6 +83,7 @@ public class DbTestComponent implements CommandLineRunner {
 
         Series series2 = Series.builder()
                 .studyKey(study1)
+                .uid("1.2.392.200036.9116.4.1.6116.40033.7004")
                 .seriesNum(20)
                 .bodyPart("HEAD")
                 .totalImagesCount(200)
