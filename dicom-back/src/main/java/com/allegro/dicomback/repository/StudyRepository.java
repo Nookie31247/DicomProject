@@ -69,7 +69,7 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
     @Query("""
     select s
     from Study s
-    join s.patientKey p
+    join fetch s.patientKey p
     where p.doctorKey.key = :doctorKey
       and s.allowResearch = true
       and s.hiddenFlag = false
