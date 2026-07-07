@@ -58,15 +58,19 @@ public class DbTestComponent implements CommandLineRunner {
         Study study1 = Study.builder()
                 .patientKey(patient1)
                 .uid("1.2.410.200018.7.100.1.201608221411119450437")
+                .orthancId("c53c795a-b5c7a36d-6245fbf2-4e313cdd-e35ecfe7")
                 .description("SKULL")
                 .createdAt(LocalDateTime.of(2016, 8, 22, 14,  31))
+                .allowResearch(true)
                 .build();
 
         Study study2 = Study.builder()
                 .patientKey(patient1)
                 .uid("1.2.826.0.1.3680043.6.18930.1439.20170201163008.968.66")
+                .orthancId("1a57210a-d1dc217c-4c864725-9f63816d-89f709e1")
                 .description("Head^02HeadSeq (Adult)")
                 .createdAt(LocalDateTime.of(2017, 2, 2, 10,  41))
+                .allowResearch(true)
                 .build();
 
         studyRepository.save(study1);

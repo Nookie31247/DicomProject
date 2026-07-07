@@ -68,7 +68,7 @@ export default function ResearchDataPage() {
 
         if (!seriesByStudy[studyKey]) {
             setLoadingSeries(prev => new Set(prev).add(studyKey));
-            const data: SeriesItem[] = await dicomApi.getSeries(studyKey);
+            const data: SeriesItem[] = await dicomApi.getSeriesForResearch(studyKey);
             setSeriesByStudy(prev => ({ ...prev, [studyKey]: data }));
             setLoadingSeries(prev => {
                 const s = new Set(prev);
@@ -183,7 +183,6 @@ export default function ResearchDataPage() {
                                         </button>
                                         <span className="text-sm">{study.description ?? "설명 없음"}</span>
                                         <span className="text-xs text-ink-soft">{study.datetime?.slice(0, 10)}</span>
-                                        <span className="text-xs text-ink-soft">{study["images-num"]}</span>
                                         <span className="text-xs text-mint-deep font-semibold">연구 허용</span>
                                     </div>
 

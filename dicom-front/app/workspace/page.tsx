@@ -442,13 +442,6 @@ export default function WorkspaceDashboardPage() {
                           </button>
                           <button
                               type="button"
-                              onClick={() => router.push("/research")}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            다운로드
-                          </button>
-                          <button
-                              type="button"
                               onClick={clearCheckedStudies}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"

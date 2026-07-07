@@ -306,11 +306,11 @@ public class DicomService {
 
     // 연구 활용이 허용된 스터디 목록을 이 의사(doctorKey) 기준으로 조회해서
     // 화면에 필요한 시리즈 수를 채우는 메서드 (/research 페이지가 최초 로딩될 때 호출하는 API의 실제 로직)
-    public List<StudyDto> getResearchStudies(Long doctorKey) {
+    public List<StudyDto> getResearchStudies() {
 
         // 의사가 담당하는 환자들 중, 연구 허용 + 숨김 아님 조건에 맞는 Study 엔티티들을 DB에서 가져옴
         // (StudyRepository.findResearchStudies의 JPQL 쿼리가 실제 필터링을 담당)
-        List<Study> studyList = studyRepository.findResearchStudies(doctorKey);
+        List<Study> studyList = studyRepository.findResearchStudies();
 
         // 연구 허용된 스터디가 하나도 없으면 뒤 로직 돌릴 필요 없이 바로 빈 리스트 반환
         if (studyList.isEmpty()) return List.of();

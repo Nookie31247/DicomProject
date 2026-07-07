@@ -138,15 +138,9 @@ public class DicomController {
     //다운로드 페이지
     @GetMapping("/studies/research")
     public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {
-        Long doctorKey = jwtTokenProvider.getUserKey(token);
-        return ResponseEntity.ok(dicomService.getResearchStudies(doctorKey));
-    }
-
-    //다운로드 페이지
-    @GetMapping("/studies/research")
-    public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {
-        Long doctorKey = jwtTokenProvider.getUserKey(token);
-        return ResponseEntity.ok(dicomService.getResearchStudies(doctorKey));
+//        Long doctorKey = jwtTokenProvider.getUserKey(token);
+        jwtTokenProvider.getUserKey(token);
+        return ResponseEntity.ok(dicomService.getResearchStudies());
     }
 
 //    //이미지 다운로드
