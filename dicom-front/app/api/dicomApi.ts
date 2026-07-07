@@ -76,6 +76,15 @@ const dicomApi = {
       }),
     });
   },
+
+  uploadDicomFiles: async (formData: FormData) => {
+    const res = await fetch("/api/dicom/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("파일 업로드 서버 오류");
+    return res.json();
+  }
 }
 
 export interface HiddenPatientList {

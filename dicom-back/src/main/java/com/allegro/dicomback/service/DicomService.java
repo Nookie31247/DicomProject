@@ -1,6 +1,5 @@
 package com.allegro.dicomback.service;
 
-import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Series;
 import com.allegro.dicomback.entity.Study;
@@ -11,6 +10,9 @@ import com.allegro.dicomback.repository.PatientRepository;
 import com.allegro.dicomback.repository.SeriesRepository;
 import com.allegro.dicomback.repository.StudyRepository;
 import com.allegro.dicomback.repository.UserRepository;
+import org.dcm4che3.data.Attributes;
+import org.dcm4che3.data.Tag;
+import org.dcm4che3.io.DicomInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
 import com.allegro.dicomback.dto.DicomRequestDto.*;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -74,16 +78,23 @@ public class DicomService {
             }
         }
 
-        // 검색어가 있을 때
-        if(StringUtils.hasText(search)) {
-            // 여기서는 시작일, 종료일, 검색어 3가지 모두를 가지고 검색한다.
-            patientList = patientRepository.findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(doctorKey, search, startDay, endDay);
-        }
-        // 검색어가 없을 때
-        else {
-            // 여기서는 시작일과 종료일만 가지고 검색한다.
-            patientList = patientRepository.findByDoctorKey_KeyAndRecentStudyBetween(doctorKey, startDay, endDay);
-        }
+        patientList = patientRepository.findByDoctorKeyWithOptionalRecentStudy(
+                doctorKey,
+                search,
+                startDay,
+                endDay
+        );
+
+//        // 검색어가 있을 때
+//        if(StringUtils.hasText(search)) {
+//            // 여기서는 시작일, 종료일, 검색어 3가지 모두를 가지고 검색한다.
+//            patientList = patientRepository.findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(doctorKey, search, startDay, endDay);
+//        }
+//        // 검색어가 없을 때
+//        else {
+//            // 여기서는 시작일과 종료일만 가지고 검색한다.
+//            patientList = patientRepository.findByDoctorKey_KeyAndRecentStudyBetween(doctorKey, startDay, endDay);
+//        }
 
         for(Patient p : patientList) {
             patientDtoList.add(new PatientDto(
@@ -349,6 +360,22 @@ public class DicomService {
                 .build();
 
         patientRepository.save(patient);
+    }
+
+    public void processDicomFile(MultipartFile file) throws IOException {
+        try (DicomInputStream dis = new DicomInputStream(file.getInputStream())) {
+            Attributes attrs = dis.readDataset(-1, -1);
+
+            String studyInstanceUid = attrs.getString(Tag.StudyInstanceUID);
+            String studyDate = attrs.getString(Tag.StudyDate);
+            String studyTime = attrs.getString(Tag.StudyTime);
+            String studyDescription = attrs.getString(Tag.StudyDescription);
+
+            log.info("--- DICOM 태그 추출 성공 ---");
+            log.info("UID: {}", studyInstanceUid);
+            log.info("Date/Time: {} {}", studyDate, studyTime);
+            log.info("Description: {}", studyDescription);
+        }
     }
 
     // 픽셀 데이터가 없어 이미지 뷰어로 열 수 없는 modality (Presentation State, Structured Report, Key Object 등)

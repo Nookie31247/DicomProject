@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
@@ -138,6 +139,22 @@ public class DicomController {
     public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {
         Long doctorKey = jwtTokenProvider.getUserKey(token);
         return ResponseEntity.ok(dicomService.getResearchStudies(doctorKey));
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadFiles(
+            @RequestParam("patientKey") Long patientKey,
+            @RequestParam("files") List<MultipartFile> files) {
+
+        for (MultipartFile file : files) {
+            try {
+                // 아까 작성한 서비스 메서드 호출
+                dicomService.processDicomFile(file);
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().body("파일 처리 실패: " + file.getOriginalFilename());
+            }
+        }
+        return ResponseEntity.ok("업로드 완료");
     }
 
 //    //이미지 다운로드

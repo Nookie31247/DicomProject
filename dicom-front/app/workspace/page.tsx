@@ -235,6 +235,28 @@ export default function WorkspaceDashboardPage() {
     setStudyError(null);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !selectedPatientId) {
+      alert("환자를 먼저 선택해주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    Array.from(files).forEach(file => formData.append("files", file));
+    formData.append("patientKey", selectedPatientId.toString());
+
+    try {
+      await dicomApi.uploadDicomFiles(formData);
+      alert("파일 업로드 및 태그 추출 완료!");
+      // 업로드 후 스터디 목록 새로고침
+      void fetchStudies(selectedPatientId);
+    } catch (error) {
+      console.error("업로드 실패:", error);
+      alert("업로드 중 문제가 발생했습니다.");
+    }
+  };
+
   const updateCheckedPatientsHidden = async (hidden: boolean) => {
     const selectedIds = Array.from(checkedPatientIds);
 
@@ -293,10 +315,11 @@ export default function WorkspaceDashboardPage() {
                     </h2>
                     <span className={wsCountClass}>{displayedPatients.length}명</span>
                   </div>
-                  <button type="button" className="btn btn-small" onClick={() => setIsAddPatientModalOpen(true)}>
+                  <button type="button" className="btn btn-small w-20 h-[48px] text-sm" onClick={() => setIsAddPatientModalOpen(true)}>
                     환자 추가
                   </button>
                 </div>
+
 
                 <div className="flex gap-2 mt-2 items-stretch">
                   <div className="flex flex-col flex-1 gap-2">
@@ -333,7 +356,7 @@ export default function WorkspaceDashboardPage() {
 
                   <button
                       type="button"
-                      className="w-18 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
+                      className="w-20 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
                       onClick={handlePatientSearch}
                   >
                     검색
@@ -475,9 +498,18 @@ export default function WorkspaceDashboardPage() {
                         </div>
                     )}
 
-                    <button type="button" className="btn btn-medium whitespace-nowrap">
+                    {/* 파일 업로드용 숨겨진 input */}
+                    <input
+                        type="file"
+                        id="dicom-upload"
+                        className="hidden"
+                        multiple
+                        onChange={handleFileUpload}
+                    />
+                    {/* 이 라벨을 누르면 input이 트리거됨 */}
+                    <label htmlFor="dicom-upload" className="btn btn-medium cursor-pointer">
                       파일 추가
-                    </button>
+                    </label>
                   </div>
                 </div>
               </div>
