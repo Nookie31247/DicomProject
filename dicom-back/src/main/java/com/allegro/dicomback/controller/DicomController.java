@@ -2,7 +2,9 @@ package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.DicomRequestDto.*;
+import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
+import com.allegro.dicomback.service.AiService;
 import com.allegro.dicomback.service.DicomService;
 //import com.allegro.dicomback.service.OrthancSyncService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.List;
 public class DicomController {
     private final DicomService dicomService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AiService aiService;
 
     //환자 목록 불러오기
     @GetMapping("/patients")
@@ -133,12 +136,12 @@ public class DicomController {
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .body(stream);
     }
-
     //다운로드 페이지
     @GetMapping("/studies/research")
     public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {
-        Long doctorKey = jwtTokenProvider.getUserKey(token);
-        return ResponseEntity.ok(dicomService.getResearchStudies(doctorKey));
+//        Long doctorKey = jwtTokenProvider.getUserKey(token);
+        jwtTokenProvider.getUserKey(token);
+        return ResponseEntity.ok(dicomService.getResearchStudies());
     }
 
     @PostMapping("/upload")
@@ -176,4 +179,35 @@ public class DicomController {
 //        orthancSyncService.syncInstancesFromOrthanc();
 //        return ResponseEntity.ok("동기화 성공");
 //    }
+
+    //Viewer 페이지에 띄우는 이름과 생년월일(getStudyDetail)
+    @GetMapping("/studies/{studyKey}")
+    public ResponseEntity<DicomResponseDto.StudyDto> getStudyDetail(@PathVariable Long studyKey) {
+        return ResponseEntity.ok(aiService.getStudyDetail(studyKey));
+    }
+
+    //Viewer 페이지에 띄우는 series목록 해당 기능을 통해서 왼쪽에 해당 환자의 검사기록(series)을 조회 (getSeriesByStudy)
+    @GetMapping("/studies/{studyKey}/series")
+    public ResponseEntity<List<DicomResponseDto.SeriesDto>> getSeriesOfStudy(@PathVariable Long studyKey) {
+        return ResponseEntity.ok(aiService.getSeriesByStudy(studyKey));
+    }
+
+    //series 정렬 - 처음가져왔을때 해시값을 통해서 가져오므로 정렬이 제대로 안되는 경우가 있기에 정렬 작업이 필요 (getInstancesOfSeries)
+    @GetMapping("/series/{seriesKey}/instances")
+    public ResponseEntity<List<String>> getInstancesOfSeries(@PathVariable("seriesKey") Long seriesKey) {
+        return ResponseEntity.ok(aiService.getInstanceIdsBySeries(seriesKey));
+    }
+
+    //Viewer 페이지에서 Dicom 이미지를 띄우는 기능 series에 있는 정렬된 Dicom이미지를 화면에 출력한다.(getInstanceFile)
+    @GetMapping("/series/{seriesKey}/instances/{instanceId}/file")
+    public ResponseEntity<StreamingResponseBody> getInstanceFile(
+            @PathVariable Long seriesKey,
+            @PathVariable String instanceId
+    ) {
+        StreamingResponseBody stream = aiService.getInstanceFile(seriesKey, instanceId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/dicom"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + instanceId + ".dcm\"")
+                .body(stream);
+    }
 }

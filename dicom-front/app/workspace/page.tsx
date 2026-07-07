@@ -455,6 +455,7 @@ export default function WorkspaceDashboardPage() {
                   <div className="flex items-center gap-4">
                     {selectedPatient && (
                         <div className="flex gap-2">
+                          {/*다운로드 버튼(주소 이동)*/}
                           <button
                               type="button"
                               onClick={() => router.push("/research")}

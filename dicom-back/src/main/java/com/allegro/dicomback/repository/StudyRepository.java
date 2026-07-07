@@ -69,12 +69,22 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
     @Query("""
     select s
     from Study s
-    join s.patientKey p
-    where p.doctorKey.key = :doctorKey
-      and s.allowResearch = true
+    join fetch s.patientKey p
+    where s.allowResearch = true
       and s.hiddenFlag = false
     order by s.createdAt desc
     """)
-    List<Study> findResearchStudies(@Param("doctorKey") Long doctorKey);
+    List<Study> findResearchStudies();
 
 }
+// 담당 의사와 무관하게, 연구 활용 허용된(allowResearch=true) 스터디 전체 조회
+//@Query("""
+//    select s
+//    from Study s
+//    join fetch s.patientKey p
+//    where s.allowResearch = true
+//      and s.hiddenFlag = false
+//    order by s.createdAt desc
+//    """)
+//List<Study> findResearchStudies();
+
