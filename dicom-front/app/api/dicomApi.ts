@@ -20,7 +20,7 @@ const dicomApi = {
     );
   },
 
-  getStudies(patientKey: number, start: string | null, end: string | null, search:string | null) {
+  getStudies(patientId: number, start: string | null, end: string | null, search:string | null) {
     const params = new URLSearchParams();
     if (search !== null && search !== "") {
       params.append('search', search);
@@ -29,7 +29,7 @@ const dicomApi = {
       params.append('start', start);
       params.append('end', end);
     }
-    params.append("patient-key", patientKey.toString());
+    params.append("patient-key", patientId.toString());
     const queryString = params.toString();
     return apiFetch(`/api/dicom/studies?${queryString}`);
   },
@@ -47,7 +47,7 @@ const dicomApi = {
   },
 
   setStudyHide(list: HiddenStudyList[]) {
-    return apiFetch("/api/dicom/study/hide", {
+    return apiFetch("/api/dicom/studies/hide", {
       method: 'POST',
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(list),

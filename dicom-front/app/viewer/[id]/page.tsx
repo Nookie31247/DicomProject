@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-// import { patients, studies, series as allSeries } from "@/mock-data";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
 import { apiFetch } from "@/app/api/apiFetch";
 

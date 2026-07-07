@@ -9,7 +9,7 @@ public class DicomResponseDto {
 
     // 환자 목록 응답 DTO
     public record PatientDto(
-            @JsonProperty("patient-id")Long pId,
+            @JsonProperty("patient-key")Long pId,
             @JsonProperty("patient-name")String pName,
             @JsonProperty("patient-birth")LocalDate pBirth,
             @JsonProperty("patient-sex")String pSex,
