@@ -58,15 +58,15 @@ public class DbTestComponent implements CommandLineRunner {
         Study study1 = Study.builder()
                 .patientKey(patient1)
                 .uid("1.2.410.200018.7.100.1.201608221411119450437")
-                .description("스터디설명1")
-                .createdAt(LocalDateTime.of(2026, 6, 3, 0,  0))
+                .description("SKULL")
+                .createdAt(LocalDateTime.of(2016, 8, 22, 14,  31))
                 .build();
 
         Study study2 = Study.builder()
                 .patientKey(patient1)
-                .uid("1.2.410.200018.7.100.1.201608221411119450437")
-                .description("스터디설명2")
-                .createdAt(LocalDateTime.of(2026, 6, 25, 0,  0))
+                .uid("1.2.826.0.1.3680043.6.18930.1439.20170201163008.968.66")
+                .description("Head^02HeadSeq (Adult)")
+                .createdAt(LocalDateTime.of(2017, 2, 2, 10,  41))
                 .build();
         studyRepository.save(study1);
         studyRepository.save(study2);
@@ -75,19 +75,19 @@ public class DbTestComponent implements CommandLineRunner {
         Series series1 = Series.builder()
                 .studyKey(study1)
                 .uid("1.2.392.200036.9116.4.1.6116.40033.7002")
-                .seriesNum(10)
-                .bodyPart("CHEST")
-                .totalImagesCount(100)
+                .seriesNum(7)
+                .bodyPart("SKULL")
+                .totalImagesCount(152)
                 .modality("MR")
                 .build();
 
         Series series2 = Series.builder()
                 .studyKey(study1)
                 .uid("1.2.392.200036.9116.4.1.6116.40033.7004")
-                .seriesNum(20)
-                .bodyPart("HEAD")
-                .totalImagesCount(200)
-                .modality("CT")
+                .seriesNum(7)
+                .bodyPart("SKULL")
+                .totalImagesCount(36)
+                .modality("MR")
                 .build();
 
         seriesRepository.save(series1);
