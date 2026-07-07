@@ -1,38 +1,49 @@
-# ==============================================================================
-# 1. Operating Systems (OS 시스템 파일)
-# ==============================================================================
-# macOS (모든 하위 폴더 포함)
-**/.DS_Store
+# OS generated files
+.DS_Store
 .AppleDouble
 .LSOverride
+._*
+Icon?
 
-# Windows
-**/Thumbs.db
-**/Thumbs.db:encryptable
-**/ehthumbs.db
-**/desktop.ini
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
 $RECYCLE.BIN/
+*.lnk
 
-# Linux
 *~
 .fuse_hidden*
 .directory
 .Trash-*
+.nfs*
 
-
-# ==============================================================================
-# 2. IDEs (에디터 및 개발 도구)
-# ==============================================================================
-# JetBrains (IntelliJ, WebStorm, PyCharm 등)
-# .idea 폴더 내의 개인 설정 및 캐시 무시
+# IDEs and editors
 .idea/
 *.iml
 *.iws
 *.ipr
 out/
 
-# VS Code
-# 워크스페이스 설정 및 확장 프로그램 캐시
 .vscode/
 *.code-workspace
 .history/
+
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+.apt_generated/
+.apt_generated_test/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+nbproject/private/
+.nb-gradle/
