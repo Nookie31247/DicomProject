@@ -14,9 +14,9 @@ const dicomApi = {
     const queryString = params.toString();
 
     return apiFetch(
-      queryString
-        ? `/api/dicom/patients?${queryString}`
-        : `/api/dicom/patients`
+        queryString
+            ? `/api/dicom/patients?${queryString}`
+            : `/api/dicom/patients`
     );
   },
 
@@ -35,9 +35,12 @@ const dicomApi = {
   },
 
   getSeries(studyKey: number) {
-    return apiFetch(`/api/dicom/studies?study-key=${studyKey}`);
+    return apiFetch(`/api/dicom/series?study-key=${studyKey}`);
   },
 
+  getResearchStudies() {
+    return apiFetch(`/api/dicom/studies/research`);
+  },
   setPatientHide(list: HiddenPatientList[]) {
     return apiFetch("/api/dicom/patients/hide", {
       method: 'POST',
@@ -61,11 +64,23 @@ const dicomApi = {
       body: JSON.stringify(list),
     });
   },
+
+  addPatient(patient: { name: string; sex: string; birth: string }) {
+    return apiFetch("/api/dicom/patients", {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        "patient-name": patient.name,
+        "patient-sex": patient.sex,
+        "patient-birth": patient.birth
+      }),
+    });
+  },
 }
 
 export interface HiddenPatientList {
-   "patient-key" : number;
-   "hidden" : boolean;
+  "patient-key" : number;
+  "hidden" : boolean;
 }
 
 export interface HiddenStudyList {

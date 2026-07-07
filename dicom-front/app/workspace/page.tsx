@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dicomApi from "../api/dicomApi";
+import AddPatientModal from "@/app/workspace/AddPatientModal";
 
 // ── 스타일 변수 ──
 const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
@@ -86,7 +87,7 @@ export default function WorkspaceDashboardPage() {
   const router = useRouter();
 
   // =========================== 환자 설정 ==================================
-  const [, setIsAddPatientModalOpen] = useState(false);
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
   const [patients, setPatients] = useState<PatientDto[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [checkedPatientIds, setCheckedPatientIds] = useState<Set<number>>(new Set());
@@ -433,6 +434,13 @@ export default function WorkspaceDashboardPage() {
                         <div className="flex gap-2">
                           <button
                               type="button"
+                              onClick={() => router.push("/research")}
+                              className="px-2 py-1 text-xs cursor-pointer"
+                          >
+                            다운로드
+                          </button>
+                          <button
+                              type="button"
                               onClick={clearCheckedStudies}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"
@@ -539,7 +547,7 @@ export default function WorkspaceDashboardPage() {
             )}
           </section>
         </section>
-        {/*{isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchMyPatients} />}*/}
+        {isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchPatients} />}
       </div>
   );
 }

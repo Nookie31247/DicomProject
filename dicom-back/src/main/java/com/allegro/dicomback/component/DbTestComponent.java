@@ -39,7 +39,7 @@ public class DbTestComponent implements CommandLineRunner {
                 .name("홍길동")
                 .birth(LocalDate.of(1999, 12, 24))
                 .sex("M")
-                .recentStudy(LocalDateTime.of(2026, 3, 29, 15, 27))
+                .recentStudy(LocalDateTime.of(2017, 2, 2, 10, 41))
                 .studyCount(3)
                 .build();
 
@@ -68,6 +68,7 @@ public class DbTestComponent implements CommandLineRunner {
                 .description("Head^02HeadSeq (Adult)")
                 .createdAt(LocalDateTime.of(2017, 2, 2, 10,  41))
                 .build();
+
         studyRepository.save(study1);
         studyRepository.save(study2);
 
