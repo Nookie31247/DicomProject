@@ -1,13 +1,17 @@
 package com.allegro.dicomback.service;
 
+import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Series;
 import com.allegro.dicomback.entity.Study;
+import com.allegro.dicomback.entity.User;
+import com.allegro.dicomback.entity.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.PatientRepository;
 import com.allegro.dicomback.repository.SeriesRepository;
 import com.allegro.dicomback.repository.StudyRepository;
+import com.allegro.dicomback.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +43,7 @@ public class DicomService {
     private final SeriesRepository seriesRepository;
     private final StudyRepository studyRepository;
     private final PatientRepository patientRepository;
+    private final UserRepository userRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
     @Value("${orthanc.url:http://localhost:8042}")
@@ -102,7 +107,7 @@ public class DicomService {
         LocalDateTime endDay;
 
         // 시작 날짜(start)와 종료 날짜(end)가 입력되었을 때에는 검색 범위를 입력된 값으로 하고
-        // 입력되지 않았을 때에는 기본값인 최근으로부터 3개월치를 검색합니다.
+        // 입력되지 않았을 때에는 기본값인 최근으로부터 3개월치를 검색합니다. (임시로 10년까지)
         if (!StringUtils.hasText(start) || !StringUtils.hasText(end)) {
             startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(120);
             endDay = LocalDateTime.now();
@@ -347,5 +352,22 @@ public class DicomService {
                     );
                 })
                 .toList();
+    }
+    @Transactional
+    public void addPatient(Long doctorKey, PatientRequestDto request) {
+
+        User doctor = userRepository.findById(doctorKey)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+
+        Patient patient = Patient.builder()
+                .doctorKey(doctor)
+                .name(request.name())
+                .sex(request.sex())
+                .birth(request.birth())
+                .studyCount(0)
+                .hiddenFlag(false)
+                .build();
+
+        patientRepository.save(patient);
     }
 }

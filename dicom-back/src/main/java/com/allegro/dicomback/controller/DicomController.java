@@ -37,6 +37,17 @@ public class DicomController {
         return ResponseEntity.ok(dicomService.getPatients(doctorKey, start, end, search));
     }
 
+    @PostMapping("/patients")
+    public ResponseEntity<String> addPatient(
+            @CookieValue(name = "token") String token,
+            @RequestBody PatientRequestDto requestDto) {
+
+        Long doctorKey = jwtTokenProvider.getUserKey(token);
+        dicomService.addPatient(doctorKey, requestDto);
+
+        return ResponseEntity.ok("환자가 성공적으로 등록되었습니다.");
+    }
+
     //스터디 목록 불러오기
     @GetMapping("/studies")
     public ResponseEntity<List<StudyDto>> getStudies(
@@ -124,6 +135,13 @@ public class DicomController {
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .body(stream);
     }
+    //다운로드 페이지
+    @GetMapping("/studies/research")
+    public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {
+        Long doctorKey = jwtTokenProvider.getUserKey(token);
+        return ResponseEntity.ok(dicomService.getResearchStudies(doctorKey));
+    }
+
     //다운로드 페이지
     @GetMapping("/studies/research")
     public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {

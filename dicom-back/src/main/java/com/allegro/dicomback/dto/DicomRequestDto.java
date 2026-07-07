@@ -1,6 +1,9 @@
 package com.allegro.dicomback.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDate;
 
 public class DicomRequestDto {
     //환자 목록 숨기기/보이기 설정
@@ -20,5 +23,17 @@ public class DicomRequestDto {
     public record SeriesHideDto(
             @JsonProperty("series-key") Long seriesKey,
             @JsonProperty("hidden") boolean hidden
+    ) {}
+
+    public record PatientRequestDto(
+            @JsonProperty("patient-name")
+            String name,
+
+            @JsonProperty("patient-sex")
+            String sex,
+
+            @JsonProperty("patient-birth")
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate birth
     ) {}
 }

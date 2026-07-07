@@ -49,16 +49,16 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
-    """
-        update Study s
-        set s.hiddenFlag = :isHidden
-        where s.key in :studyKeys
-        and exists(
-            select 1 from Patient p
-            where p = s.patientKey
-            and p.doctorKey.key = :doctorKey
-        )
-    """)
+            """
+                update Study s
+                set s.hiddenFlag = :isHidden
+                where s.key in :studyKeys
+                and exists(
+                    select 1 from Patient p
+                    where p = s.patientKey
+                    and p.doctorKey.key = :doctorKey
+                )
+            """)
     int changeHiddenFlag(
             @Param("doctorKey") Long doctorKey,
             @Param("studyKeys") List<Long> studyKeys,

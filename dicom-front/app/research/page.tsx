@@ -128,7 +128,7 @@ export default function ResearchDataPage() {
     });
 
     const gridCols = "40px 1fr 1fr 1fr 100px";
-    
+
     return (
         <div className="page p-8 max-w-[1200px] mx-auto">
             {/* 상단 헤더 영역에 검색 필터 통합 */}
@@ -224,18 +224,18 @@ export default function ResearchDataPage() {
                     </h2>
 
                     <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-                    {[
-                        { label: "환자 정보", desc: "익명으로 데이터 치환" },
-                        { label: "검사 정보", desc: "익명화 및 데이터의 일반화" },
-                        { label: "UID 속 장비번호·날짜", desc: "시퀀스 내부까지 순회" },
-                        { label: "파일 정보", desc: "정보 마스킹 처리 및 규칙 변경" }
-                    ].map((rule) => (
-                        <div key={rule.label} className="bg-paper p-3 rounded-lg border border-line">
-                            <div className="font-bold text-ink mb-0.5">{rule.label}</div>
-                            <div className="text-ink-soft">{rule.desc}</div>
-                        </div>
-                    ))}
-                </div>
+                        {[
+                            { label: "환자 정보", desc: "익명으로 데이터 치환" },
+                            { label: "검사 정보", desc: "익명화 및 데이터의 일반화" },
+                            { label: "UID 속 장비번호·날짜", desc: "시퀀스 내부까지 순회" },
+                            { label: "파일 정보", desc: "정보 마스킹 처리 및 규칙 변경" }
+                        ].map((rule) => (
+                            <div key={rule.label} className="bg-paper p-3 rounded-lg border border-line">
+                                <div className="font-bold text-ink mb-0.5">{rule.label}</div>
+                                <div className="text-ink-soft">{rule.desc}</div>
+                            </div>
+                        ))}
+                    </div>
 
                     <div className="p-4 bg-canvas rounded-xl mb-6 text-xs text-ink-soft leading-relaxed flex gap-2">
                         <AlertCircle size={16} className="shrink-0 text-mint-deep" />
