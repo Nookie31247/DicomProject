@@ -64,9 +64,7 @@ public class AiService {
                 seriesNum,
                 imagesNum,
                 study.getAllowResearch() != null && study.getAllowResearch(),
-                study.getHiddenFlag() != null && study.getHiddenFlag(),
-                patient.getName(),
-                patient.getBirth()
+                study.getHiddenFlag() != null && study.getHiddenFlag()
         );
     }
 

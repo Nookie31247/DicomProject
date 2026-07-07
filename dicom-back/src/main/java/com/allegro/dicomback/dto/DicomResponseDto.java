@@ -26,9 +26,7 @@ public class DicomResponseDto {
             @JsonProperty("series-num")Number seriesNum,
             @JsonProperty("images-num")Number imagesNum,
             @JsonProperty("allow-research")boolean allowedResearch,
-            @JsonProperty("hidden")boolean hidden,
-            @JsonProperty("patient-name")String patientName,      // Dicom 상세페이지에 이름과 생년월일 띄우는 용도 (ex: 홍길동 1910-09-12)
-            @JsonProperty("patient-birth")LocalDate patientBirth
+            @JsonProperty("hidden")boolean hidden
     ) {}
 
     // Series 목록 응답 DTO
