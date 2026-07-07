@@ -35,9 +35,12 @@ const dicomApi = {
   },
 
   getSeries(studyKey: number) {
-    return apiFetch(`/api/dicom/studies?study-key=${studyKey}`);
+    return apiFetch(`/api/dicom/series?study-key=${studyKey}`);
   },
 
+  getResearchStudies() {
+    return apiFetch(`/api/dicom/studies/research`);
+  },
   setPatientHide(list: HiddenPatientList[]) {
     return apiFetch("/api/dicom/patients/hide", {
       method: 'POST',

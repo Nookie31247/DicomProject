@@ -124,6 +124,12 @@ public class DicomController {
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .body(stream);
     }
+    //다운로드 페이지
+    @GetMapping("/studies/research")
+    public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {
+        Long doctorKey = jwtTokenProvider.getUserKey(token);
+        return ResponseEntity.ok(dicomService.getResearchStudies(doctorKey));
+    }
 
 //    //이미지 다운로드
 //    @GetMapping("/images/download")

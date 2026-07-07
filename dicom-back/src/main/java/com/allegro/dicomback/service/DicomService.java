@@ -104,7 +104,7 @@ public class DicomService {
         // 시작 날짜(start)와 종료 날짜(end)가 입력되었을 때에는 검색 범위를 입력된 값으로 하고
         // 입력되지 않았을 때에는 기본값인 최근으로부터 3개월치를 검색합니다.
         if (!StringUtils.hasText(start) || !StringUtils.hasText(end)) {
-            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(3);
+            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(120);
             endDay = LocalDateTime.now();
         }
         else {
@@ -297,5 +297,39 @@ public class DicomService {
                 return null;
             });
         };
+    }
+
+    public List<StudyDto> getResearchStudies(Long doctorKey) {
+        List<Study> studyList = studyRepository.findResearchStudies(doctorKey);
+        if (studyList.isEmpty()) return List.of();
+
+        List<Long> studyKeys = studyList.stream().map(Study::getKey).toList();
+        Map<Long, SeriesRepository.SeriesAndImagesCount> countMap =
+                seriesRepository.getSeriesAndImagesCount(studyKeys)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                SeriesRepository.SeriesAndImagesCount::getStudyKey,
+                                Function.identity()
+                        ));
+
+        return studyList.stream()
+                .map(study -> {
+                    SeriesRepository.SeriesAndImagesCount count = countMap.get(study.getKey());
+                    Long seriesNum = count == null ? 0L : count.getSeriesNum();
+                    Long imagesNum = count == null ? 0L : count.getImagesNum();
+
+                    return new StudyDto(
+                            study.getKey(),
+                            study.getDescription(),
+                            study.getCreatedAt(),
+                            seriesNum,
+                            imagesNum,
+                            study.getAllowResearch(),
+                            study.getHiddenFlag(),
+                            study.getPatientKey().getName(),
+                            study.getPatientKey().getBirth()
+                    );
+                })
+                .toList();
     }
 }
