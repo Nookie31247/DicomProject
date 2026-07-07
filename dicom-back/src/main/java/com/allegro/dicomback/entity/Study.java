@@ -17,7 +17,7 @@ public class Study {
     @Column(name = "id")
     private Long key;
 
-    @Column(unique = true)
+    @Column(unique = true, name = "uid")
     private String uid;
 
     @ManyToOne(fetch = FetchType.LAZY)

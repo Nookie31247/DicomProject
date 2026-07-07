@@ -19,6 +19,9 @@ public class Series {
     @Column(name = "id")
     private Long key;
 
+    @Column(name = "uid", unique = true)
+    private String uid;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_key", nullable = false)
     private Study studyKey;
