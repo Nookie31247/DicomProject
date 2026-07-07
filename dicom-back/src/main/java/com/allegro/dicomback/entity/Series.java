@@ -40,7 +40,7 @@ public class Series {
     private String orthancId;
 
     @Column(name = "total_images_conut")
-    private Integer totalImagesCount; // 해당 시리즈 내의 이미지 개수
+    private Integer totalImagesCount = 0; // 해당 시리즈 내의 이미지 개수
 
     // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default

@@ -17,6 +17,9 @@ public class Study {
     @Column(name = "id")
     private Long key;
 
+    @Column(unique = true)
+    private String uid;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_key", nullable = false)
     private Patient patientKey;
@@ -37,9 +40,4 @@ public class Study {
     @Builder.Default
     @Column(name = "hidden_flag", nullable = false)
     private Boolean hiddenFlag = false;
-
-    // 스터디 숨김 여부 설정
-    public void setHidden(boolean isHidden) {
-        this.hiddenFlag = isHidden;
-    }
 }
