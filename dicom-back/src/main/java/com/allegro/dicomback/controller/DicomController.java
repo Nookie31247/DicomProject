@@ -62,6 +62,11 @@ public class DicomController {
     public ResponseEntity<Void> anonymizeStudies(
             @RequestParam("study-key")Long studyKey
     ) {
+        // 1. 데이터 불러오기
+
+        // 2. 익명화 작업 진행
+
+        // 3. 익명화 파일을 보관하는 서버로 전송
         return ResponseEntity.ok().build();
     }
 

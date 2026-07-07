@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  pacs-server-anonymization:
+    image: orthancteam/orthanc:latest
+    container_name: pacs-orthanc-anonymization
+    ports:
+      - "8043:8042"
+      - "4243:4242"
+    environment:
+      ORTHANC__NAME: "Hanul_Hospital_Anonymization_PACS"
+
+      DICOM_WEB_PLUGIN_ENABLED: "true"
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+
+      ORTHANC_EXPLORER_2_PLUGIN_ENABLED: "true"
+      ORTHANC__ORTHANC_EXPLORER2__ENABLE: "true"
+      ORTHANC__ORTHANC_EXPLORER2__IS_DEFAULT_ORTHANC_UI: "true"
+
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
+
+    volumes:
+      - pacs-orthanc-anonymization:/var/lib/orthanc/db
+
+  pacs-db-anonymization:
+    image: mysql:8.0
+    container_name: pacs-db-anonymization
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "anonymization_password"
+      MYSQL_DATABASE: "anonymizationdb"
+    volumes:
+      - pacs-db-anonymization:/var/lib/mysql
+
+  redis-anonymization:
+    image: redis:latest
+    container_name: pacs-redis-anonymization
+    ports:
+      - "6380:6379"
+    volumes:
+      - pacs-redis-anonymization:/data
+
+volumes:
+  pacs-orthanc-anonymization:
+  pacs-db-anonymization:
+  pacs-redis-anonymization:

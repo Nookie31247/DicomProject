@@ -16,48 +16,16 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     }
 
     @Query(
-    """
-    select
-        s.studyKey.key as studyKey,
-        count(s) as seriesNum,
-        coalesce(sum(s.totalImagesCount), 0) as imagesNum
-    from Series s
-    where s.studyKey.key in :studyKeys
-    group by s.studyKey.key
-    """)
+            """
+                    select
+                        s.studyKey.key as studyKey,
+                        count(s) as seriesNum,
+                        coalesce(sum(s.totalImagesCount), 0) as imagesNum
+                    from Series s
+                    where s.studyKey.key in :studyKeys
+                    group by s.studyKey.key
+                    """)
     List<SeriesAndImagesCount> getSeriesAndImagesCount(@Param("studyKeys") List<Long> studyKeys);
 
-    @Query(
-    """
-    select se
-    from Series se
-    join se.studyKey st
-    join st.patientKey p
-    where p.doctorKey.key = :doctorKey
-        and st.key = :studyKey
-    """)
-    List<Series> getSeries(
-            @Param("doctorKey") Long doctorKey,
-            @Param("studyKey") Long studyKey
-    );
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(
-    """
-        update Series se
-        set se.hiddenFlag = :isHidden
-        where se.key in :seriesKeys
-        and exists (
-            select 1
-            from Study st
-            where st = se.studyKey
-            and st.patientKey.doctorKey.key = :doctorKey
-        )
-    """
-    )
-    int changeHiddenFlag(
-            @Param("doctorKey") Long doctorKey,
-            @Param("seriesKeys") List<Long> seriesKeys,
-            @Param("isHidden") boolean isHidden
-    );
+    List<Series> findSeriesByStudyKey_Key(Long studyKey);
 }

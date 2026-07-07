@@ -2,6 +2,11 @@ package com.allegro.backanonymization.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Study {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,24 +26,20 @@ public class Study {
     @Column(unique = true, name = "uid")
     private String uid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "patient_key", nullable = false)
-    private Patient patientKey;
-
     @Column(name = "created_at")
+    @CreatedDate
     private LocalDateTime createdAt;
+
+    @Column(name = "patient_birth")
+    private LocalDate patientBirth;
+
+    @Column(name = "patient_sex")
+    private String patientSex;
 
     @Column(name = "description")
     private String description;
 
-    @Builder.Default
-    @Column(name = "allow_research", nullable = false)
-    private Boolean allowResearch = false;
-
     @Column(name = "orthanc_id")
     private String orthancId;
 
-    @Builder.Default
-    @Column(name = "hidden_flag", nullable = false)
-    private Boolean hiddenFlag = false;
 }
