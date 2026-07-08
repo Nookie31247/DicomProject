@@ -31,6 +31,11 @@ type SeriesDto = {
     hidden: boolean;
 };
 
+type InstanceInfo = {
+    "instance-id": string;
+    "number-of-frames": number;
+};
+
 export default function ViewerPage() {
     const params = useParams();
     const studyKey = Number(params?.id);
@@ -82,17 +87,19 @@ export default function ViewerPage() {
 
         async function loadInstances() {
             try {
-                const instanceIds: string[] = await apiFetch(
+                const instances: InstanceInfo[] = await apiFetch(
                     `/api/dicom/series/${selectedSeriesId}/instances`,
                     { credentials: "include" }
                 );
-
-                // DicomViewer가 fetch할 raw DICOM 스트리밍 URL 목록.
-                // apiFetch를 거치지 않고 상대경로 문자열만 조립 -> next.config.ts의 rewrites가
-                // /api/* 요청을 자동으로 백엔드(8080)로 프록시해줌.
-                const urls = instanceIds.map(
-                    (id) => `/api/dicom/series/${selectedSeriesId}/instances/${id}/file`
-                );
+                // 프레임이 여러 장인 인스턴스는 number-of-frames만큼 URL을 펼쳐서 만든다.
+                // 같은 파일 URL에 ?frame=N만 다르게 붙이면, cornerstone-wado-image-loader가 파일을 한 번만 받아서 그 안에서 N번째 프레임만 잘라 보여준다
+                const urls = instances.flatMap((inst) => {
+                    const baseUrl = `/api/dicom/series/${selectedSeriesId}/instances/${inst["instance-id"]}/file`;
+                    const frameCount = inst["number-of-frames"] || 1;
+                    return frameCount <= 1
+                        ? [baseUrl]
+                        : Array.from({ length: frameCount }, (_, frame) => `${baseUrl}?frame=${frame}`);
+                });
                 setDicomUrls(urls);
             } catch (e) {
                 setError(e instanceof Error ? e.message : "이미지 목록을 불러오지 못했습니다.");

@@ -222,8 +222,8 @@ public class DicomController {
 
     //series 정렬 (getInstancesOfSeries) — 로그 안 남김
     @GetMapping("/series/{seriesKey}/instances")
-    public ResponseEntity<List<String>> getInstancesOfSeries(@PathVariable("seriesKey") Long seriesKey) {
-        return ResponseEntity.ok(aiService.getInstanceIdsBySeries(seriesKey));
+    public ResponseEntity<List<DicomResponseDto.InstanceInfoDto>> getInstancesOfSeries(@PathVariable("seriesKey") Long seriesKey) {
+        return ResponseEntity.ok(aiService.getInstancesBySeries(seriesKey));
     }
 
     //Viewer에서 Dicom 이미지를 띄우는 기능 (getInstanceFile) — 로그 안 남기
