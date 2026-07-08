@@ -123,6 +123,45 @@ public class AiService {
                 .collect(Collectors.toList());
     }
 
+    // 프론트 뷰어 목록 조회용으로 이 메서드
+    @SuppressWarnings("unchecked")
+    public List<DicomResponseDto.InstanceInfoDto> getInstancesBySeries(Long seriesKey) {
+        Series series = seriesRepository.findById(seriesKey)
+                .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
+
+        if (series.getOrthancId() == null) {
+            throw new BaseException(ErrorCode.SERIES_NOT_SYNCED);
+        }
+
+        String url = orthancUrl + "/series/" + series.getOrthancId() + "/instances?expand=true";
+        List<Map<String, Object>> instances = restTemplate.getForObject(url, List.class);
+
+        if (instances == null || instances.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        return instances.stream()
+                .sorted(Comparator.comparingInt(this::extractInstanceNumber))
+                .map(inst -> new DicomResponseDto.InstanceInfoDto(
+                        (String) inst.get("ID"),
+                        extractNumberOfFrames(inst)
+                ))
+                .collect(Collectors.toList());
+    }
+
+
+    // MainDicomTags의 NumberOfFrames(0028,0008) 태그를 파싱(초음파나 혈과 같은 한 Instance(1장의 이미지) 안에 수십개의 이미지가 있는 경우가 존재)
+    // 태그가 아예 없으면(일반 단일 프레임 이미지) 1장으로 취급.
+    @SuppressWarnings("unchecked")
+    private int extractNumberOfFrames(Map<String, Object> instance) {
+        try {
+            Map<String, Object> tags = (Map<String, Object>) instance.get("MainDicomTags");
+            String num = (String) tags.get("NumberOfFrames");
+            return (num != null && !num.isBlank()) ? Integer.parseInt(num.trim()) : 1;
+        } catch (Exception e) {
+            return 1;
+        }
+    }
     // 인스턴스 하나의 raw DICOM 바이너리 프록시
     //Viewer 페이지에서 Dicom 이미지를 띄우는 기능 series에 있는 정렬된 Dicom이미지를 화면에 출력한다.(getInstanceFile)
     public StreamingResponseBody getInstanceFile(Long seriesKey, String instanceId) {

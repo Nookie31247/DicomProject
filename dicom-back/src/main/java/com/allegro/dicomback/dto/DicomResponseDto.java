@@ -74,6 +74,13 @@ public class DicomResponseDto {
             @JsonProperty("failed-files") List<String> failedFiles         // 실패한 파일명 목록
     ) {}
 
+    // 멀티프레임(시네) 인스턴스를 프론트가 N장으로 펼쳐서 보여줄 수 있도록
+    // 인스턴스ID뿐 아니라 그 안에 프레임이 몇 장 들어있는지도 같이 내려준다.
+    public record InstanceInfoDto(
+            @JsonProperty("instance-id") String instanceId,
+            @JsonProperty("number-of-frames") int numberOfFrames // 일반 이미지는 1, 시네 루프는 2 이상
+    ) {}
+
 //    //익명화 DTo 필요없음
 //    public record StudyAnonymizationDto(
 //            @JsonProperty("study-key") Long studyKey
