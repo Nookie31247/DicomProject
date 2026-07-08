@@ -46,7 +46,7 @@ public class AiService {
 
 
     //Viewer 페이지에 띄우는 이름과 생년월일(getStudyDetail)
-    public DicomResponseDto.StudyDto getStudyDetail(Long studyKey) {
+    public DicomResponseDto.StudyDetailDto getStudyDetail(Long studyKey) {
         Study study = studyRepository.findById(studyKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
 
@@ -57,14 +57,20 @@ public class AiService {
         Long seriesNum = counts.isEmpty() ? 0L : counts.get(0).getSeriesNum();
         Long imagesNum = counts.isEmpty() ? 0L : counts.get(0).getImagesNum();
 
-        return new DicomResponseDto.StudyDto(
+        DicomResponseDto.PatientSummaryDto patientSummary = new DicomResponseDto.PatientSummaryDto(
+                patient.getName(),
+                patient.getBirth()
+        );
+
+        return new DicomResponseDto.StudyDetailDto(
                 study.getKey(),
                 study.getDescription(),
                 study.getCreatedAt(),
                 seriesNum,
                 imagesNum,
                 study.getAllowResearch() != null && study.getAllowResearch(),
-                study.getHiddenFlag() != null && study.getHiddenFlag()
+                study.getHiddenFlag() != null && study.getHiddenFlag(),
+                patientSummary
         );
     }
 

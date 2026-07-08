@@ -152,7 +152,7 @@ public class DicomController {
         for (MultipartFile file : files) {
             try {
                 // 아까 작성한 서비스 메서드 호출
-                dicomService.processDicomFile(file);
+                dicomService.processDicomFile(patientKey, file);
             } catch (Exception e) {
                 return ResponseEntity.internalServerError().body("파일 처리 실패: " + file.getOriginalFilename());
             }
@@ -182,7 +182,7 @@ public class DicomController {
 
     //Viewer 페이지에 띄우는 이름과 생년월일(getStudyDetail)
     @GetMapping("/studies/{studyKey}")
-    public ResponseEntity<DicomResponseDto.StudyDto> getStudyDetail(@PathVariable Long studyKey) {
+    public ResponseEntity<DicomResponseDto.StudyDetailDto> getStudyDetail(@PathVariable Long studyKey) {
         return ResponseEntity.ok(aiService.getStudyDetail(studyKey));
     }
 
