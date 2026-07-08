@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class DicomResponseDto {
 
@@ -64,6 +65,13 @@ public class DicomResponseDto {
             @JsonProperty("datetime")LocalDateTime datetime,
             @JsonProperty("path")String path, // 뷰어에서 이미지를 로드하기 위한 파일 경로
             @JsonProperty("hidden")boolean hidden
+    ) {}
+
+    // 파일 업로드 결과 응답 DTO — 여러 파일을 한 번에 올릴 때
+    // 어떤 파일이 성공했고 어떤 파일이 실패했는지 프론트에 요약해서 알려주기 위한 용도
+    public record UploadResultDto(
+            @JsonProperty("succeeded-files") List<String> succeededFiles, // 성공한 파일명 목록
+            @JsonProperty("failed-files") List<String> failedFiles         // 실패한 파일명 목록
     ) {}
 
 //    //익명화 DTo 필요없음

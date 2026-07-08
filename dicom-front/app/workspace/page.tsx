@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {useState, useEffect, useRef} from "react";
 import { useRouter } from "next/navigation";
 import dicomApi from "../api/dicomApi";
 import AddPatientModal from "@/app/workspace/AddPatientModal";
@@ -95,6 +95,9 @@ export default function WorkspaceDashboardPage() {
   const [patientSearchKeyword, setPatientSearchKeyword] = useState("");
   const [patientStartDate, setPatientStartDate] = useState(getDefaultPatientStartDate);
   const [patientEndDate, setPatientEndDate] = useState(getDefaultPatientEndDate);
+  const [showUploadMenu, setShowUploadMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // 서버에서 환자 목록 가져오기
   const fetchPatients = async (
@@ -102,10 +105,10 @@ export default function WorkspaceDashboardPage() {
       start: string | null = patientStartDate,
       end: string | null = patientEndDate,
   ) => {
-      const res = await dicomApi.getPatients(start || null, end || null, search?.trim() || null);
+    const res = await dicomApi.getPatients(start || null, end || null, search?.trim() || null);
 
-      setPatients(res as PatientDto[]);
-    };
+    setPatients(res as PatientDto[]);
+  };
 
   // 환자 선택하기 (선택한 환자는 하이라이팅되며, 환자의 스터디가 로딩된다.)
   const handleSelectPatient = (id: number) => {
@@ -235,10 +238,6 @@ export default function WorkspaceDashboardPage() {
     setStudyError(null);
   };
 
-  // 한 요청에 파일을 너무 많이 담으면 Tomcat의 멀티파트 파트 개수 제한에 걸려 파싱 자체가 실패하므로,
-  // 파일을 이 개수 단위로 나눠서 순차적으로(하나씩 끝나면 다음 배치) 업로드한다.
-  const UPLOAD_BATCH_SIZE = 10;
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !selectedPatientId) {
@@ -246,22 +245,12 @@ export default function WorkspaceDashboardPage() {
       return;
     }
 
-    const fileList = Array.from(files);
-    const batches: File[][] = [];
-    for (let i = 0; i < fileList.length; i += UPLOAD_BATCH_SIZE) {
-      batches.push(fileList.slice(i, i + UPLOAD_BATCH_SIZE));
-    }
+    const formData = new FormData();
+    formData.append("patientKey", selectedPatientId.toString());
+    Array.from(files).forEach(file => formData.append("files", file));
 
     try {
-      for (const batch of batches) {
-        const formData = new FormData();
-        formData.append("patientKey", selectedPatientId.toString());
-        batch.forEach(file => formData.append("files", file));
-
-        // eslint-disable-next-line no-await-in-loop
-        await dicomApi.uploadDicomFiles(formData);
-      }
-
+      await dicomApi.uploadDicomFiles(formData);
       alert("파일 업로드 및 태그 추출 완료!");
       // 업로드 후 스터디 목록 새로고침
       void fetchStudies(selectedPatientId);
@@ -514,17 +503,62 @@ export default function WorkspaceDashboardPage() {
                     )}
 
                     {/* 파일 업로드용 숨겨진 input */}
-                    <input
-                        type="file"
-                        id="dicom-upload"
-                        className="hidden"
-                        multiple
-                        onChange={handleFileUpload}
-                    />
-                    {/* 이 라벨을 누르면 input이 트리거됨 */}
-                    <label htmlFor="dicom-upload" className="btn btn-medium cursor-pointer">
-                      파일 추가
-                    </label>
+                    <div className="relative">
+                      <button
+                          type="button"
+                          className="btn btn-medium cursor-pointer"
+                          onClick={() => setShowUploadMenu(prev => !prev)}
+                      >
+                        파일 추가
+                      </button>
+
+                      {/* 버튼 눌렀을 때만 아래에 뜨는 작은 선택 메뉴 */}
+                      {showUploadMenu && (
+                          <div className="absolute mt-1 flex flex-col border rounded bg-white shadow z-10">
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  fileInputRef.current?.click(); // 숨겨진 일반 파일 input을 대신 클릭
+                                  setShowUploadMenu(false);
+                                }}
+                            >
+                              파일로 추가
+                            </button>
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  folderInputRef.current?.click(); // 숨겨진 폴더 input을 대신 클릭
+                                  setShowUploadMenu(false);
+                                }}
+                            >
+                              폴더로 추가
+                            </button>
+                          </div>
+                      )}
+
+                      {/* 일반 파일 여러 개 선택용 화면엔 안 보임 */}
+                      <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          onChange={handleFileUpload}
+                      />
+
+                      {/* 폴더 전체(하위 폴더 포함) 선택용, 화면엔 안 보임 */}
+                      <input
+                          ref={folderInputRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          // @ts-expect-error - React 타입 정의에 webkitdirectory가 없어서 타입 에러 무시
+                          webkitdirectory=""
+                          directory=""
+                          onChange={handleFileUpload}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -551,34 +585,34 @@ export default function WorkspaceDashboardPage() {
                         <li className="p-4 text-center text-sm text-red-600">{studyError}</li>
                     ) : displayedStudies.length > 0 ? (
                         displayedStudies.map((it) => (
-                              <li key={it["study-key"]}>
-                                <div
-                                    className="study-row grid items-center gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] border-transparent rounded-xl bg-transparent font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 hover:bg-canvas"
-                                    onDoubleClick={() => router.push(`/viewer/${it["study-key"]}`)}
-                                    style={{ gridTemplateColumns: studyGridColumns }}
-                                    title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
+                            <li key={it["study-key"]}>
+                              <div
+                                  className="study-row grid items-center gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] border-transparent rounded-xl bg-transparent font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 hover:bg-canvas"
+                                  onDoubleClick={() => router.push(`/viewer/${it["study-key"]}`)}
+                                  style={{ gridTemplateColumns: studyGridColumns }}
+                                  title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
+                              >
+                                <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+                                  <input
+                                      type="checkbox"
+                                      checked={checkedStudyIds.has(it["study-key"])}
+                                      onChange={() => toggleStudyCheck(it["study-key"])}
+                                      className="cursor-pointer"
+                                  />
+                                </div>
+                                <span className={colDescClass}>{it.description ? it.description : "-"}</span>
+                                <span className={colDateClass}>{formatDate(it.datetime)}</span>
+                                <span className={colSeriesClass}>#{it["series-num"]}</span>
+                                <span className={colImagesClass}>{it["images-num"]}</span>
+                                <span
+                                    className={`text-center font-bold ${
+                                        it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
+                                    }`}
                                 >
-                                  <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedStudyIds.has(it["study-key"])}
-                                        onChange={() => toggleStudyCheck(it["study-key"])}
-                                        className="cursor-pointer"
-                                    />
-                                  </div>
-                                  <span className={colDescClass}>{it.description ? it.description : "-"}</span>
-                                  <span className={colDateClass}>{formatDate(it.datetime)}</span>
-                                  <span className={colSeriesClass}>#{it["series-num"]}</span>
-                                  <span className={colImagesClass}>{it["images-num"]}</span>
-                                  <span
-                                      className={`text-center font-bold ${
-                                          it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
-                                      }`}
-                                  >
                                     {it["allow-research"] ? "예" : "아니오"}
                                   </span>
-                                </div>
-                              </li>
+                              </div>
+                            </li>
                         ))
                     ) : (
                         <li className="p-4 text-center text-slate-500 text-sm">
