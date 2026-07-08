@@ -11,6 +11,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface StudyRepository extends JpaRepository<Study, Long> {
+
+    // 같은 Study Instance UID가 이미 저장되어 있는지 확인 (중복 저장 방지)
+    boolean existsByUid(String uid);
+
+    // uid(Study Instance UID)로 기존 Study를 찾기 (있으면 재사용, 없으면 신규 생성)
+    java.util.Optional<Study> findByUid(String uid);
+
     // 검색어가 없을 때의 조회
     @Query("""
 

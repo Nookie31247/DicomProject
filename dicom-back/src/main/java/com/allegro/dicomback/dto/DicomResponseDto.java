@@ -29,6 +29,24 @@ public class DicomResponseDto {
             @JsonProperty("hidden")boolean hidden
     ) {}
 
+    // Viewer 페이지의 Study 상세 응답 DTO (목록용 StudyDto와 달리, 연결된 환자 정보를 patient 객체로 함께 내려준다)
+    public record StudyDetailDto(
+            @JsonProperty("study-key") Long studyKey,
+            @JsonProperty("description")String description,
+            @JsonProperty("datetime")LocalDateTime dateTime,
+            @JsonProperty("series-num")Number seriesNum,
+            @JsonProperty("images-num")Number imagesNum,
+            @JsonProperty("allow-research")boolean allowedResearch,
+            @JsonProperty("hidden")boolean hidden,
+            @JsonProperty("patient") PatientSummaryDto patient
+    ) {}
+
+    // Study 상세에 함께 실리는 환자 요약 정보 (이름, 생년월일만)
+    public record PatientSummaryDto(
+            @JsonProperty("name") String name,
+            @JsonProperty("birth") LocalDate birth
+    ) {}
+
     // Series 목록 응답 DTO
     public record SeriesDto(
             @JsonProperty("series-key")Long seriesKey,

@@ -82,13 +82,13 @@ const dicomApi = {
     });
   },
 
-  uploadDicomFiles: async (formData: FormData) => {
-    const res = await fetch("/api/dicom/upload", {
+  // /api/dicom/upload는 app/api/dicom/upload/route.ts가 직접 처리한다(Next rewrite의
+  // multipart 유실 버그 우회용 커스텀 프록시). apiFetch는 그대로 상대경로로 호출하면 된다.
+  uploadDicomFiles: (formData: FormData) => {
+    return apiFetch("/api/dicom/upload", {
       method: "POST",
       body: formData,
     });
-    if (!res.ok) throw new Error("파일 업로드 서버 오류");
-    return res.json();
   }
 }
 

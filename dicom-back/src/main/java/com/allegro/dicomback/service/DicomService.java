@@ -17,7 +17,10 @@ import org.dcm4che3.io.DicomInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
@@ -27,11 +30,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
 import com.allegro.dicomback.dto.DicomRequestDto.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.Function;
@@ -378,20 +384,197 @@ public class DicomService {
         patientRepository.save(patient);
     }
 
-    public void processDicomFile(MultipartFile file) throws IOException {
-        try (DicomInputStream dis = new DicomInputStream(file.getInputStream())) {
-            Attributes attrs = dis.readDataset(-1, -1);
+    @Transactional
+    public void processDicomFile(Long patientKey, MultipartFile file) throws IOException {
+        // Orthanc 업로드용으로 바이트를 한 번만 읽어서 재사용한다.
+        // (file.getInputStream()을 두 번 열어도 되긴 하지만, 바이트 배열로 고정해두는 게 더 안전하다)
+        byte[] fileBytes = file.getBytes();
 
-            String studyInstanceUid = attrs.getString(Tag.StudyInstanceUID);
-            String studyDate = attrs.getString(Tag.StudyDate);
-            String studyTime = attrs.getString(Tag.StudyTime);
-            String studyDescription = attrs.getString(Tag.StudyDescription);
-
-            log.info("--- DICOM 태그 추출 성공 ---");
-            log.info("UID: {}", studyInstanceUid);
-            log.info("Date/Time: {} {}", studyDate, studyTime);
-            log.info("Description: {}", studyDescription);
+        Attributes attrs;
+        try (DicomInputStream dis = new DicomInputStream(new ByteArrayInputStream(fileBytes))) {
+            attrs = dis.readDataset(-1, -1);
         }
+
+        String studyInstanceUid = attrs.getString(Tag.StudyInstanceUID);
+        String studyDate = attrs.getString(Tag.StudyDate);
+        String studyTime = attrs.getString(Tag.StudyTime);
+        String studyDescription = attrs.getString(Tag.StudyDescription);
+
+        String seriesInstanceUid = attrs.getString(Tag.SeriesInstanceUID);
+        String seriesDate = attrs.getString(Tag.SeriesDate);
+        String seriesTime = attrs.getString(Tag.SeriesTime);
+        String modality = attrs.getString(Tag.Modality);
+        String bodyPart = attrs.getString(Tag.BodyPartExamined);
+        Integer seriesNum = parseIntTag(attrs.getString(Tag.SeriesNumber));
+
+        log.info("--- DICOM 태그 추출 성공 ---");
+        log.info("Study UID: {}, Series UID: {}", studyInstanceUid, seriesInstanceUid);
+        log.info("Description: {}", studyDescription);
+
+        // 1단계: PACS(Orthanc)에 원본 파일을 그대로 업로드한다.
+        // Orthanc가 파일 안의 태그를 직접 읽어서 Patient/Study/Series/Instance 계층으로 알아서 정렬해주기 때문에
+        // 별도로 구조를 맞춰서 보낼 필요가 없다. 이미 올라간 인스턴스를 다시 올려도 에러가 나지 않고
+        // Status: "AlreadyStored"로 응답하므로, 같은 파일을 몇 번을 올려도 안전하다(idempotent).
+        OrthancInstanceResponse orthancResponse = uploadToOrthanc(fileBytes);
+        log.info("Orthanc 업로드 결과: status={}, studyId={}, seriesId={}",
+                orthancResponse.status(), orthancResponse.parentStudy(), orthancResponse.parentSeries());
+
+        // 2단계: Study Instance UID로 기존 Study를 찾는다.
+        // - 없으면 새로 만들고, PACS가 방금 알려준 studyId를 orthanc_id에 바로 넣는다.
+        // - 이미 있으면(같은 Study의 다른 인스턴스/시리즈를 올린 경우) 새로 만들지 않고,
+        //   orthanc_id가 비어있을 때만 채워준다.
+        Study study = studyRepository.findByUid(studyInstanceUid).orElse(null);
+        if (study == null) {
+            Patient patient = patientRepository.findById(patientKey)
+                    .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+
+            study = Study.builder()
+                    .uid(studyInstanceUid)
+                    .patientKey(patient)
+                    .createdAt(parseDicomDateTime(studyDate, studyTime))
+                    .description(studyDescription)
+                    .allowResearch(false)
+                    .hiddenFlag(false)
+                    .orthancId(orthancResponse.parentStudy())
+                    .build();
+            study = studyRepository.save(study);
+            log.info("새 Study 저장 완료. UID: {}", studyInstanceUid);
+
+            // 환자의 검사 횟수(study_count) +1
+            patient.setStudyCount((patient.getStudyCount() == null ? 0 : patient.getStudyCount()) + 1);
+
+            // 환자의 최근 검사일(recent_study)을 이번에 새로 생긴 Study의 날짜로 갱신
+            // (기존 Study는 날짜가 바뀌지 않으므로, 새 Study가 생길 때만 비교/갱신하면 충분하다)
+            if (patient.getRecentStudy() == null || study.getCreatedAt().isAfter(patient.getRecentStudy())) {
+                patient.setRecentStudy(study.getCreatedAt());
+            }
+
+            patientRepository.save(patient);
+        } else if (study.getOrthancId() == null && orthancResponse.parentStudy() != null) {
+            study.setOrthancId(orthancResponse.parentStudy());
+            studyRepository.save(study);
+            log.info("기존 Study의 orthanc_id를 채워넣었습니다. UID: {}", studyInstanceUid);
+        } else {
+            log.info("이미 등록된 Study입니다. UID: {}", studyInstanceUid);
+        }
+
+        // 3단계: Series Instance UID도 동일한 방식으로 처리한다.
+        // 이미지 수(total_images_conut)는 Orthanc 응답의 status를 기준으로 판단한다.
+        // - "AlreadyStored": 완전히 같은 인스턴스 파일을 재업로드한 것 -> 카운트 올리지 않음
+        // - 그 외("Success" 등): 이번에 실제로 새로 저장된 인스턴스 -> 카운트 +1
+        if (StringUtils.hasText(seriesInstanceUid)) {
+            boolean isNewInstance = !"AlreadyStored".equalsIgnoreCase(orthancResponse.status());
+
+            Series series = seriesRepository.findByUid(seriesInstanceUid).orElse(null);
+            if (series == null) {
+                series = Series.builder()
+                        .uid(seriesInstanceUid)
+                        .studyKey(study)
+                        .seriesNum(seriesNum)
+                        .bodyPart(bodyPart)
+                        .modality(modality)
+                        .createdAt(parseDicomDateTime(
+                                StringUtils.hasText(seriesDate) ? seriesDate : studyDate,
+                                StringUtils.hasText(seriesTime) ? seriesTime : studyTime))
+                        .orthancId(orthancResponse.parentSeries())
+                        .hiddenFlag(false)
+                        // 우리 DB엔 이번이 이 시리즈의 첫 등록이므로, Orthanc의 이전 저장 여부와 무관하게 1로 시작
+                        .totalImagesCount(1)
+                        .build();
+                seriesRepository.save(series);
+                log.info("새 Series 저장 완료. UID: {}", seriesInstanceUid);
+            } else {
+                boolean changed = false;
+
+                if (series.getOrthancId() == null && orthancResponse.parentSeries() != null) {
+                    series.setOrthancId(orthancResponse.parentSeries());
+                    changed = true;
+                }
+                if (isNewInstance) {
+                    int current = series.getTotalImagesCount() == null ? 0 : series.getTotalImagesCount();
+                    series.setTotalImagesCount(current + 1);
+                    changed = true;
+                }
+
+                if (changed) {
+                    seriesRepository.save(series);
+                    log.info("기존 Series 갱신 완료(orthanc_id/이미지 수). UID: {}", seriesInstanceUid);
+                } else {
+                    log.info("이미 등록된 Series 인스턴스입니다. UID: {}", seriesInstanceUid);
+                }
+            }
+        }
+    }
+
+    // Orthanc REST API로 DICOM 파일 원본을 그대로 POST 업로드한다.
+    // 응답에 이 인스턴스가 속한 Study/Series의 Orthanc 내부 ID(ParentStudy/ParentSeries)가 들어있다.
+    private OrthancInstanceResponse uploadToOrthanc(byte[] fileBytes) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/dicom"));
+        HttpEntity<byte[]> requestEntity = new HttpEntity<>(fileBytes, headers);
+
+        OrthancInstanceResponse response = restTemplate.postForObject(
+                orthancUrl + "/instances",
+                requestEntity,
+                OrthancInstanceResponse.class
+        );
+
+        if (response == null) {
+            throw new BaseException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+        return response;
+    }
+
+    // Orthanc의 POST /instances 응답 중 우리가 필요한 필드만 뽑아서 받는 record.
+    // 예) {"ID": "...", "ParentStudy": "...", "ParentSeries": "...", "Status": "Success"}
+    private record OrthancInstanceResponse(
+            @JsonProperty("ID") String id,
+            @JsonProperty("ParentStudy") String parentStudy,
+            @JsonProperty("ParentSeries") String parentSeries,
+            @JsonProperty("Status") String status
+    ) {}
+
+    // "7", "007" 같은 DICOM 숫자 태그 문자열을 정수로 안전하게 변환한다. 값이 없거나 이상하면 0.
+    private Integer parseIntTag(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    // DICOM Date(yyyyMMdd) + Time(HHmmss.ffffff)을 LocalDateTime으로 합쳐준다.
+    // Study/Series 양쪽에서 재사용. 날짜/시간이 없거나 형식이 이상하면 최대한 방어적으로 처리한다.
+    private LocalDateTime parseDicomDateTime(String date, String time) {
+        if (!StringUtils.hasText(date)) {
+            log.warn("날짜 태그가 없어 현재 시각으로 대체합니다.");
+            return LocalDateTime.now();
+        }
+
+        LocalDate localDate;
+        try {
+            localDate = LocalDate.parse(date.trim(), DateTimeFormatter.BASIC_ISO_DATE);
+        } catch (DateTimeParseException e) {
+            log.warn("날짜 형식이 올바르지 않습니다: {}", date);
+            return LocalDateTime.now();
+        }
+
+        LocalTime localTime = LocalTime.MIDNIGHT;
+        if (StringUtils.hasText(time)) {
+            // 소수점 이하(초 미만) 제거 후 HHmmss 6자리로 보정 (HH, HHmm만 오는 경우도 방어)
+            String digitsOnly = time.trim().split("\\.")[0];
+            String padded = (digitsOnly + "000000").substring(0, 6);
+            try {
+                localTime = LocalTime.parse(padded, DateTimeFormatter.ofPattern("HHmmss"));
+            } catch (DateTimeParseException e) {
+                log.warn("시간 형식이 올바르지 않아 00:00:00으로 대체합니다: {}", time);
+            }
+        }
+
+        return LocalDateTime.of(localDate, localTime);
     }
 
     // 픽셀 데이터가 없어 이미지 뷰어로 열 수 없는 modality (Presentation State, Structured Report, Key Object 등)

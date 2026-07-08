@@ -14,8 +14,10 @@ type StudyDto = {
     // "images-num": number;
     "allow-research": boolean;
     hidden: boolean;
-    "patient-name": string;
-    "patient-birth": string;
+    patient: {
+        name: string;
+        birth: string;
+    } | null;
 };
 
 type SeriesDto = {
@@ -146,7 +148,7 @@ export default function ViewerPage() {
                             )}
                             {study && (
                                 <span className="text-left font-medium text-sm text-ink-soft leading-[1.4]">
-                                    {study["patient-name"] || "N/A"} · {study["patient-birth"] ? study["patient-birth"].split("T")[0] : "N/A"}
+                                    {study.patient?.name || "N/A"} · {study.patient?.birth ? study.patient.birth.split("T")[0] : "N/A"}
                                 </span>
                             )}
                         </div>

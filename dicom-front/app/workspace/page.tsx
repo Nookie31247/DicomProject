@@ -243,8 +243,8 @@ export default function WorkspaceDashboardPage() {
     }
 
     const formData = new FormData();
-    Array.from(files).forEach(file => formData.append("files", file));
     formData.append("patientKey", selectedPatientId.toString());
+    Array.from(files).forEach(file => formData.append("files", file));
 
     try {
       await dicomApi.uploadDicomFiles(formData);
@@ -552,7 +552,7 @@ export default function WorkspaceDashboardPage() {
                                         className="cursor-pointer"
                                     />
                                   </div>
-                                  <span className={colDescClass}>{it.description}</span>
+                                  <span className={colDescClass}>{it.description ? it.description : "-"}</span>
                                   <span className={colDateClass}>{formatDate(it.datetime)}</span>
                                   <span className={colSeriesClass}>#{it["series-num"]}</span>
                                   <span className={colImagesClass}>{it["images-num"]}</span>

@@ -9,6 +9,7 @@ import com.allegro.dicomback.service.DicomService;
 //import com.allegro.dicomback.service.OrthancSyncService;
 import com.allegro.dicomback.log.AuditLogged;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -167,7 +168,8 @@ public class DicomController {
 
         for (MultipartFile file : files) {
             try {
-                dicomService.processDicomFile(file);
+                // 아까 작성한 서비스 메서드 호출
+                dicomService.processDicomFile(patientKey, file);
             } catch (Exception e) {
                 return ResponseEntity.internalServerError().body("파일 처리 실패: " + file.getOriginalFilename());
             }
@@ -198,7 +200,7 @@ public class DicomController {
     //Viewer 페이지에 띄우는 이름과 생년월일(getStudyDetail)
     @AuditLogged(action = "VIEW", targetType = "STUDY", targetArgIndex = 0)
     @GetMapping("/studies/{studyKey}")
-    public ResponseEntity<DicomResponseDto.StudyDto> getStudyDetail(@PathVariable Long studyKey) {
+    public ResponseEntity<DicomResponseDto.StudyDetailDto> getStudyDetail(@PathVariable Long studyKey) {
         return ResponseEntity.ok(aiService.getStudyDetail(studyKey));
     }
 
