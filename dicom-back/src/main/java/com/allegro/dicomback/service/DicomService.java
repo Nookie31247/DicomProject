@@ -407,6 +407,13 @@ public class DicomService {
         String bodyPart = attrs.getString(Tag.BodyPartExamined);
         Integer seriesNum = parseIntTag(attrs.getString(Tag.SeriesNumber));
 
+        //NumberOfFrames(0028,0008): 초음파/혈관조영처럼 인스턴스 1개 안에 여러 프레임이 들어있는 경우(얘네는 이미지 하나가 사실상 시리즈 하나 판정임).
+        //태그가 없으면(대부분의 CT/MR/X-ray) 단일 프레임이므로 1로 취급.
+        String numberOfFramesStr = attrs.getString(Tag.NumberOfFrames);
+        int numberOfFrames = (numberOfFramesStr != null && !numberOfFramesStr.isBlank())
+                ? Integer.parseInt(numberOfFramesStr.trim())
+                : 1;
+
         log.info("--- DICOM 태그 추출 성공 ---");
         log.info("Study UID: {}, Series UID: {}", studyInstanceUid, seriesInstanceUid);
         log.info("Description: {}", studyDescription);
@@ -478,8 +485,9 @@ public class DicomService {
                                 StringUtils.hasText(seriesTime) ? seriesTime : studyTime))
                         .orthancId(orthancResponse.parentSeries())
                         .hiddenFlag(false)
-                        // 우리 DB엔 이번이 이 시리즈의 첫 등록이므로, Orthanc의 이전 저장 여부와 무관하게 1로 시작
-                        .totalImagesCount(1)
+                        // 우리 DB엔 이번이 이 시리즈의 첫 등록이므로, Orthanc의 이전 저장 여부와 무관하게 프레임 수(numberOfFrames)로 시작
+                        // (일반 이미지는 numberOfFrames=1이라 기존과 동일하게 1로 시작됨)
+                        .totalImagesCount(numberOfFrames)
                         .build();
                 seriesRepository.save(series);
                 log.info("새 Series 저장 완료. UID: {}", seriesInstanceUid);
@@ -490,12 +498,12 @@ public class DicomService {
                     series.setOrthancId(orthancResponse.parentSeries());
                     changed = true;
                 }
+                // 기존 시리즈에 인스턴스 추가 시 — 인스턴스 1개당 +1이 아니라, 그 인스턴스가 가진 프레임 수(+numberOfFrames)만큼 더한다.
                 if (isNewInstance) {
                     int current = series.getTotalImagesCount() == null ? 0 : series.getTotalImagesCount();
-                    series.setTotalImagesCount(current + 1);
+                    series.setTotalImagesCount(current + numberOfFrames);
                     changed = true;
                 }
-
                 if (changed) {
                     seriesRepository.save(series);
                     log.info("기존 Series 갱신 완료(orthanc_id/이미지 수). UID: {}", seriesInstanceUid);
