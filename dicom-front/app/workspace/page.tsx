@@ -4,7 +4,8 @@ import {useState, useEffect, useRef} from "react";
 import { useRouter } from "next/navigation";
 import dicomApi from "../api/dicomApi";
 import AddPatientModal from "@/app/workspace/AddPatientModal";
-import Toast from "@/app/components/message-box/Toast";
+import { useToast } from "@/app/context/ToastContext";
+import { useUpload } from "@/app/context/UploadContext";
 
 // ── 스타일 변수 ──
 const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
@@ -86,6 +87,8 @@ const getDefaultPatientEndDate = () => {
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { isUploading, uploadProgress, uploadResult, startUpload } = useUpload();
 
   // =========================== 환자 설정 ==================================
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
@@ -99,12 +102,6 @@ export default function WorkspaceDashboardPage() {
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
-
-  // 메시지 띄울 때 쓰는 토스트
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  // 파일/폴더 업로드 중 전체 화면 오버레이 표시 여부
-  const [isUploading, setIsUploading] = useState(false);
 
   // 서버에서 환자 목록 가져오기
   const fetchPatients = async (
@@ -245,37 +242,34 @@ export default function WorkspaceDashboardPage() {
     setStudyError(null);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) {
       return;
     }
     if (!selectedPatientId) {
-      setToastMsg("환자를 먼저 선택해주세요.");
+      showToast("환자를 먼저 선택해주세요.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("patientKey", selectedPatientId.toString());
-    Array.from(files).forEach(file => formData.append("files", file));
+    const fileArray = Array.from(files);
 
     // 같은 파일(목록)을 다시 선택해도 change 이벤트가 발생하도록 값 초기화.
-    // FormData에는 File 객체가 이미 복사돼 담겨 있어서 안전하다.
+    // startUpload에는 이미 배열로 복사한 파일 목록을 넘기므로 안전하다.
     e.target.value = "";
 
-    setIsUploading(true);
-    try {
-      await dicomApi.uploadDicomFiles(formData);
-      alert("파일 업로드 및 태그 추출 완료!");
-      // 업로드 후 스터디 목록 새로고침
-      void fetchStudies(selectedPatientId);
-    } catch (error) {
-      console.error("업로드 실패:", error);
-      alert("업로드 중 문제가 발생했습니다.");
-    } finally {
-      setIsUploading(false);
-    }
+    // 업로드는 전역 UploadContext가 들고 있는다. 페이지를 이동해도(workspace를 벗어나도)
+    // 업로드 자체와 완료/실패 토스트 표시는 계속 진행된다.
+    startUpload(selectedPatientId, fileArray);
   };
+
+  // 업로드가 끝났을 때, 지금 보고 있는 환자가 그 업로드 대상과 같으면 검사 목록을 새로고침한다.
+  useEffect(() => {
+    if (uploadResult && uploadResult.success && uploadResult.patientKey === selectedPatientId) {
+      void fetchStudies(selectedPatientId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadResult]);
 
   const updateCheckedPatientsHidden = async (hidden: boolean) => {
     const selectedIds = Array.from(checkedPatientIds);
@@ -472,6 +466,24 @@ export default function WorkspaceDashboardPage() {
                     )}
                   </div>
 
+                  {isUploading && (
+                      <div className="flex flex-1 items-center gap-2 px-4 min-w-[120px]">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-canvas">
+                          {uploadProgress >= 0 ? (
+                              <div
+                                  className="h-full rounded-full bg-mint-deep transition-[width] duration-200"
+                                  style={{ width: `${Math.round(uploadProgress * 100)}%` }}
+                              />
+                          ) : (
+                              <div className="h-full w-1/3 animate-pulse rounded-full bg-mint-deep" />
+                          )}
+                        </div>
+                        <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
+                          {uploadProgress >= 0 ? `${Math.round(uploadProgress * 100)}%` : "업로드 중..."}
+                        </span>
+                      </div>
+                  )}
+
                   <div className="flex items-center gap-4">
                     {selectedPatient && (
                         <div className="flex gap-2">
@@ -539,7 +551,7 @@ export default function WorkspaceDashboardPage() {
                                 onClick={() => {
                                   setShowUploadMenu(false);
                                   if (!selectedPatientId) {
-                                    setToastMsg("환자를 먼저 선택해주세요.");
+                                    showToast("환자를 먼저 선택해주세요.");
                                     return;
                                   }
                                   fileInputRef.current?.click(); // 숨겨진 일반 파일 input을 대신 클릭
@@ -553,7 +565,7 @@ export default function WorkspaceDashboardPage() {
                                 onClick={() => {
                                   setShowUploadMenu(false);
                                   if (!selectedPatientId) {
-                                    setToastMsg("환자를 먼저 선택해주세요.");
+                                    showToast("환자를 먼저 선택해주세요.");
                                     return;
                                   }
                                   folderInputRef.current?.click(); // 숨겨진 폴더 input을 대신 클릭
@@ -655,13 +667,6 @@ export default function WorkspaceDashboardPage() {
           </section>
         </section>
         {isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchPatients} />}
-        {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
-        {isUploading && (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/50">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-              <span className="font-bold text-white">업로드 중입니다...</span>
-            </div>
-        )}
       </div>
   );
 }

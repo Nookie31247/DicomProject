@@ -2,15 +2,13 @@
 
 import { useState, useRef } from "react";
 import { checkId, signup } from "@/app/api/authApi";
-import Toast from "@/app/components/message-box/Toast";
+import { useToast } from "@/app/context/ToastContext";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignupForm() {
   const router = useRouter();
-
-  // 메시지 띄울 때 쓰는 토스트
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // 포커스 제어를 위한 Ref들
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -111,7 +109,7 @@ export default function SignupForm() {
 
   const doSignup = async () => {
     if (!allValid) {
-      setToastMsg("양식을 모두 올바르게 입력해주세요.");
+      showToast("양식을 모두 올바르게 입력해주세요.");
       return;
     }
 
@@ -233,10 +231,6 @@ export default function SignupForm() {
             회원가입
           </button>
         </form>
-        {/* 토스트 메시지 출력 */}
-        {toastMsg && (
-            <Toast message={toastMsg} onClose={() => setToastMsg(null)} />
-        )}
       </>
   );
 }

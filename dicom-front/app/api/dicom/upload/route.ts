@@ -21,6 +21,9 @@ export async function POST(request: Request) {
     const contentType = request.headers.get("content-type") ?? "";
     const bodyBuffer = await request.arrayBuffer();
 
+    // 로그아웃 등으로 프론트에서 업로드를 취소(AbortController.abort())하면
+    // request.signal도 같이 취소되는데, 이걸 백엔드로 가는 요청에도 그대로 넘겨줘야
+    // 브라우저 쪽만 끊기고 백엔드/Orthanc 쪽 처리는 계속 진행되는 상황을 막을 수 있다.
     const backendResponse = await fetch("http://localhost:8080/api/dicom/upload", {
         method: "POST",
         headers: {
@@ -28,6 +31,7 @@ export async function POST(request: Request) {
             "Content-Length": String(bodyBuffer.byteLength),
         },
         body: bodyBuffer,
+        signal: request.signal,
     });
 
     const responseText = await backendResponse.text();
