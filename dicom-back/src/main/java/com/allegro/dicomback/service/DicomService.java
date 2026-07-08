@@ -257,6 +257,23 @@ public class DicomService {
     }
 
     @Transactional
+    public void setAllowResearchStudies(Long doctorKey, List<StudyResearchDto> requests) {
+        List<Long> allowedStudies = new ArrayList<>();
+        List<Long> disallowedStudies = new ArrayList<>();
+        requests.forEach(r -> {
+            if(r.allowResearch())
+                allowedStudies.add(r.studyKey());
+            else
+                disallowedStudies.add(r.studyKey());
+        });
+
+        if(!allowedStudies.isEmpty())
+            studyRepository.changeAllowResearch(doctorKey, allowedStudies, true);
+        if(!disallowedStudies.isEmpty())
+            studyRepository.changeAllowResearch(doctorKey, disallowedStudies, false);
+    }
+
+    @Transactional
     public void setHideSeries(Long doctorKey, List<SeriesHideDto> requests) {
         List<Long> hiddenSeries = new ArrayList<>();
         List<Long> showSeries = new ArrayList<>();

@@ -96,6 +96,18 @@ public class DicomController {
         return ResponseEntity.ok().build();
     }
 
+    // 스터디 연구 목적 활용 허용 설정
+    @AuditLogged(action = "RESEARCH_ALLOW", targetType = "STUDY")
+    @PostMapping("/studies/research-allow")
+    public ResponseEntity<Void> setStudiesResearchAllow(
+            @CookieValue(name = "token") String token,
+            @RequestBody List<StudyResearchDto> request
+    ) {
+        Long doctorKey = jwtTokenProvider.getUserKey(token);
+        dicomService.setAllowResearchStudies(doctorKey, request);
+        return ResponseEntity.noContent().build();
+    }
+
     //환자 목록 숨기기/보이기 설정
     @AuditLogged(action = "HIDE", targetType = "PATIENT")
     @PostMapping("/patients/hide")
