@@ -235,6 +235,10 @@ export default function WorkspaceDashboardPage() {
     setStudyError(null);
   };
 
+  // 한 요청에 파일을 너무 많이 담으면 Tomcat의 멀티파트 파트 개수 제한에 걸려 파싱 자체가 실패하므로,
+  // 파일을 이 개수 단위로 나눠서 순차적으로(하나씩 끝나면 다음 배치) 업로드한다.
+  const UPLOAD_BATCH_SIZE = 10;
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !selectedPatientId) {
@@ -242,12 +246,22 @@ export default function WorkspaceDashboardPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("patientKey", selectedPatientId.toString());
-    Array.from(files).forEach(file => formData.append("files", file));
+    const fileList = Array.from(files);
+    const batches: File[][] = [];
+    for (let i = 0; i < fileList.length; i += UPLOAD_BATCH_SIZE) {
+      batches.push(fileList.slice(i, i + UPLOAD_BATCH_SIZE));
+    }
 
     try {
-      await dicomApi.uploadDicomFiles(formData);
+      for (const batch of batches) {
+        const formData = new FormData();
+        formData.append("patientKey", selectedPatientId.toString());
+        batch.forEach(file => formData.append("files", file));
+
+        // eslint-disable-next-line no-await-in-loop
+        await dicomApi.uploadDicomFiles(formData);
+      }
+
       alert("파일 업로드 및 태그 추출 완료!");
       // 업로드 후 스터디 목록 새로고침
       void fetchStudies(selectedPatientId);
