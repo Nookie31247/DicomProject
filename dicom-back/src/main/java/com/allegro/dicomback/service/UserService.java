@@ -35,6 +35,7 @@ public class UserService {
     public record LoginServiceRes(String token, String username) {}
 
     // 로그인
+    @Transactional
     public LoginServiceRes login(LoginRequest request) {
         // 유저 정보 조회
         User user = findActiveUser(request.userId());

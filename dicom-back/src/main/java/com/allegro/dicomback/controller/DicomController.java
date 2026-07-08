@@ -6,6 +6,7 @@ import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
 import com.allegro.dicomback.service.AiService;
 import com.allegro.dicomback.service.DicomService;
+import lombok.extern.slf4j.Slf4j;
 //import com.allegro.dicomback.service.OrthancSyncService;
 import com.allegro.dicomback.log.AuditLogged;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/dicom")
 @RequiredArgsConstructor //의존성 주입
@@ -171,6 +173,7 @@ public class DicomController {
                 // 아까 작성한 서비스 메서드 호출
                 dicomService.processDicomFile(patientKey, file);
             } catch (Exception e) {
+                log.error("파일 처리 실패: {}", file.getOriginalFilename(), e);
                 return ResponseEntity.internalServerError().body("파일 처리 실패: " + file.getOriginalFilename());
             }
         }

@@ -73,29 +73,29 @@ public class DbTestComponent implements CommandLineRunner {
                 .allowResearch(true)
                 .build();
 
-        studyRepository.save(study1);
-        studyRepository.save(study2);
+//        studyRepository.save(study1);
+//        studyRepository.save(study2);
 
 
-        Series series1 = Series.builder()
-                .studyKey(study1)
-                .uid("1.2.392.200036.9116.4.1.6116.40033.7002")
-                .seriesNum(7)
-                .bodyPart("SKULL")
-                .totalImagesCount(152)
-                .modality("MR")
-                .build();
-
-        Series series2 = Series.builder()
-                .studyKey(study1)
-                .uid("1.2.392.200036.9116.4.1.6116.40033.7004")
-                .seriesNum(7)
-                .bodyPart("SKULL")
-                .totalImagesCount(36)
-                .modality("MR")
-                .build();
-
-        seriesRepository.save(series1);
-        seriesRepository.save(series2);
+//        Series series1 = Series.builder()
+//                .studyKey(study1)
+//                .uid("1.2.392.200036.9116.4.1.6116.40033.7002")
+//                .seriesNum(7)
+//                .bodyPart("SKULL")
+//                .totalImagesCount(152)
+//                .modality("MR")
+//                .build();
+//
+//        Series series2 = Series.builder()
+//                .studyKey(study1)
+//                .uid("1.2.392.200036.9116.4.1.6116.40033.7004")
+//                .seriesNum(7)
+//                .bodyPart("SKULL")
+//                .totalImagesCount(36)
+//                .modality("MR")
+//                .build();
+//
+//        seriesRepository.save(series1);
+//        seriesRepository.save(series2);
     }
 }
