@@ -4,6 +4,7 @@ import {useState, useEffect, useRef} from "react";
 import { useRouter } from "next/navigation";
 import dicomApi from "../api/dicomApi";
 import AddPatientModal from "@/app/workspace/AddPatientModal";
+import Toast from "@/app/components/message-box/Toast";
 
 // ── 스타일 변수 ──
 const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
@@ -98,6 +99,12 @@ export default function WorkspaceDashboardPage() {
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // 메시지 띄울 때 쓰는 토스트
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // 파일/폴더 업로드 중 전체 화면 오버레이 표시 여부
+  const [isUploading, setIsUploading] = useState(false);
 
   // 서버에서 환자 목록 가져오기
   const fetchPatients = async (
@@ -240,8 +247,11 @@ export default function WorkspaceDashboardPage() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0 || !selectedPatientId) {
-      alert("환자를 먼저 선택해주세요.");
+    if (!files || files.length === 0) {
+      return;
+    }
+    if (!selectedPatientId) {
+      setToastMsg("환자를 먼저 선택해주세요.");
       return;
     }
 
@@ -249,6 +259,11 @@ export default function WorkspaceDashboardPage() {
     formData.append("patientKey", selectedPatientId.toString());
     Array.from(files).forEach(file => formData.append("files", file));
 
+    // 같은 파일(목록)을 다시 선택해도 change 이벤트가 발생하도록 값 초기화.
+    // FormData에는 File 객체가 이미 복사돼 담겨 있어서 안전하다.
+    e.target.value = "";
+
+    setIsUploading(true);
     try {
       await dicomApi.uploadDicomFiles(formData);
       alert("파일 업로드 및 태그 추출 완료!");
@@ -257,6 +272,8 @@ export default function WorkspaceDashboardPage() {
     } catch (error) {
       console.error("업로드 실패:", error);
       alert("업로드 중 문제가 발생했습니다.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -506,10 +523,11 @@ export default function WorkspaceDashboardPage() {
                     <div className="relative">
                       <button
                           type="button"
-                          className="btn btn-medium cursor-pointer"
+                          className="btn btn-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => setShowUploadMenu(prev => !prev)}
+                          disabled={isUploading}
                       >
-                        파일 추가
+                        {isUploading ? "업로드 중..." : "파일 추가"}
                       </button>
 
                       {/* 버튼 눌렀을 때만 아래에 뜨는 작은 선택 메뉴 */}
@@ -519,8 +537,12 @@ export default function WorkspaceDashboardPage() {
                                 type="button"
                                 className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
                                 onClick={() => {
-                                  fileInputRef.current?.click(); // 숨겨진 일반 파일 input을 대신 클릭
                                   setShowUploadMenu(false);
+                                  if (!selectedPatientId) {
+                                    setToastMsg("환자를 먼저 선택해주세요.");
+                                    return;
+                                  }
+                                  fileInputRef.current?.click(); // 숨겨진 일반 파일 input을 대신 클릭
                                 }}
                             >
                               파일로 추가
@@ -529,8 +551,12 @@ export default function WorkspaceDashboardPage() {
                                 type="button"
                                 className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
                                 onClick={() => {
-                                  folderInputRef.current?.click(); // 숨겨진 폴더 input을 대신 클릭
                                   setShowUploadMenu(false);
+                                  if (!selectedPatientId) {
+                                    setToastMsg("환자를 먼저 선택해주세요.");
+                                    return;
+                                  }
+                                  folderInputRef.current?.click(); // 숨겨진 폴더 input을 대신 클릭
                                 }}
                             >
                               폴더로 추가
@@ -629,6 +655,13 @@ export default function WorkspaceDashboardPage() {
           </section>
         </section>
         {isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchPatients} />}
+        {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
+        {isUploading && (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/50">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+              <span className="font-bold text-white">업로드 중입니다...</span>
+            </div>
+        )}
       </div>
   );
 }
