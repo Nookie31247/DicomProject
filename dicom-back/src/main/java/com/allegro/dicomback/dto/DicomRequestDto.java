@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class DicomRequestDto {
     //환자 목록 숨기기/보이기 설정
@@ -41,5 +42,11 @@ public class DicomRequestDto {
             @JsonProperty("patient-birth")
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate birth
+    ) {}
+
+    // 연구 자료 다운로드 페이지에서 체크된 study/series 전체를 zip 하나로 묶어 받기 위한 요청 DTO.
+    public record BatchDownloadDto(
+            @JsonProperty("study-keys") List<Long> studyKeys,
+            @JsonProperty("series-keys") List<Long> seriesKeys
     ) {}
 }

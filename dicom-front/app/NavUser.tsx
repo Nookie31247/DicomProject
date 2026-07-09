@@ -15,15 +15,19 @@ export default function NavUser() {
   // 로그인 여부
   const [isLogin, setIsLogin] = useState(false);
   const [username, setUsername] = useState("");
+  const [userType, setUserType] = useState(""); // "연구원" 배지 표시용
 
   useEffect(() => {
     const name = localStorage.getItem("username");
+    const type = localStorage.getItem("userType");
     if (name) {
       setUsername(name);
+      setUserType(type ?? "");
       setIsLogin(true);
     }
     else {
       setUsername("");
+      setUserType("");
       setIsLogin(false)
     }
   }, [pathname]);
@@ -35,8 +39,10 @@ export default function NavUser() {
     cancelUpload();
     await logout();
     localStorage.removeItem("username");
+    localStorage.removeItem("userType");
     setIsLogin(false);
     setUsername("");
+    setUserType("");
     router.push("/");
   };
 
@@ -48,7 +54,14 @@ export default function NavUser() {
             <span className="flex shrink-0 items-center justify-center rounded-full font-bold w-9 h-9 text-base text-paper bg-slate max-[560px]:hidden">
               {username.charAt(0)}
             </span>
-            <span className="font-semibold text-base text-ink max-[560px]:text-sm">{username}님</span>
+            <span className="font-semibold text-base text-ink max-[560px]:text-sm">
+              {username}님
+              {userType === "RESEARCHER" && (
+                <span className="ml-1.5 align-middle text-[11px] font-bold text-mint-deep bg-mint/20 px-1.5 py-0.5 rounded-full">
+                  연구원
+                </span>
+              )}
+            </span>
           </Link>
           <button type="button" className="btn btn-medium" onClick={handleLogout}>
             로그아웃

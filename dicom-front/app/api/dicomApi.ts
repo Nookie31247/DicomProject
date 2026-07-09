@@ -155,7 +155,32 @@ const dicomApi = {
 
       xhr.send(formData);
     });
-  }
+  },
+
+  // 연구 자료 다운로드 페이지: 체크된 study/series 여러 개를 zip 하나로 묶어 받는다.
+  // body가 있는 POST에 응답도 바이너리(zip)라서 텍스트 응답을 전제하는 apiFetch를 못 쓰고 fetch를 직접 써서 blob으로 받음
+  downloadBatch: async (studyKeys: number[], seriesKeys: number[]): Promise<Blob> => {
+    const response = await fetch(BASE_URL + "/api/dicom/download/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ "study-keys": studyKeys, "series-keys": seriesKeys }),
+    });
+    if (!response.ok) {
+      // 백엔드가 내려주는 실제 에러 메시지(ErrorResponse.message)가 있으면 그걸 그대로 보여준다.
+      // 예: 연구원 계정이 다운로드를 시도하면 "연구원 계정은 익명화 다운로드 기능이..." 메시지가 옴.
+      // JSON 파싱이 안 되는 경우(네트워크 레벨 에러 등)엔 기존처럼 상태 코드만 표시.
+      let message = `다운로드 실패 (status: ${response.status})`;
+      try {
+        const data = await response.json();
+        if (data?.message) message = data.message;
+      } catch {
+        // 응답이 JSON이 아니면 기본 메시지 사용
+      }
+      throw new Error(message);
+    }
+    return response.blob();
+  },
 }
 
 export interface HiddenPatientList {

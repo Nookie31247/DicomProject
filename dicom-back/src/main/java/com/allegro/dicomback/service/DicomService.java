@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -199,6 +200,7 @@ public class DicomService {
                         s.getCreatedAt(),
                         s.getSeriesNum(),
                         s.getBodyPart(),
+                        s.getSeriesDescription(),
                         s.getHiddenFlag()
                 ))
         );
@@ -329,9 +331,65 @@ public class DicomService {
         };
     }
 
-    // TODO 임시 로직. 나중에 삭제할 것
-    /// 연구 활용이 허용된 스터디 목록을 이 의사(doctorKey) 기준으로 조회해서
-    /// 화면에 필요한 시리즈 수를 채우는 메서드 (/research 페이지가 최초 로딩될 때 호출하는 API의 실제 로직)
+    // 연구 자료 다운로드 페이지에서 체크된 study/series 여러 개를 zip 하나로 묶어서 받는다
+    // 원래는 각각 따로 호출해서 <a> 태그를 여러 번 클릭시키는 방식이었는데 이렇게 자동 다운로드를 연달아 여러 번 트리거하면 브라우저에서 막히는 경우 발생함
+    // Orthanc의 /tools/create-archive는 여러 리소스(Study/Series) ID를 한 번에 넘기면 그걸 다 합친 zip 하나를 만들어줌
+    // 해당 기능으로 하나의 zip으로 묶어서 1회의 요청으로 처리함
+    public StreamingResponseBody downloadBatchAsZip(BatchDownloadDto request) {
+        List<String> orthancIds = new ArrayList<>();
+
+        if (request.studyKeys() != null) {
+            for (Long studyKey : request.studyKeys()) {
+                Study study = studyRepository.findById(studyKey)
+                        .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
+                if (study.getOrthancId() == null) {
+                    log.warn("orthancStudyId가 없습니다. studyKey: {} (동기화 필요)", studyKey);
+                    throw new BaseException(ErrorCode.STUDY_NOT_SYNCED);
+                }
+                orthancIds.add(study.getOrthancId());
+            }
+        }
+        if (request.seriesKeys() != null) {
+            for (Long seriesKey : request.seriesKeys()) {
+                Series series = seriesRepository.findById(seriesKey)
+                        .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
+                if (series.getOrthancId() == null) {
+                    log.warn("orthancSeriesId가 없습니다. seriesKey: {} (동기화 필요)", seriesKey);
+                    throw new BaseException(ErrorCode.SERIES_NOT_SYNCED);
+                }
+                orthancIds.add(series.getOrthancId());
+            }
+        }
+
+        if (orthancIds.isEmpty()) {
+            throw new BaseException(ErrorCode.EMPTY_DOWNLOAD_SELECTION);
+        }
+
+        String url = orthancUrl + "/tools/create-archive";
+
+        // Orthanc가 요청 바디: {"Resources": ["id1", "id2", ...]}
+        // orthancId는 Orthanc가 내부적으로 발급한 16진수 해시라 특수문자가 섞일 일이 없어 직접 조립해도 안전할거임
+        String requestBody = "{\"Resources\":[" +
+                orthancIds.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(",")) +
+                "]}";
+
+        //스트리밍 프록시 (GET이 아니라 POST라는 것만 다르고 나머지 흐름은 위 study/series 다운로드와 동일)
+        return outputStream -> restTemplate.execute(
+                url,
+                HttpMethod.POST,
+                clientHttpRequest -> {
+                    clientHttpRequest.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                    clientHttpRequest.getBody().write(requestBody.getBytes(StandardCharsets.UTF_8));
+                },
+                clientHttpResponse -> {
+                    StreamUtils.copy(clientHttpResponse.getBody(), outputStream);
+                    return null;
+                }
+        );
+    }
+
+    // 연구 활용이 허용된 스터디 목록을 이 의사(doctorKey) 기준으로 조회해서
+    // 화면에 필요한 시리즈 수를 채우는 메서드 (/research 페이지가 최초 로딩될 때 호출하는 API의 실제 로직)
     public List<StudyDto> getResearchStudies() {
 
         // 의사가 담당하는 환자들 중, 연구 허용 + 숨김 아님 조건에 맞는 Study 엔티티들을 DB에서 가져옴
@@ -417,6 +475,7 @@ public class DicomService {
         String seriesTime = attrs.getString(Tag.SeriesTime);
         String modality = attrs.getString(Tag.Modality);
         String bodyPart = attrs.getString(Tag.BodyPartExamined);
+        String seriesDescription = attrs.getString(Tag.SeriesDescription);
         Integer seriesNum = parseIntTag(attrs.getString(Tag.SeriesNumber));
 
         //NumberOfFrames(0028,0008): 초음파/혈관조영처럼 인스턴스 1개 안에 여러 프레임이 들어있는 경우(얘네는 이미지 하나가 사실상 시리즈 하나 판정임).
@@ -491,6 +550,7 @@ public class DicomService {
                         .studyKey(study)
                         .seriesNum(seriesNum)
                         .bodyPart(bodyPart)
+                        .seriesDescription(seriesDescription)
                         .modality(modality)
                         .createdAt(parseDicomDateTime(
                                 StringUtils.hasText(seriesDate) ? seriesDate : studyDate,
@@ -596,118 +656,4 @@ public class DicomService {
 
         return LocalDateTime.of(localDate, localTime);
     }
-
-    // 픽셀 데이터가 없어 이미지 뷰어로 열 수 없는 modality (Presentation State, Structured Report, Key Object 등)
-    //  DB에는 그대로 보관하되, 이미지 뷰어용 시리즈 목록에서는 제외한다.
-    //  PR (Presentation State): 영상의 밝기, 대조도, 확대, 회전, 주석 등 화면에 보이는 출력 상태를 원본 파괴 없이 저장하는 기능
-    //  SR (Structured Report): 영상 진단 결과, 측정 수치, 의사의 소견 등을 기계가 읽을 수 있는 표준화된 문서 형식으로 기록하는 기능
-    //  KO (Key Object Selection): 수많은 영상 중 진단이나 연구에 중요한 핵심 영상만을 골라내어 따로 표시하고 관리하는 기능
-    //  DOC (Document): 환자의 진료 기록, 소견서, 외부 보고서 등의 일반 문서 데이터를 DICOM 규격 내에 캡슐화하여 저장하는 기능
-    //  AU (Audio): 수술 중 녹음된 음성 소견이나 심장 초음파의 도플러 혈류 소리 등 의료 영상과 관련된 오디오 데이터를 저장하는 기능
-    //  REG (Registration): CT와 MRI 등 서로 다른 시점이나 다른 장비로 촬영한 영상을 정밀하게 겹쳐서 비교할 수 있도록 정렬하는 기능
-    //  SEG (Segmentation): 의료 영상 인공지능(AI)이나 분석 소프트웨어가 장기, 종양 등 특정 관심 부위의 경계를 지정하고 분할하여 표시하는 기능
-    private static final Set<String> NON_IMAGE_MODALITIES = Set.of("PR");
-
-//    // 프론트엔드 뷰어를 위한 시리즈 내 인스턴스(단면) ID 목록 가져오기
-//    // InstanceNumber 기준으로 정렬해서 반환
-//    @SuppressWarnings("unchecked")
-//    public List<String> getInstanceIdsBySeries(Long seriesKey) {
-//        Series series = seriesRepository.findById(seriesKey)
-//                .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND)); // STUDY_NOT_FOUND -> SERIES_NOT_FOUND
-//
-//        if (series.getOrthancSeriesId() == null) {
-//            log.warn("orthancSeriesId가 없습니다. seriesKey: {} (동기화 필요)", seriesKey);
-//            throw new BaseException(ErrorCode.SERIES_NOT_SYNCED);
-//        }
-//
-//        // expand=true로 instance별 MainDicomTags(InstanceNumber 포함)까지 한 번에 조회
-//        String url = orthancUrl + "/series/" + series.getOrthancSeriesId() + "/instances?expand=true";
-//        List<Map<String, Object>> instances = restTemplate.getForObject(url, List.class);
-//
-//        if (instances == null || instances.isEmpty()) {
-//            return java.util.Collections.emptyList();
-//        }
-//
-//        return instances.stream()
-//                .sorted(Comparator.comparingInt(this::extractInstanceNumber))
-//                .map(inst -> (String) inst.get("ID"))
-//                .collect(Collectors.toList());
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    private int extractInstanceNumber(Map<String, Object> instance) {
-//        try {
-//            Map<String, Object> tags = (Map<String, Object>) instance.get("MainDicomTags");
-//            String num = (String) tags.get("InstanceNumber");
-//            return num != null ? Integer.parseInt(num.trim()) : Integer.MAX_VALUE;
-//        } catch (Exception e) {
-//            return Integer.MAX_VALUE; // 파싱 실패 시 맨 뒤로 밀어서 순서를 깨뜨리지 않음
-//        }
-//    }
-//
-//    public DicomResponseDto.StudyDto getStudyDetail(Long studyKey) {
-//        Study study = studyRepository.findById(studyKey)
-//                .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
-//
-//        Patient patient = study.getPatient();
-//
-//        return new DicomResponseDto.StudyDto(
-//                study.getStudyKey(),
-//                study.getDescription(),
-//                study.getStudyDateTime(),
-//                study.getTotalSeriesCount(),
-//                study.getTotalInstanceCount(),
-//                study.getAllowedResearch() != null && study.getAllowedResearch() == 1,
-//                study.getDelFlag() != null && study.getDelFlag() == 1,
-//                patient.getName(),
-//                patient.getBirth()
-//        );
-//    }
-//
-//    // Study에 속한 Series 목록
-//    public List<DicomResponseDto.SeriesDto> getSeriesByStudy(Long studyKey) {
-//        if (!studyRepository.existsById(studyKey)) {
-//            throw new BaseException(ErrorCode.STUDY_NOT_FOUND);
-//        }
-//
-//        List<Series> seriesEntities = seriesRepository.findByStudy_StudyKeyAndDelFlag(studyKey, 0);
-//
-//        return seriesEntities.stream()
-//                // PR/SR/KO 등 픽셀 데이터 없는 시리즈는 이미지 뷰어 목록에서 제외 (DB에는 그대로 남아있음)
-//                .filter(s -> s.getModality() == null || !NON_IMAGE_MODALITIES.contains(s.getModality().toUpperCase()))
-//                .map(s -> new DicomResponseDto.SeriesDto(
-//                        s.getSeriesKey(),
-//                        s.getSeriesNum(),
-//                        null,
-//                        s.getSeriesNum(),
-//                        s.getBodyPart(),
-//                        s.getTotalInstanceCount(),
-//                        s.getSeriesDescription(),
-//                        s.getDelFlag() != null && s.getDelFlag() == 1
-//                ))
-//                .collect(Collectors.toList());
-//    }
-//
-//    // 인스턴스 하나의 raw DICOM 바이너리 프록시
-//    // seriesKey를 같이 받아서, 해당 시리즈에 실제로 속한 인스턴스인지 검증 (임의 UUID 요청 방지)
-//    public StreamingResponseBody getInstanceFile(Long seriesKey, String instanceId) {
-//        Series series = seriesRepository.findById(seriesKey)
-//                .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
-//
-//        if (series.getOrthancSeriesId() == null) {
-//            throw new BaseException(ErrorCode.SERIES_NOT_SYNCED);
-//        }
-//
-//        List<String> validInstanceIds = getInstanceIdsBySeries(seriesKey);
-//        if (!validInstanceIds.contains(instanceId)) {
-//            throw new BaseException(ErrorCode.IMAGE_NOT_FOUND);
-//        }
-//
-//        String url = orthancUrl + "/instances/" + instanceId + "/file";
-//
-//        return outputStream -> restTemplate.execute(url, HttpMethod.GET, null, clientHttpResponse -> {
-//            StreamUtils.copy(clientHttpResponse.getBody(), outputStream);
-//            return null;
-//        });
-//    }
 }

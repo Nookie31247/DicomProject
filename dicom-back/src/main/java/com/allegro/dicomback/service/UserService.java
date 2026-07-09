@@ -32,7 +32,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuditLogRepository auditLogRepository;
 
-    public record LoginServiceRes(String token, String username) {}
+    public record LoginServiceRes(String token, String username, String userType) {}
 
     // 로그인
     @Transactional
@@ -45,6 +45,7 @@ public class UserService {
 
         String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserType().getTypeString(), user.getKey());
         String username = user.getUserName();
+        String userType = user.getUserType().name();
 
         // 로그인 성공 시점에 감사 로그 기록
         AuditLog log = new AuditLog();
@@ -55,7 +56,7 @@ public class UserService {
         log.setCreatedAt(LocalDateTime.now());
         auditLogRepository.save(log);
 
-        return new LoginServiceRes(token, username);
+        return new LoginServiceRes(token, username, userType);
     }
 
     // 회원가입

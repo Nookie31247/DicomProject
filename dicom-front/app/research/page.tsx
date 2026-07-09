@@ -47,8 +47,18 @@ export default function ResearchDataPage() {
     // "study:123", "series:456" 처럼 접두어로 두 종류의 id 네임스페이스를 구분
     const [checked, setChecked] = useState<Set<string>>(new Set());
 
+    // 서버가 zip 하나로 묶는 동안(체크 항목이 많으면 수 초 걸릴 수 있음) 버튼을 잠그기 위한 상태
+    const [downloading, setDownloading] = useState(false);
+
+    // 연구원 계정 여부. 연구원은 원칙상 익명화된 데이터만 받아야 하는데
+    // 익명화 기능(#11)이 아직 없어서, 그게 붙기 전까지는 이 페이지에서
+    // 연구원에게 "익명화 준비 중" 배지를 보여주고 다운로드 버튼을 잠근다.
+    // (실제 차단은 백엔드 blockResearcherDownload가 하고, 이건 UX용 안내일 뿐)
+    const [isResearcher, setIsResearcher] = useState(false);
+
     // 연구 허용 스터디 목록 조회
     useEffect(() => {
+        setIsResearcher(localStorage.getItem("userType") === "RESEARCHER");
         dicomApi.getResearchStudies()
             .then((data: StudyItem[]) => setStudies(data))
             .finally(() => setLoading(false));
@@ -102,23 +112,55 @@ export default function ResearchDataPage() {
         setChecked(next);
     };
 
-    // 체크된 study/series 각각에 대해 <a> 태그를 만들어 클릭 -> 브라우저 다운로드 트리거
-    const startDownload = () => {
-        let delay = 0;
+    // 체크된 study/series를 zip 하나로 묶어서 한 번만 다운로드함
+    // 백엔드의 /api/dicom/download/batch가 선택된 항목 전체를 zip 하나로 합쳐 다운로드 자체를 1번만 트리거하도록 바꿈
+    // 부모 스터디가 체크돼 있는 시리즈는 어차피 study zip에 포함되므로 중복 방지를 위해 제외함
+    const startDownload = async () => {
+        const checkedStudyKeys = new Set(
+            Array.from(checked)
+                .filter((item) => item.startsWith("study:"))
+                .map((item) => Number(item.split(":")[1]))
+        );
+
+        // series-key -> 그 시리즈가 속한 study-key 역방향 조회 맵
+        const seriesToStudy = new Map<number, number>();
+        Object.entries(seriesByStudy).forEach(([studyKey, seriesList]) => {
+            seriesList.forEach((s) => seriesToStudy.set(s["series-key"], Number(studyKey)));
+        });
+
+        const studyKeys: number[] = [];
+        const seriesKeys: number[] = [];
+
         checked.forEach((item) => {
             const [type, idStr] = item.split(":");
-            const url =
-                type === "study"
-                    ? `/api/dicom/studies/download?study-key=${idStr}`
-                    : `/api/dicom/series/download?series-key=${idStr}`;
+            const id = Number(idStr);
 
-            setTimeout(() => {
-                const a = document.createElement("a");
-                a.href = url;
-                a.click();
-            }, delay);
-            delay += 150; // 여러 개를 동시에 클릭하면 브라우저가 막을 수 있어 조금 딜레이를 준다.
+            if (type === "study") {
+                studyKeys.push(id);
+                return;
+            }
+            // 부모 스터디가 이미 포함 대상이면 건너뛴다 (studies.zip에 이미 들어있음)
+            if (!checkedStudyKeys.has(seriesToStudy.get(id) ?? -1)) {
+                seriesKeys.push(id);
+            }
         });
+
+        if (studyKeys.length === 0 && seriesKeys.length === 0) return;
+
+        setDownloading(true);
+        try {
+            const blob = await dicomApi.downloadBatch(studyKeys, seriesKeys);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "download.zip";
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert(e instanceof Error ? e.message : "다운로드 중 문제가 발생했습니다.");
+        } finally {
+            setDownloading(false);
+        }
     };
 
     // 날짜 필터링 로직 검사일자 기준, 대상은 실제 조회된 studies
@@ -154,6 +196,11 @@ export default function ResearchDataPage() {
                 <div className="lg:col-span-2 bg-paper border border-line rounded-[20px] p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <FileText size={20} /> 연구 활용 허용 자료
+                        {isResearcher && (
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                익명화 준비 중
+                            </span>
+                        )}
                     </h2>
 
                     <div className="grid font-bold text-xs text-ink-soft bg-canvas p-3 rounded-lg mb-2" style={{ gridTemplateColumns: gridCols }}>
@@ -241,14 +288,22 @@ export default function ResearchDataPage() {
                         익명화된 자료는 DICOM 헤더 내 개인식별정보가 제거된 후 다운로드됩니다.
                     </div>
 
+                    {/* 연구원 계정 전용 안내: 익명화 기능이 붙기 전까지는 다운로드를 못 받는 이유를 설명 */}
+                    {isResearcher && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4 text-xs text-amber-800 leading-relaxed">
+                            연구원 계정은 개인정보 보호를 위해 익명화 처리된 자료만 다운로드할 수 있습니다.
+                            익명화 기능은 현재 준비 중이며, 완료되는 대로 이 페이지에서 다운로드가 가능해집니다.
+                        </div>
+                    )}
+
                     <div className="text-xs text-ink-soft mb-4">선택된 항목: {checked.size}개</div>
 
                     <button
-                        onClick={startDownload}
-                        disabled={checked.size === 0}
+                        onClick={() => { void startDownload(); }}
+                        disabled={checked.size === 0 || downloading || isResearcher}
                         className="w-full btn btn-big bg-mint text-slate font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <Download size={20} /> 다운로드 시작
+                        <Download size={20} /> {isResearcher ? "익명화 준비 중" : downloading ? "압축하는 중..." : "다운로드 시작"}
                     </button>
                 </div>
             </div>

@@ -4,6 +4,8 @@ import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.DicomRequestDto.*;
 import com.allegro.dicomback.dto.DicomResponseDto;
 import com.allegro.dicomback.dto.DicomResponseDto.*;
+import com.allegro.dicomback.exception.BaseException;
+import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.service.AiService;
 import com.allegro.dicomback.service.DicomService;
 import lombok.extern.slf4j.Slf4j;
@@ -136,12 +138,25 @@ public class DicomController {
         return ResponseEntity.noContent().build();
     }
 
+    // 연구원 계정의 다운로드를 막는 임시 안전장치.
+    // 지금 다운로드는 비식별화 안 된 원본 DICOM을 그대로 zip으로 내려주는데,
+    // 연구원은 원칙상 익명화된 데이터만 받아야 함. 익명화 기능(#11)이 아직 없으므로
+    // 그게 붙기 전까지는 연구원의 다운로드 요청 자체를 서버에서 403으로 막는다.
+    private void blockResearcherDownload(String token) {
+        String userType = jwtTokenProvider.getUserType(token);
+        if ("RESEARCHER".equals(userType)) {
+            throw new BaseException(ErrorCode.RESEARCHER_DOWNLOAD_NOT_READY);
+        }
+    }
+
     //스터디 다운로드
     @AuditLogged(action = "DOWNLOAD", targetType = "STUDY", targetArgIndex = 0)
     @GetMapping("/studies/download")
     public ResponseEntity<StreamingResponseBody> downloadStudies(
+            @CookieValue(name = "token") String token,
             @RequestParam("study-key") Long studyKey
     ) {
+        blockResearcherDownload(token);
         StreamingResponseBody stream = dicomService.downloadStudyAsZip(studyKey);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"study_" + studyKey + ".zip\"")
@@ -153,8 +168,10 @@ public class DicomController {
     @AuditLogged(action = "DOWNLOAD", targetType = "SERIES", targetArgIndex = 0)
     @GetMapping("/series/download")
     public ResponseEntity<StreamingResponseBody> downloadSeries(
+            @CookieValue(name = "token") String token,
             @RequestParam("series-key") Long seriesKey
     ) {
+        blockResearcherDownload(token);
         StreamingResponseBody stream = dicomService.downloadSeriesAsZip(seriesKey);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"series_" + seriesKey + ".zip\"")
@@ -162,6 +179,21 @@ public class DicomController {
                 .body(stream);
     }
 
+    // 여러 study/series 체크 후 한 번에 다운로드 — 요청 1번, zip 파일 1개로 응답
+    // (studies/download, series/download를 체크 개수만큼 따로 부르면 브라우저가 다중 자동 다운로드를 막아버려서 추가함 그래서 하나의 zip으로 묶어서 처리)
+    @AuditLogged(action = "DOWNLOAD", targetType = "BATCH")
+    @PostMapping("/download/batch")
+    public ResponseEntity<StreamingResponseBody> downloadBatch(
+            @CookieValue(name = "token") String token,
+            @RequestBody BatchDownloadDto request
+    ) {
+        blockResearcherDownload(token);
+        StreamingResponseBody stream = dicomService.downloadBatchAsZip(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"download.zip\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
+    }
     //다운로드 페이지
     @GetMapping("/studies/research")
     public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {

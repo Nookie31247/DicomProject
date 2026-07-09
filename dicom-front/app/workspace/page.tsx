@@ -1,11 +1,13 @@
 "use client";
 
-import {useState, useEffect, useRef} from "react";
-import { useRouter } from "next/navigation";
+import {useState, useEffect, useRef, Suspense} from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import dicomApi from "../api/dicomApi";
 import AddPatientModal from "@/app/workspace/AddPatientModal";
 import { useToast } from "@/app/context/ToastContext";
 import { useUpload } from "@/app/context/UploadContext";
+import { useConfirm } from "@/app/context/ConfirmContext";
+import { clampDateInputValue, formatDateInputValue, getMaxDateInputValue, getMinDateInputValue } from "@/services/dateInputValue";
 
 // ── 스타일 변수 ──
 const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
@@ -66,14 +68,6 @@ const formatDate = (value: string | null | undefined, fallback = "기록 없음"
   return value?.split("T")[0] || fallback;
 };
 
-const formatDateInputValue = (date: Date) => {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
 const getDefaultPatientStartDate = () => {
   const date = new Date();
   date.setMonth(date.getMonth() - 12);
@@ -85,20 +79,42 @@ const getDefaultPatientEndDate = () => {
   return formatDateInputValue(new Date());
 };
 
+// useSearchParams()를 쓰는 페이지는 Suspense 경계로 감싸야 한다(안 그러면 빌드 시
+// "useSearchParams() should be wrapped in a suspense boundary" 에러가 난다).
 export default function WorkspaceDashboardPage() {
+  return (
+      <Suspense fallback={null}>
+        <WorkspaceDashboardPageInner />
+      </Suspense>
+  );
+}
+
+function WorkspaceDashboardPageInner() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const { isUploading, uploadProgress, uploadResult, startUpload } = useUpload();
+  const confirm = useConfirm();
+
+  // 뷰어 페이지 갔다가 뒤로 돌아왔을 때 선택했던 환자/날짜 필터가 유지되도록 URL 쿼리에서
+  // 초기값을 복원한다. 검색어(patientSearchKeyword)는 환자 이름 등 민감한 텍스트가 그대로
+  // URL/브라우저 히스토리/서버 로그에 남을 수 있어서 일부러 URL에는 안 싣는다.
+  const initialPatientId = (() => {
+    const raw = searchParams.get("patientId");
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isFinite(parsed) ? parsed : null;
+  })();
 
   // =========================== 환자 설정 ==================================
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
   const [patients, setPatients] = useState<PatientDto[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(initialPatientId);
   const [checkedPatientIds, setCheckedPatientIds] = useState<Set<number>>(new Set());
   const [showHiddenPatients, setShowHiddenPatients] = useState(false);
   const [patientSearchKeyword, setPatientSearchKeyword] = useState("");
-  const [patientStartDate, setPatientStartDate] = useState(getDefaultPatientStartDate);
-  const [patientEndDate, setPatientEndDate] = useState(getDefaultPatientEndDate);
+  const [patientStartDate, setPatientStartDate] = useState(() => searchParams.get("start") || getDefaultPatientStartDate());
+  const [patientEndDate, setPatientEndDate] = useState(() => searchParams.get("end") || getDefaultPatientEndDate());
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -114,6 +130,29 @@ export default function WorkspaceDashboardPage() {
     setPatients(res as PatientDto[]);
   };
 
+  // 뷰어 갔다가 뒤로 돌아왔을 때 복원할 수 있도록 선택된 환자/날짜 범위를 URL에 반영한다.
+  // 검색어는 일부러 안 싣는다(민감 정보 노출 방지). push가 아니라 replace를 쓰는 이유는,
+  // push로 하면 필터를 바꿀 때마다 브라우저 히스토리가 쌓여서 뒤로가기를 눌러도 뷰어로 안
+  // 가고 이전 필터 상태들을 하나씩 거슬러 올라가게 되기 때문이다.
+  const updateUrlParams = (next: { patientId?: number | null; start?: string; end?: string }) => {
+    const patientId = next.patientId !== undefined ? next.patientId : selectedPatientId;
+    const start = next.start !== undefined ? next.start : patientStartDate;
+    const end = next.end !== undefined ? next.end : patientEndDate;
+
+    const params = new URLSearchParams();
+    if (patientId !== null) {
+      params.set("patientId", String(patientId));
+    }
+    if (start) {
+      params.set("start", start);
+    }
+    if (end) {
+      params.set("end", end);
+    }
+
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   // 환자 선택하기 (선택한 환자는 하이라이팅되며, 환자의 스터디가 로딩된다.)
   const handleSelectPatient = (id: number) => {
     setSelectedPatientId(id);
@@ -121,6 +160,7 @@ export default function WorkspaceDashboardPage() {
     setShowHiddenStudies(false);
     setStudies([]);
     void fetchStudies(id);
+    updateUrlParams({ patientId: id });
   };
 
   // 환자 체크박스로 선택하기
@@ -240,9 +280,43 @@ export default function WorkspaceDashboardPage() {
     }
   };
 
+  // 연구 목적 활용 허용은 한번 누르면 데이터가 익명화되어 다운로드 가능해지고,
+  // 이 익명화 자체는 되돌릴 수 없는 작업이라 실수로 누르지 않도록 확인창을 한 번 더 띄운다.
+  const handleClickResearchAllow = async () => {
+    const ok = await confirm({
+      title: "연구 목적 데이터 활용 여부",
+      message: "선택한 검사를 연구 목적으로 활용하도록 허용합니다.\n허용 시 데이터를 익명화 후 다운로드 할 수 있으며,\n이 작업은 되돌릴 수 없습니다.\n\n계속하시겠습니까?",
+      confirmLabel: "허용",
+      cancelLabel: "취소",
+    });
+
+    if (ok) {
+      void requestResearchAllowApi();
+    }
+  };
+
   const displayedStudies = !selectedPatient
       ? []
       : studies.filter(s => s.hidden === showHiddenStudies);
+
+  // displayedStudies는 이미 showHiddenStudies로 필터링돼 있어서, 이 값만 보고
+  // 전체 선택 여부를 판단하면 일반/숨김 뷰가 서로 섞이지 않는다. 뷰를 전환할 때도
+  // 이미 checkedStudyIds를 비우고 있어서(switchStudyVisibilityView) 두 뷰의
+  // 선택 상태가 겹칠 일이 없다.
+  const isAllDisplayedStudiesChecked =
+      displayedStudies.length > 0 && displayedStudies.every((s) => checkedStudyIds.has(s["study-key"]));
+
+  const toggleSelectAllStudies = () => {
+    setCheckedStudyIds((prev) => {
+      const next = new Set(prev);
+      if (isAllDisplayedStudiesChecked) {
+        displayedStudies.forEach((s) => next.delete(s["study-key"]));
+      } else {
+        displayedStudies.forEach((s) => next.add(s["study-key"]));
+      }
+      return next;
+    });
+  };
 
   const handlePatientSearch = () => {
     setCheckedPatientIds(new Set());
@@ -251,6 +325,7 @@ export default function WorkspaceDashboardPage() {
     setStudies([]);
     setStudyError(null);
     void fetchPatients(patientSearchKeyword, patientStartDate, patientEndDate);
+    updateUrlParams({ patientId: null, start: patientStartDate, end: patientEndDate });
   };
 
   const clearCheckedPatients = () => {
@@ -264,6 +339,7 @@ export default function WorkspaceDashboardPage() {
     setCheckedStudyIds(new Set());
     setStudies([]);
     setStudyError(null);
+    updateUrlParams({ patientId: null });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -288,9 +364,13 @@ export default function WorkspaceDashboardPage() {
   };
 
   // 업로드가 끝났을 때, 지금 보고 있는 환자가 그 업로드 대상과 같으면 검사 목록을 새로고침한다.
+  // 환자 목록의 검사 개수 뱃지도 같이 새로고침해야 새로고침 없이 바로 반영된다.
   useEffect(() => {
-    if (uploadResult && uploadResult.success && uploadResult.patientKey === selectedPatientId) {
-      void fetchStudies(selectedPatientId);
+    if (uploadResult && uploadResult.success) {
+      if (uploadResult.patientKey === selectedPatientId) {
+        void fetchStudies(selectedPatientId);
+      }
+      void fetchPatients();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadResult]);
@@ -323,6 +403,7 @@ export default function WorkspaceDashboardPage() {
         setCheckedStudyIds(new Set());
         setStudies([]);
         setStudyError(null);
+        updateUrlParams({ patientId: null });
       }
     } catch (error) {
       console.error("환자 숨김 상태 변경 실패", error);
@@ -333,6 +414,10 @@ export default function WorkspaceDashboardPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchPatients(null, patientStartDate, patientEndDate);
+    // URL에 patientId가 남아있으면(뷰어에서 뒤로 돌아온 경우) 그 환자의 검사 목록도 같이 복원한다.
+    if (selectedPatientId !== null) {
+      void fetchStudies(selectedPatientId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -379,7 +464,12 @@ export default function WorkspaceDashboardPage() {
                           aria-label="시작일"
                           className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
                           value={patientStartDate}
+                          min={getMinDateInputValue()}
+                          max={getMaxDateInputValue()}
                           onChange={(e) => setPatientStartDate(e.target.value)}
+                          onBlur={(e) => setPatientStartDate(
+                              clampDateInputValue(e.target.value, getMinDateInputValue(), getMaxDateInputValue()),
+                          )}
                       />
                       <span className="text-slate-400">-</span>
                       <input
@@ -387,7 +477,12 @@ export default function WorkspaceDashboardPage() {
                           aria-label="종료일"
                           className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
                           value={patientEndDate}
+                          min={getMinDateInputValue()}
+                          max={getMaxDateInputValue()}
                           onChange={(e) => setPatientEndDate(e.target.value)}
+                          onBlur={(e) => setPatientEndDate(
+                              clampDateInputValue(e.target.value, getMinDateInputValue(), getMaxDateInputValue()),
+                          )}
                       />
                     </div>
                   </div>
@@ -547,7 +642,7 @@ export default function WorkspaceDashboardPage() {
                           <button
                               type="button"
                               onClick={() => {
-                                void requestResearchAllowApi();
+                                void handleClickResearchAllow();
                               }}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"
@@ -634,7 +729,16 @@ export default function WorkspaceDashboardPage() {
                       className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-xs tracking-[0.02em] text-ink-soft bg-canvas border-b border-line max-[560px]:hidden"
                       style={{ gridTemplateColumns: studyGridColumns }}
                   >
-                    <span></span>
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <input
+                          type="checkbox"
+                          checked={isAllDisplayedStudiesChecked}
+                          onChange={toggleSelectAllStudies}
+                          disabled={displayedStudies.length === 0}
+                          className="cursor-pointer"
+                          aria-label="전체 선택"
+                      />
+                    </span>
                     <span className={colDescClass}>검사 설명</span>
                     <span className={colDateClass}>검사 일자</span>
                     <span className={colSeriesClass}>시리즈</span>

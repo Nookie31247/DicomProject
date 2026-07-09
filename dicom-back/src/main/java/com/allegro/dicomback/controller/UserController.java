@@ -33,7 +33,7 @@ public class UserController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ResponseEntity.ok(new LoginRes(serviceRes.username()));
+        return ResponseEntity.ok(new LoginRes(serviceRes.username(), serviceRes.userType()));
     }
 
     @PostMapping("/signup")

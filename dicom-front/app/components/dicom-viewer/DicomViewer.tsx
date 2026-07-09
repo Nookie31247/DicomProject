@@ -155,6 +155,12 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
         if (isCancelled) return;
 
         cornerstone.displayImage(element, image);
+        const viewport = cornerstone.getViewport(element);
+        if (viewport) {
+          viewport.voi.windowWidth = image.windowWidth;
+          viewport.voi.windowCenter = image.windowCenter;
+          cornerstone.setViewport(element, viewport);
+        }
         setIsLoaded(true);
 
         // 메타데이터 추출

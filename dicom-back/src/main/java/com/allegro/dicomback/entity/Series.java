@@ -35,6 +35,10 @@ public class Series {
     @Column(name = "body_part", length = 64)
     private String bodyPart;
 
+    //series 설명을 저장하는 컴험
+    @Column(name = "series_description", length = 255)
+    private String seriesDescription;
+
     @Column(name = "modality", length = 16)
     private String modality;
 
