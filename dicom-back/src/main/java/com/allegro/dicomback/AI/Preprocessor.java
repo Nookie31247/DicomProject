@@ -15,18 +15,40 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+/**
+ * AI 모델 추론을 위해 DICOM 이미지를 전처리하는 컴포넌트입니다.
+ */
 @Component
 public class Preprocessor {
-    // originalRows/originalCols:  640x640 모델 좌표를 원본 이미지 좌표로 되돌릴 때 필요
+    /**
+     * 전처리된 텐서를 나타내는 레코드입니다.
+     * originalRows/originalCols: 640x640 모델 좌표를 원본 이미지 좌표로 되돌릴 때 필요
+     */
     public record Tensor(float[] data, long[] shape, int originalRows, int originalCols, float scale, int padX, int padY) {
     }
 
+    /**
+     * 주어진 경로의 DICOM 파일을 전처리합니다.
+     *
+     * @param dicomPath DICOM 파일 경로
+     * @param size 크기 조정을 위한 대상 크기
+     * @return 전처리된 Tensor
+     * @throws Exception 전처리 중 오류 발생 시
+     */
     public Tensor preprocess(Path dicomPath, int size) throws Exception {
         byte[] dicomBytes = Files.readAllBytes(dicomPath);
         return preprocess(dicomBytes, size);
     }
 
-    // Orthanc에서 바로 받은 byte[]로 전처리 (압축 DICOM이면 DicomPixelReader/OpenCV 코덱이 필요)
+    /**
+     * 바이트 배열에서 DICOM 파일을 전처리합니다.
+     * Orthanc에서 바로 받은 byte[]로 전처리 (압축 DICOM이면 DicomPixelReader/OpenCV 코덱이 필요)
+     *
+     * @param dicomBytes DICOM 바이트
+     * @param size 크기 조정을 위한 대상 크기
+     * @return 전처리된 Tensor
+     * @throws Exception 전처리 중 오류 발생 시
+     */
     public Tensor preprocess(byte[] dicomBytes, int size) throws Exception {
         Attributes a;
         try (DicomInputStream dis = new DicomInputStream(new ByteArrayInputStream(dicomBytes))) {
@@ -51,22 +73,31 @@ public class Preprocessor {
         return buildTensor(windowed, rows, cols, size);
     }
 
-    // 프론트(cornerstone)가 화면에 띄우면서 이미 압축을 풀어놓은 픽셀 배열을 그대로 받아서 전처리.
-    // 여기서는 DICOM 압축 해제를 다시 할 필요가 없으므로 DicomPixelReader/dcm4che-imageio-opencv가
-    // 전혀 필요 없다 (뷰어에서 오는 AI 판독 요청은 전부 이 경로를 탄다).
-    //
-    // windowCenter/windowWidth는 nullable(Double)로 받는다: DICOM에 실제 (0028,1050)/(0028,1051)
-    // 태그가 있는 이미지는 그 값을 그대로 신뢰해서 쓰고(누군가 임상적으로 의미있게 정해둔 값이니까),
-    // 진짜로 태그가 없는 이미지만 픽셀 분포(상하위 0.5% 제외 백분위수)로 대신 계산한다.
+    /**
+     * 원시 픽셀 바이트를 직접 전처리합니다.
+     * 프론트(cornerstone)가 화면에 띄우면서 이미 압축을 풀어놓은 픽셀 배열을 그대로 받아서 전처리.
+     * 여기서는 DICOM 압축 해제를 다시 할 필요가 없으므로 DicomPixelReader/dcm4che-imageio-opencv가
+     * 전혀 필요 없다 (뷰어에서 오는 AI 판독 요청은 전부 이 경로를 탄다).
+     *
+     * windowCenter/windowWidth는 nullable(Double)로 받는다: DICOM에 실제 (0028,1050)/(0028,1051)
+     * 태그가 있는 이미지는 그 값을 그대로 신뢰해서 쓰고(누군가 임상적으로 의미있게 정해둔 값이니까),
+     * 진짜로 태그가 없는 이미지만 픽셀 분포(상하위 0.5% 제외 백분위수)로 대신 계산한다.
+     *
+     * @param rows 행 수
+     * @param cols 열 수
+     * @param windowCenter 윈도우 중심 (null일 수 있음)
+     * @param windowWidth 윈도우 너비 (null일 수 있음)
+     * @param slope 리스케일 기울기
+     * @param intercept 리스케일 절편
+     * @param signed 픽셀의 부호 여부
+     * @param pixelBytes 원시 픽셀 바이트
+     * @param size 크기 조정을 위한 대상 크기
+     * @return 전처리된 Tensor
+     */
     public Tensor preprocessRaw(int rows, int cols, Double windowCenter, Double windowWidth,
                                 double slope, double intercept, boolean signed,
                                 byte[] pixelBytes, int size) {
         // 프론트(JS 타입드 배열)와 DICOM 둘 다 기본이 little-endian이라 별도 변환 없이 그대로 읽으면 된다.
-//        ShortBuffer sb = ByteBuffer.wrap(pixelBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
-//        PixelSampler sampler = (x, y) -> {
-//            short raw = sb.get(y * cols + x);
-//            return signed ? raw : (raw & 0xFFFF);
-//        };
         PixelSampler sampler = buildSampler(pixelBytes, rows, cols, signed);
 
         double wc, ww;

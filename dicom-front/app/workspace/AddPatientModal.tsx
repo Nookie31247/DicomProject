@@ -9,6 +9,14 @@ interface Props {
     onRefresh: () => void;
 }
 
+/**
+ * 새로운 환자를 추가하기 위한 모달 컴포넌트입니다.
+ *
+ * @param props - 컴포넌트 속성
+ * @param props.onClose - 모달을 닫기 위해 호출할 함수
+ * @param props.onRefresh - 환자 목록을 새로 고침하기 위해 호출할 함수
+ * @returns 환자 추가 모달
+ */
 export default function AddPatientModal({ onClose, onRefresh }: Props) {
     const [formData, setFormData] = useState({
         name: "",
@@ -19,7 +27,7 @@ export default function AddPatientModal({ onClose, onRefresh }: Props) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // API 호출 (백엔드 엔드포인트는 /api/patients 등으로 가정)
+
             await dicomApi.addPatient(formData);
             onRefresh(); // 목록 새로고침
             onClose();   // 모달 닫기

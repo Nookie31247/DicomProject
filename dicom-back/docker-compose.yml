@@ -1,34 +1,26 @@
-version: '3.8'
-
 services:
   pacs-server:
-    image: orthancteam/orthanc:latest # 굳이 full 안 쓰고 기본 latest 써도 충분함!
+    image: orthancteam/orthanc:latest
     container_name: pacs-orthanc
     ports:
-      - "8042:8042" # 웹 UI 및 DICOMweb REST API 포트
-      - "4242:4242" # DICOM 통신 포트
+      - "${ORTHANC_HTTP_PORT:-8042}:8042"
+      - "${ORTHANC_DICOM_PORT:-4242}:4242"
     environment:
-      ORTHANC__NAME: "PACS_MAIN"
-      ORTHANC__DICOM_AET: "PACS_MAIN"
+      ORTHANC__NAME: "${ORTHANC_NAME:-PACS_MAIN}"
+      ORTHANC__DICOM_AET: "${ORTHANC_NAME:-PACS_MAIN}"
 
-      # DICOMweb 플러그인 활성화
       DICOM_WEB_PLUGIN_ENABLED: "true"
       ORTHANC__DICOM_WEB__ENABLE: "true"
 
-      # (중요) 여기에 익명화 Orthanc 서버 정보 등록하기
       DICOM_MODALITIES: |
         {
-          "anonymization-server": ["PACS_ANON", "192.168.7.17", 4243]
+          "anonymization-server": ["${ANON_ORTHANC_NAME:-PACS_ANON}", "${ANON_ORTHANC_HOST:-host.docker.internal}", ${ANON_ORTHANC_DICOM_PORT:-4243}]
         }
 
-      # Orthanc Explorer 2 플러그인 활성화
       ORTHANC_EXPLORER_2_PLUGIN_ENABLED: "true"
       ORTHANC__ORTHANC_EXPLORER2__ENABLE: "true"
-      ORTHANC__ORTHANC_EXPLORER2__IS_DEFAULT_ORTHANC_UI: "true" # 루트(/) 접속 시 구형 UI 대신 새 UI로 리다이렉트
-
-      # 외부 연동(Next.js / Spring)을 위한 접근 제어
+      ORTHANC__ORTHANC_EXPLORER2__IS_DEFAULT_ORTHANC_UI: "true"
       ORTHANC__AUTHENTICATION_ENABLED: "false"
-      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
 
     volumes:
       - pacs-orthanc:/var/lib/orthanc/db
@@ -37,10 +29,10 @@ services:
     image: mysql:8.0
     container_name: pacs-db
     ports:
-      - "3306:3306"
+      - "${RDS_PORT:-3306}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "pacs_password"
-      MYSQL_DATABASE: "pacsdb"
+      MYSQL_ROOT_PASSWORD: "${RDS_PASS:-pacs_password}"
+      MYSQL_DATABASE: "${RDS_NAME:-pacsdb}"
     volumes:
       - pacs-db:/var/lib/mysql
 
@@ -48,7 +40,7 @@ services:
     image: redis:latest
     container_name: pacs-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - pacs-redis:/var/lib/redis
 

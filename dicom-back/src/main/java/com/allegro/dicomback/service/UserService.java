@@ -1,10 +1,12 @@
 package com.allegro.dicomback.service;
 
 import com.allegro.dicomback.config.JwtTokenProvider;
-import com.allegro.dicomback.dto.UserRequestDto.*;
+import com.allegro.dicomback.dto.UserRequestDto.ChangePasswordRequest;
+import com.allegro.dicomback.dto.UserRequestDto.DeleteUserRequest;
+import com.allegro.dicomback.dto.UserRequestDto.LoginRequest;
+import com.allegro.dicomback.dto.UserRequestDto.SignupRequest;
 import com.allegro.dicomback.dto.UserResponseDto;
 import com.allegro.dicomback.entity.User;
-import com.allegro.dicomback.entity.UserType;
 import com.allegro.dicomback.entity.ai.AuditLog;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
@@ -21,6 +23,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 사용자 관련 작업을 관리하는 서비스입니다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -32,9 +37,14 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuditLogRepository auditLogRepository;
 
-    public record LoginServiceRes(String token, String username, String userType) {}
+    public record LoginServiceRes(String token, String username) {}
 
-    // 로그인
+    /**
+     * 사용자 로그인을 수행합니다.
+     *
+     * @param request 로그인 요청
+     * @return 로그인 응답
+     */
     @Transactional
     public LoginServiceRes login(LoginRequest request) {
         // 유저 정보 조회
@@ -43,9 +53,8 @@ public class UserService {
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
 
-        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserType().getTypeString(), user.getKey());
+        String token = jwtTokenProvider.createToken(user.getUserId(), user.getKey());
         String username = user.getUserName();
-        String userType = user.getUserType().name();
 
         // 로그인 성공 시점에 감사 로그 기록
         AuditLog log = new AuditLog();
@@ -56,10 +65,14 @@ public class UserService {
         log.setCreatedAt(LocalDateTime.now());
         auditLogRepository.save(log);
 
-        return new LoginServiceRes(token, username, userType);
+        return new LoginServiceRes(token, username);
     }
 
-    // 회원가입
+    /**
+     * 사용자 회원가입을 수행합니다.
+     *
+     * @param request 회원가입 요청
+     */
     @Transactional
     public void signup(SignupRequest request) {
         // 아이디 중복 체크
@@ -71,13 +84,17 @@ public class UserService {
                 .userId(request.userId())
                 .userPassword(passwordEncoder.encode(request.password()))
                 .userName(request.name())
-                .userType(UserType.fromTypeString(request.userType()))
                 .build();
 
         userRepository.save(user);
     }
 
-    // 비밀번호 수정
+    /**
+     * 사용자 비밀번호를 변경합니다.
+     *
+     * @param token 사용자 토큰
+     * @param request 비밀번호 변경 요청
+     */
     @Transactional
     public void changePassword(String token, ChangePasswordRequest request) {
         // 유저 정보 조회
@@ -90,7 +107,11 @@ public class UserService {
         user.setUserPassword(passwordEncoder.encode(request.newPassword()));
     }
 
-    // 로그아웃 (블랙리스트 형식으로)
+    /**
+     * 토큰을 블랙리스트에 추가하여 사용자 로그아웃을 수행합니다.
+     *
+     * @param token 사용자 토큰
+     */
     @Transactional
     public void logout(String token) {
         String redisKey= "jwt:blacklist:" + token;
@@ -111,7 +132,12 @@ public class UserService {
         }
     }
 
-    // 회원탈퇴
+    /**
+     * 사용자 계정을 비활성화합니다.
+     *
+     * @param token 사용자 토큰
+     * @param request 사용자 삭제 요청
+     */
     @Transactional
     public void deleteUser(String token, DeleteUserRequest request) {
 
@@ -125,20 +151,29 @@ public class UserService {
         user.deactivate();
     }
 
-    // 아이디 중복 확인
+    /**
+     * 사용자 ID가 중복되는지 확인합니다.
+     *
+     * @param userId 확인할 사용자 ID
+     * @return 중복되면 true, 그렇지 않으면 false
+     */
     public boolean checkIdDuplicate(String userId) {
         return userRepository.existsByUserId(userId);
     }
 
-    // 유저 정보 조회
+    /**
+     * 사용자 정보를 검색합니다.
+     *
+     * @param token 사용자 토큰
+     * @return 사용자 정보 응답
+     */
     public UserResponseDto.UserInfoRes getUserInfo(String token) {
         String userId = jwtTokenProvider.getUserId(token);
         User user = findActiveUser(userId);
         String username = user.getUserName();
-        String userType = user.getUserType().getTypeString();
         LocalDate date = user.getCreatedAt().toLocalDate();
 
-        return new UserResponseDto.UserInfoRes(userId, username, userType, date);
+        return new UserResponseDto.UserInfoRes(userId, username, date);
     }
 
     // --- [공통] 유저 조회 (Private) ---

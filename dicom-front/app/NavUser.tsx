@@ -5,7 +5,14 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {logout} from "@/app/api/authApi";
 import { useUpload } from "@/app/context/UploadContext";
+import { clearStoredAuth, getStoredAccountType } from "@/app/api/ApiFetch";
 
+/**
+ * 사용자 정보 및 로그아웃 기능을 표시하는 내비게이션 사용자 컴포넌트입니다.
+ * 또한 로그인 상태 동기화를 처리합니다.
+ *
+ * @returns 내비게이션 사용자 인터페이스
+ */
 export default function NavUser() {
   const router = useRouter();
   const pathname = usePathname();
@@ -13,37 +20,80 @@ export default function NavUser() {
   const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
 
   // 로그인 여부
+function useAuthState(pathname: string) {
   const [isLogin, setIsLogin] = useState(false);
   const [username, setUsername] = useState("");
   const [userType, setUserType] = useState(""); // "연구원" 배지 표시용
 
   useEffect(() => {
-    const name = localStorage.getItem("username");
-    const type = localStorage.getItem("userType");
-    if (name) {
-      setUsername(name);
-      setUserType(type ?? "");
-      setIsLogin(true);
-    }
-    else {
-      setUsername("");
-      setUserType("");
-      setIsLogin(false)
-    }
+    const syncAuthState = () => {
+      const name = localStorage.getItem("username");
+      const type = localStorage.getItem("userType");
+      if (name) {
+        setUsername(name);
+        setUserType(type ?? "");
+        setIsLogin(true);
+      } else {
+        setUsername("");
+        setUserType("");
+        setIsLogin(false);
+      }
+    };
+
+    syncAuthState();
+    window.addEventListener("auth-state-changed", syncAuthState);
+    return () => window.removeEventListener("auth-state-changed", syncAuthState);
   }, [pathname]);
 
+  return { isLogin, username, userType };
+}
+
+const homePathFor = (userType: string) => (userType === "RESEARCHER" ? "/research" : "/workspace");
+
+export function HeaderLogo() {
+  const pathname = usePathname();
+  const { isLogin, userType } = useAuthState(pathname);
+
+  return (
+      <Link
+          href={isLogin ? homePathFor(userType) : "/"}
+          className="font-bold no-underline text-3xl tracking-[-0.01em] text-ink"
+      >
+        DICOM!
+      </Link>
+  );
+}
+
+export default function NavUser() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { cancelUpload } = useUpload();
+  const { isLogin, username, userType } = useAuthState(pathname); // 기존 useState/useEffect 3줄+1블록을 훅 호출로 대체
+  const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
+
   const handleLogout = async () => {
-    // 서버가 /api/dicom/** 요청의 로그인 여부를 검사하지 않기 때문에, 로그아웃해도
+    // 서버가 /api/medical/dicom/** 요청의 로그인 여부를 검사하지 않기 때문에, 로그아웃해도
     // 서버가 알아서 업로드를 막아주지 않는다. 그래서 로그아웃 처리 전에 여기서
     // 직접 진행 중인 업로드를 취소한다.
     cancelUpload();
-    await logout();
-    localStorage.removeItem("username");
-    localStorage.removeItem("userType");
-    setIsLogin(false);
-    setUsername("");
-    setUserType("");
-    router.push("/");
+    const accountType = getStoredAccountType();
+    try {
+      await logout(accountType);
+    } catch (error) {
+      const status = typeof error === "object" && error !== null && "status" in error
+        ? (error as { status?: unknown }).status
+        : null;
+
+      if (status !== 401 && status !== 403) {
+        console.error("Logout failed", error);
+      }
+    } finally {
+      clearStoredAuth();
+      setIsLogin(false);
+      setUsername("");
+      setUserType("");
+      router.push("/");
+    }
   };
 
   return (

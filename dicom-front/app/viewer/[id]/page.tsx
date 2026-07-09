@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
-import { apiFetch } from "@/app/api/apiFetch";
+import {RoleGuard} from "@/app/components/auth/RouteAccess";
+import {medicalApiFetch} from "../../api/ApiFetch";
 
 type StudyDto = {
     "study-key": number;
     description: string;
     datetime: string;
     "series-num": number;
-    // "images-num": number;
+
     "allow-research": boolean;
     hidden: boolean;
     patient: {
@@ -25,7 +26,7 @@ type SeriesDto = {
     datetime: string | null;
     "series-num": number;
     bodypart: string;
-    // "images-num": number;
+
     description: string;
     hidden: boolean;
 };
@@ -49,6 +50,13 @@ type Clip = {
 // - 프레임이 2장 이상인 인스턴스(초음파 시네 루프, 혈관조영 시네 등)는 그 자체로 독립된 클립이 된다.
 //   같은 시리즈 안에 서로 다른 각도/시점의 시네이 여러 개 섞여 있어도 하나로 뭉치지 않도록 분리하기 위함.
 //   ex: 시리즈 하나에 100프레임/16프레임/150프레임짜리 혈관조영 시네이 3개 섞여 있으면 클립 3개로 분리됨
+/**
+ * 인스턴스 목록을 클립 목록으로 재구성합니다.
+ *
+ * @param seriesKey - 시리즈 식별자
+ * @param instances - 인스턴스 목록
+ * @returns 구성된 클립 목록
+ */
 function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     const clips: Clip[] = [];
     let currentStack: string[] = [];
@@ -61,7 +69,7 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     };
 
     instances.forEach((inst) => {
-        const baseUrl = `/api/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`;
+        const baseUrl = `/api/medical/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`;
         const frameCount = inst["number-of-frames"] || 1;
 
         if (frameCount <= 1) {
@@ -80,7 +88,27 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     return clips;
 }
 
+/**
+ * 역할 기반 접근 제어가 있는 뷰어 페이지 래퍼입니다.
+ * MEDICAL 계정으로의 접근을 제한합니다.
+ *
+ * @returns 권한이 있는 경우 뷰어 페이지
+ */
 export default function ViewerPage() {
+    return (
+        <RoleGuard allow="MEDICAL">
+            <ViewerPageInner />
+        </RoleGuard>
+    );
+}
+
+/**
+ * 뷰어 페이지의 내부 컴포넌트입니다.
+ * DICOM 데이터를 가져오고 뷰어를 렌더링하는 것을 처리합니다.
+ *
+ * @returns 뷰어 인터페이스
+ */
+function ViewerPageInner() {
     const params = useParams();
     const router = useRouter();
     const studyKey = Number(params?.id);
@@ -107,8 +135,8 @@ export default function ViewerPage() {
                 setError(null);
 
                 const [studyData, seriesData]: [StudyDto, SeriesDto[]] = await Promise.all([
-                    apiFetch(`/api/dicom/studies/${studyKey}`, { credentials: "include" }),
-                    apiFetch(`/api/dicom/studies/${studyKey}/series`, { credentials: "include" }),
+                    medicalApiFetch(`/api/medical/dicom/studies/${studyKey}`, { credentials: "include" }),
+                    medicalApiFetch(`/api/medical/dicom/studies/${studyKey}/series`, { credentials: "include" }),
                 ]);
 
                 setStudy(studyData);
@@ -134,8 +162,8 @@ export default function ViewerPage() {
 
         async function loadInstances() {
             try {
-                const instances: InstanceInfo[] = await apiFetch(
-                    `/api/dicom/series/${selectedSeriesId}/instances`,
+                const instances: InstanceInfo[] = await medicalApiFetch(
+                    `/api/medical/dicom/series/${selectedSeriesId}/instances`,
                     { credentials: "include" }
                 );
                 setClips(buildClips(selectedSeriesId as number, instances));

@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * AI 관련 DICOM 작업을 처리하는 서비스입니다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,8 +47,12 @@ public class AiService {
     //  SEG (Segmentation): 의료 영상 인공지능(AI)이나 분석 소프트웨어가 장기, 종양 등 특정 관심 부위의 경계를 지정하고 분할하여 표시하는 기능
     private static final Set<String> NON_IMAGE_MODALITIES = Set.of("PR");
 
-
-    //Viewer 페이지에 띄우는 이름과 생년월일(getStudyDetail)
+    /**
+     * 환자 이름 및 생년월일을 포함하여 뷰어 페이지에 대한 검사(study) 세부 정보를 검색합니다.
+     *
+     * @param studyKey 검사(study) 키
+     * @return 검사(study) 세부 정보 DTO
+     */
     public DicomResponseDto.StudyDetailDto getStudyDetail(Long studyKey) {
         Study study = studyRepository.findById(studyKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
@@ -74,7 +81,12 @@ public class AiService {
         );
     }
 
-    //Viewer 페이지에 띄우는 series목록 해당 기능을 통해서 왼쪽에 해당 환자의 검사기록(series)을 조회 (getSeriesByStudy)
+    /**
+     * 뷰어 페이지에 표시될 주어진 검사(study)에 대한 시리즈 목록을 검색합니다.
+     *
+     * @param studyKey 검사(study) 키
+     * @return 시리즈 DTO 목록
+     */
     public List<DicomResponseDto.SeriesDto> getSeriesByStudy(Long studyKey) {
         if (!studyRepository.existsById(studyKey)) {
             throw new BaseException(ErrorCode.STUDY_NOT_FOUND);
@@ -97,13 +109,16 @@ public class AiService {
                 .collect(Collectors.toList());
     }
 
-    // InstanceNumber 기준으로 정렬해서 반환
-    // 프론트엔드 뷰어를 위한 시리즈 내 인스턴스(단면) ID 목록 가져오기
-    //series 정렬 - 처음가져왔을때 해시값을 통해서 가져오므로 정렬이 제대로 안되는 경우가 있기에 정렬 작업이 필요 (getInstancesOfSeries)
+    /**
+     * InstanceNumber를 기준으로 특정 시리즈에 대한 인스턴스 ID를 검색하고 정렬합니다.
+     *
+     * @param seriesKey 시리즈 키
+     * @return 정렬된 인스턴스 ID 목록
+     */
     @SuppressWarnings("unchecked")
     public List<String> getInstanceIdsBySeries(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
-                .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND)); // STUDY_NOT_FOUND -> SERIES_NOT_FOUND
+                .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
 
         if (series.getOrthancId() == null) {
             log.warn("orthancSeriesId가 없습니다. seriesKey: {} (동기화 필요)", seriesKey);
@@ -124,7 +139,12 @@ public class AiService {
                 .collect(Collectors.toList());
     }
 
-    // 프론트 뷰어 목록 조회용으로 이 메서드
+    /**
+     * 프론트엔드 뷰어 목록을 위한 인스턴스 정보를 검색합니다.
+     *
+     * @param seriesKey 시리즈 키
+     * @return 인스턴스 정보 DTO 목록
+     */
     @SuppressWarnings("unchecked")
     public List<DicomResponseDto.InstanceInfoDto> getInstancesBySeries(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
@@ -151,8 +171,13 @@ public class AiService {
     }
 
 
-    // MainDicomTags의 NumberOfFrames(0028,0008) 태그를 파싱(초음파나 혈과 같은 한 Instance(1장의 이미지) 안에 수십개의 이미지가 있는 경우가 존재)
-    // 태그가 아예 없으면(일반 단일 프레임 이미지) 1장으로 취급.
+    /**
+     * MainDicomTags에서 프레임 수를 추출합니다.
+     * 태그가 아예 없으면(일반 단일 프레임 이미지) 1장으로 취급.
+     *
+     * @param instance 인스턴스 맵
+     * @return 프레임 수
+     */
     @SuppressWarnings("unchecked")
     private int extractNumberOfFrames(Map<String, Object> instance) {
         try {
@@ -163,8 +188,15 @@ public class AiService {
             return 1;
         }
     }
-    // 인스턴스 하나의 raw DICOM 바이너리 프록시
-    //Viewer 페이지에서 Dicom 이미지를 띄우는 기능 series에 있는 정렬된 Dicom이미지를 화면에 출력한다.(getInstanceFile)
+
+    /**
+     * 단일 인스턴스에 대한 원본 DICOM 파일을 스트리밍 응답으로 검색합니다.
+     * Viewer 페이지에서 Dicom 이미지를 띄우는 기능.
+     *
+     * @param seriesKey 시리즈 키
+     * @param instanceId 인스턴스 ID
+     * @return 스트리밍 응답 본문
+     */
     public StreamingResponseBody getInstanceFile(Long seriesKey, String instanceId) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
@@ -186,7 +218,13 @@ public class AiService {
         });
     }
 
-    // AI 추론용: 인스턴스 하나의 raw DICOM byte[] 조회
+    /**
+     * AI 추론을 위해 원본 DICOM 바이트 배열을 검색합니다.
+     *
+     * @param seriesKey 시리즈 키
+     * @param instanceId 인스턴스 ID
+     * @return 인스턴스의 바이트 배열
+     */
     public byte[] getInstanceBytes(Long seriesKey, String instanceId) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));

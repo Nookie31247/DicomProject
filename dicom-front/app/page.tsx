@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
+import HeroCta from "@/app/HeroCta";
+import { HomeRedirect } from "@/app/components/auth/RouteAccess";
 
 export const metadata: Metadata = {
   title: "DICOM! — DICOM 파일을 보다 간편하게",
 };
 
+/**
+ * 서비스 기능을 설명하는 홈페이지 컴포넌트입니다.
+ * 히어로 섹션과 홍보 콘텐츠를 표시합니다.
+ *
+ * @returns 홈페이지 인터페이스
+ */
 export default function Home() {
   const heroPoints = [
     "DICOM 파일을 웹에서 손쉽게 볼 수 있습니다.",
@@ -16,6 +24,7 @@ export default function Home() {
 
   return (
     <div className="page">
+      <HomeRedirect />
 
 
       {/* ───────────── Hero ───────────── */}
@@ -36,20 +45,21 @@ export default function Home() {
             ))}
           </ul>
 
-          <div className="flex gap-4.5 max-[560px]:flex-wrap">
-            <Link
-              href="/login"
-              className="btn btn-big text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
-            >
-              로그인
-            </Link>
-            <Link
-              href="/signup"
-              className="btn btn-big text-paper bg-slate hover:-translate-y-0.5 hover:bg-[#0f1722] text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
-            >
-              시작하기
-            </Link>
-          </div>
+          {/*<div className="flex gap-4.5 max-[560px]:flex-wrap">*/}
+          {/*  <Link*/}
+          {/*    href="/login"*/}
+          {/*    className="btn btn-big text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"*/}
+          {/*  >*/}
+          {/*    로그인*/}
+          {/*  </Link>*/}
+          {/*  <Link*/}
+          {/*    href="/signup"*/}
+          {/*    className="btn btn-big text-paper bg-slate hover:-translate-y-0.5 hover:bg-[#0f1722] text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"*/}
+          {/*  >*/}
+          {/*    시작하기*/}
+          {/*  </Link>*/}
+          {/*</div>*/}
+            <HeroCta />
         </div>
 
         <div className="flex justify-center max-[900px]:-order-1" aria-hidden="true">

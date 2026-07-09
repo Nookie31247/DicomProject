@@ -3,9 +3,16 @@
 import {useRouter} from "next/navigation";
 import {type SubmitEvent, useState} from "react";
 import {deleteUser, logout} from "@/app/api/authApi";
+import {clearStoredAuth, getStoredAccountType} from "@/app/api/ApiFetch";
 
 const pwInput = "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
 
+/**
+ * 계정 탈퇴 처리를 위한 컴포넌트입니다.
+ * 현재 비밀번호가 필요한 확인 모달을 표시합니다.
+ *
+ * @returns 탈퇴 인터페이스
+ */
 export default function Withdraw() {
   const router = useRouter();
 
@@ -26,12 +33,12 @@ export default function Withdraw() {
       setWithdrawError("비밀번호를 입력해주세요.");
       return;
     }
-    // 인증 로직 미구현: 실제 탈퇴는 추후 백엔드 연동.
-    await deleteUser(withdrawPassword);
+    const accountType = getStoredAccountType();
+    await deleteUser(withdrawPassword, accountType);
     setIsWithdrawModalOpen(false);
     alert("회원 탈퇴가 처리되었습니다.");
-    await logout();
-    localStorage.removeItem("username");
+    await logout(accountType);
+    clearStoredAuth();
     router.push("/");
   }
 
