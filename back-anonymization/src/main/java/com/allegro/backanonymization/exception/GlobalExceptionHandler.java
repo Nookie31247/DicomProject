@@ -1,4 +1,4 @@
-package com.allegro.dicomback.exception;
+package com.allegro.backanonymization.exception;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,9 +12,7 @@ public class GlobalExceptionHandler {
     // 우리가 정의한 비즈니스 예외 처리
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException e) {
-        String original = e.getMessage();
-        String truncated = original.substring(0, Math.min(original.length(), 1000));
-        System.out.println(truncated);
+        System.out.println(e.getMessage());
         ErrorCode errorCode = e.getErrorCode();
         return ResponseEntity
                 .status(errorCode.getStatus())

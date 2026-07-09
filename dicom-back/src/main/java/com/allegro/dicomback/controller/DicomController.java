@@ -90,14 +90,6 @@ public class DicomController {
         return ResponseEntity.ok(dicomService.getSeries(doctorKey, studyKey));
     }
 
-    //데이터 익명화 허용하기 (Study 단위)
-    @GetMapping("/studies/anonymization")
-    public ResponseEntity<Void> anonymizeStudies(
-            @RequestParam("study-key")Long studyKey
-    ) {
-        return ResponseEntity.ok().build();
-    }
-
     // 스터디 연구 목적 활용 허용 설정
     @AuditLogged(action = "RESEARCH_ALLOW", targetType = "STUDY")
     @PostMapping("/studies/research-allow")
@@ -230,26 +222,6 @@ public class DicomController {
         // 몇 개 성공/실패했는지 프론트에서 바로 보여줄 수 있게 요약해서 반환
         return ResponseEntity.ok(new UploadResultDto(succeeded, failed));
     }
-
-//    //이미지 다운로드
-//    @GetMapping("/images/download")
-//    public ResponseEntity<Resource> downloadImages(
-//            @RequestParam ("image-key") Long imageKey
-//    ) {
-//        Resource resource = dicomService.downloadImage(imageKey);
-//        return ResponseEntity.ok()
-//                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"image_" + imageKey + ".dcm\"")
-//                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-//                .body(resource);
-//    }
-//    //Orthanc의 내용가져오기(이제 안 쓸듯?)
-//    private final OrthancSyncService orthancSyncService;
-//
-//    @PostMapping("/sync")
-//    public ResponseEntity<String> sync() {
-//        orthancSyncService.syncInstancesFromOrthanc();
-//        return ResponseEntity.ok("동기화 성공");
-//    }
 
     //Viewer 페이지에 띄우는 이름과 생년월일(getStudyDetail)
     @AuditLogged(action = "VIEW", targetType = "STUDY", targetArgIndex = 0)

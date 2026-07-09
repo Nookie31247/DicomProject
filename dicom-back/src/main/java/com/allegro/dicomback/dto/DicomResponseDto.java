@@ -81,9 +81,4 @@ public class DicomResponseDto {
             @JsonProperty("instance-id") String instanceId,
             @JsonProperty("number-of-frames") int numberOfFrames // 일반 이미지는 1, 시네 루프는 2 이상
     ) {}
-
-//    //익명화 DTo 필요없음
-//    public record StudyAnonymizationDto(
-//            @JsonProperty("study-key") Long studyKey
-//    ) {}
 }
