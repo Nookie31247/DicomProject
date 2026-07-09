@@ -13,6 +13,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
+/**
+ * 확인 모달의 옵션입니다.
+ */
 interface ConfirmOptions {
   title?: string;
   message: string;
@@ -20,14 +23,32 @@ interface ConfirmOptions {
   cancelLabel?: string;
 }
 
+/**
+ * resolve 함수를 포함하는 대기 중인 확인 상태입니다.
+ */
 interface PendingConfirm extends ConfirmOptions {
   resolve: (result: boolean) => void;
 }
 
+/**
+ * 확인 대화상자의 함수 시그니처입니다.
+ */
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
 
 const ConfirmContext = createContext<ConfirmFn | null>(null);
 
+/**
+ * 확인 모달 컨텍스트의 제공자입니다.
+ * 애플리케이션 전체에서 재사용 가능한 프라미스 기반 확인/취소 대화상자를 활성화합니다.
+ *
+ * @param props - 컴포넌트 속성
+ * @param props.children - 감쌀 애플리케이션 컴포넌트
+ * @returns 제공자 컴포넌트
+ */
+
+/**
+ * 확인 대화상자 컨텍스트의 제공자입니다.
+ */
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const [pending, setPending] = useState<PendingConfirm | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
@@ -104,6 +125,15 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * 확인 대화상자를 사용하는 훅입니다.
+ */
+/**
+ * 확인 컨텍스트를 사용하는 훅입니다.
+ * 참(확인) 또는 거짓(취소)으로 확인되는 프라미스를 반환하는 함수를 반환합니다.
+ *
+ * @returns 확인 함수
+ */
 export function useConfirm() {
   const ctx = useContext(ConfirmContext);
   if (!ctx) {

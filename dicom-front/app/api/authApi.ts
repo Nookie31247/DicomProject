@@ -1,67 +1,122 @@
-import {apiFetch} from "@/app/api/apiFetch";
+import {AccountType, ApiFetch, getStoredAccountType,} from "./ApiFetch";
 
+const USER_API_BASE = {
+  MEDICAL: "/api/medical/users",
+  RESEARCHER: "/api/research/users",
+} satisfies Record<AccountType, string>;
 
-// 1. 로그인 (클라이언트 요청)
-export async function login(userId: string, password: string) {
-  return apiFetch("/api/users/login", {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, password })
-  })
+function userApiBase(accountType: AccountType = getStoredAccountType()) {
+  return USER_API_BASE[accountType];
 }
 
-// 2. 회원가입 (클라이언트 요청)
-export async function signup(userId: string, password: string, name: string, userType: string) {
-  return apiFetch("/api/users/signup", {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, password, name, userType})
-  })
+/**
+ * 사용자를 로그인합니다.
+ *
+ * @param userId - 사용자 ID
+ * @param password - 사용자 비밀번호
+ * @param accountType - 계정 유형
+ * @returns 로그인 요청에 대한 응답 데이터
+ */
+export async function login(userId: string, password: string, accountType: AccountType) {
+  return ApiFetch(`${userApiBase(accountType)}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, password }),
+  });
 }
 
-// 3. 로그아웃 (클라이언트 요청)
-export async function logout() {
-  return apiFetch("/api/users/logout", {
-    method: 'POST',
-    credentials: 'include'
-  })
+/**
+ * 새로운 사용자를 가입시킵니다.
+ *
+ * @param userId - 사용자 ID
+ * @param password - 사용자 비밀번호
+ * @param name - 사용자 이름
+ * @param accountType - 계정 유형
+ * @returns 가입 요청에 대한 응답 데이터
+ */
+export async function signup(userId: string, password: string, name: string, accountType: AccountType) {
+  return ApiFetch(`${userApiBase(accountType)}/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, password, name }),
+  });
 }
 
-// 4. 아이디 중복 확인 (클라이언트 요청)
-export async function checkId(userId: string) {
-  return apiFetch("/api/users/check-id", {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId })
-  })
+/**
+ * 현재 사용자를 로그아웃합니다.
+ *
+ * @param accountType - 계정 유형
+ * @returns 로그아웃 요청에 대한 응답 데이터
+ */
+export async function logout(accountType: AccountType = getStoredAccountType()) {
+  return ApiFetch(`${userApiBase(accountType)}/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
 }
 
-// 5. 비밀번호 수정 (클라이언트 요청)
-export async function changePassword(currentPassword: string, newPassword: string) {
-  return apiFetch("/api/users/change-password", {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({currentPassword, newPassword })
-  })
+/**
+ * 사용자 ID가 사용 가능한지 확인합니다.
+ *
+ * @param userId - 확인할 사용자 ID
+ * @param accountType - 계정 유형
+ * @returns ID 확인 요청에 대한 응답 데이터
+ */
+export async function checkId(userId: string, accountType: AccountType) {
+  return ApiFetch(`${userApiBase(accountType)}/check-id`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId }),
+  });
 }
 
-// 6. 회원탈퇴 (클라이언트 요청)
-export async function deleteUser(password: string) {
-  return apiFetch("/api/users/delete", {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({password})
-  })
+/**
+ * 사용자의 비밀번호를 변경합니다.
+ *
+ * @param currentPassword - 현재 비밀번호
+ * @param newPassword - 새 비밀번호
+ * @param accountType - 계정 유형
+ * @returns 비밀번호 변경 요청에 대한 응답 데이터
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+  accountType: AccountType = getStoredAccountType(),
+) {
+  return ApiFetch(`${userApiBase(accountType)}/change-password`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
 }
 
-// 7. 회원정보 불러오기 (서버 요청, 쿠키값 수동으로 넣을 것)
-export async function getUserInfo(token: string | undefined) {
-  return apiFetch("/api/users/info", {
-    method: 'GET',
-    headers: { 'Cookie': `token=${token}` },
-    cache: 'no-store',
-    credentials: 'include'
-  })
+/**
+ * 사용자 계정을 삭제합니다.
+ *
+ * @param password - 사용자 비밀번호
+ * @param accountType - 계정 유형
+ * @returns 삭제 요청에 대한 응답 데이터
+ */
+export async function deleteUser(password: string, accountType: AccountType = getStoredAccountType()) {
+  return ApiFetch(`${userApiBase(accountType)}/delete`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+}
+
+/**
+ * 사용자의 정보를 검색합니다.
+ *
+ * @param accountType - 계정 유형
+ * @returns 사용자 정보를 포함하는 응답 데이터
+ */
+export async function getUserInfo(accountType: AccountType = getStoredAccountType()) {
+  return ApiFetch(`${userApiBase(accountType)}/info`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: "include",
+  });
 }

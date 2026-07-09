@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+/**
+ * DICOM 검사(study)를 나타내는 엔티티입니다.
+ */
 @Entity
 @Table(name = "studies")
 @Getter

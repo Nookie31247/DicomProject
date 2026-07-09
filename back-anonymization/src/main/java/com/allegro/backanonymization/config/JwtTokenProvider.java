@@ -1,6 +1,7 @@
 package com.allegro.backanonymization.config;
 
-import com.allegro.backanonymization.exception.*;
+import com.allegro.backanonymization.exception.BaseException;
+import com.allegro.backanonymization.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
+/**
+ * JWT 토큰을 생성하고 검증하기 위한 프로바이더입니다.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
@@ -24,14 +28,23 @@ public class JwtTokenProvider {
 
     private SecretKey key;
 
+    /**
+     * 비밀 키를 초기화합니다.
+     */
     @PostConstruct
     protected void init() {
         // application.yml의 secret-key를 Base64로 디코딩하여 안전한 키 생성
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyStr));
     }
 
-    // 토큰 생성 (userId, userType, userKey를 담음)
-    public String createToken(String userId, String userType, Long userKey) {
+    /**
+     * 사용자를 위한 JWT 토큰을 생성합니다.
+     *
+     * @param userId 사용자 ID
+     * @param userKey 사용자 키
+     * @return 생성된 JWT 토큰
+     */
+    public String createToken(String userId, Long userKey) {
         Date now = new Date();
 
         // 토큰 유효기간: 24시간
@@ -40,14 +53,17 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(userId)
                 .claim("userKey", userKey)
-                .claim("userType", userType)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + EXPIRE_TIME))
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
-    // 토큰 검증
+    /**
+     * 지정된 JWT 토큰을 검증합니다.
+     *
+     * @param token 검증할 JWT 토큰
+     */
     public void validateToken(String token) {
         try {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
@@ -58,7 +74,12 @@ public class JwtTokenProvider {
         }
     }
 
-    // 3. 토큰에서 Claims 전체 추출 (필터에서 유용하게 사용)
+    /**
+     * JWT 토큰에서 모든 클레임을 추출합니다.
+     *
+     * @param token JWT 토큰
+     * @return 클레임
+     */
     public Claims getClaims(String token) {
         return Jwts.parser()
                 .verifyWith(key)
@@ -67,17 +88,22 @@ public class JwtTokenProvider {
                 .getPayload();
     }
 
-    // 4. 토큰에서 유저 ID 추출
+    /**
+     * JWT 토큰에서 사용자 ID를 추출합니다.
+     *
+     * @param token JWT 토큰
+     * @return 사용자 ID
+     */
     public String getUserId(String token) {
         return getClaims(token).getSubject();
     }
 
-    // 5. 토큰에서 유저 유형(type) 추출
-    public String getUserType(String token) {
-        return getClaims(token).get("userType", String.class);
-    }
-
-    // UserKey 추출 메서드
+    /**
+     * JWT 토큰에서 사용자 키를 추출합니다.
+     *
+     * @param token JWT 토큰
+     * @return 사용자 키
+     */
     public Long getUserKey(String token) {
         return getClaims(token).get("userKey", Long.class);
     }

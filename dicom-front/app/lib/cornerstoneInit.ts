@@ -1,5 +1,8 @@
 let isInitialized = false;
 
+/**
+ * Cornerstone 및 해당 종속성을 초기화합니다.
+ */
 export default async function initCornerstone() {
   if (typeof window === "undefined" || isInitialized) return;
 
@@ -38,16 +41,6 @@ export default async function initCornerstone() {
     };
 
     cornerstoneWADOImageLoader.webWorkerManager.initialize(config);
-
-    // ★ 팁: 백엔드(Spring)와 통신 시 인증 토큰이 필요하다면 아래와 같이 헤더를 추가할 수 있습니다.
-    /*
-    cornerstoneWADOImageLoader.configure({
-      beforeSend: function(xhr) {
-        const token = localStorage.getItem('token');
-        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      }
-    });
-    */
 
     isInitialized = true;
   } catch (error) {

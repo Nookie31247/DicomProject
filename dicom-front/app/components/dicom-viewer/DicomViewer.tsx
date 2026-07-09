@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import initCornerstone from "@/app/lib/cornerstoneInit";
 import { dicomTagDictionary } from "./dicom-dictionary";
 import {getTextDecoder, getElementDisplayValue} from "./dicom-charset"
-import { apiFetch } from "@/app/api/apiFetch";
+import { medicalApiFetch } from "../../api/ApiFetch";
 
 interface DicomViewerProps {
   dicomUrls: string[];
@@ -278,9 +278,9 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
 
   //현재 보고 있는 이미지의에서 seriesKey와 instanceId를 뽑아내고
   //백엔드가 AI 결과를 DB에 저장할 때 어떤 시리즈,이미지였는지필요함.
-  //이미지 URL는 대충 예: /api/dicom/series/12/instances/abcd.../file 이런 느낌
+  //이미지 URL는 대충 예: /api/medical/dicom/series/12/instances/abcd.../file 이런 느낌
   const parseSeriesAndInstance = (url: string): { seriesKey: number | null; instanceId: string | null } => {
-    const match = url.match(/\/api\/dicom\/series\/(\d+)\/instances\/([^/]+)\/file/);
+    const match = url.match(/\/api\/(?:medical\/)?dicom\/series\/(\d+)\/instances\/([^/]+)\/file/);
     if (!match) return { seriesKey: null, instanceId: null };
     return { seriesKey: Number(match[1]), instanceId: match[2] };
   };
@@ -326,9 +326,9 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
       const { seriesKey, instanceId } = parseSeriesAndInstance(dicomUrls[currentIndex]);
 
       //현제 보고 있는 화면 dicom의 URL에서 seriesKey/instanceId를 뽑아낸다.
-      //dicomUrls는 viewer/[id]/page.tsx가 "/api/dicom/series/{seriesKey}/instances/{id}/file" 형태로
+      //dicomUrls는 viewer/[id]/page.tsx가 "/api/medical/dicom/series/{seriesKey}/instances/{id}/file" 형태로
       //이미 만들어서 내려주고 있어서 그 문자열만 파싱하면 되서 별도 prop을 추가할 필요는 없음
-      const res: DetectRawResponse = await apiFetch("/api/ai/detect-raw", {
+      const res: DetectRawResponse = await medicalApiFetch("/api/medical/ai/detect-raw", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

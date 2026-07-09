@@ -19,6 +19,9 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 익명화 데이터를 수신하고 처리하기 위한 서비스입니다.
+ */
 @Service
 public class AnonymizationReceiveService {
 
@@ -41,8 +44,9 @@ public class AnonymizationReceiveService {
         this.seriesRepository = seriesRepository;
     }
 
-    // ---- Orthanc 응답 DTO ----
-
+    /**
+     * Orthanc 연구 세부 정보를 위한 내부 DTO입니다.
+     */
     private record OrthancStudyDetail(
             @JsonProperty("ID") String id,
             @JsonProperty("MainDicomTags") Map<String, String> mainDicomTags,
@@ -50,14 +54,20 @@ public class AnonymizationReceiveService {
             @JsonProperty("Series") List<String> seriesOrthancIds
     ) {}
 
+    /**
+     * Orthanc 시리즈 세부 정보를 위한 내부 DTO입니다.
+     */
     private record OrthancSeriesDetail(
             @JsonProperty("ID") String id,
             @JsonProperty("MainDicomTags") Map<String, String> mainDicomTags,
             @JsonProperty("Instances") List<String> instanceOrthancIds
     ) {}
 
-    // ---- 메인 로직 ----
-
+    /**
+     * 연구 목록을 저장합니다.
+     *
+     * @param request 익명화 요청 목록
+     */
     @Transactional
     public void saveStudies(List<AnonymizationRequestDto> request) {
         if (request == null || request.isEmpty()) {
@@ -69,6 +79,11 @@ public class AnonymizationReceiveService {
         }
     }
 
+    /**
+     * 단일 연구를 저장합니다.
+     *
+     * @param studyInstanceUid 연구 인스턴스 UID
+     */
     private void saveOneStudy(String studyInstanceUid) {
         // 이미 저장된 Study면 중복 저장 방지
         if (studyRepository.existsByUid(studyInstanceUid)) {
@@ -119,6 +134,12 @@ public class AnonymizationReceiveService {
         }
     }
 
+    /**
+     * 단일 시리즈를 저장합니다.
+     *
+     * @param seriesOrthancId 시리즈 Orthanc ID
+     * @param study 연구 엔티티
+     */
     private void saveOneSeries(String seriesOrthancId, Study study) {
         OrthancSeriesDetail seriesDetail = orthancRestClient.get()
                 .uri("/series/{id}", seriesOrthancId)
@@ -153,6 +174,12 @@ public class AnonymizationReceiveService {
         seriesRepository.save(series);
     }
 
+    /**
+     * 연구 UID로 Orthanc ID를 찾습니다.
+     *
+     * @param studyInstanceUid 연구 인스턴스 UID
+     * @return Orthanc ID 목록
+     */
     private List<String> findOrthancIdByStudyUid(String studyInstanceUid) {
         Map<String, Object> body = Map.of(
                 "Level", "Study",
@@ -169,6 +196,12 @@ public class AnonymizationReceiveService {
         return result != null ? result : List.of();
     }
 
+    /**
+     * DICOM 날짜 문자열을 파싱합니다.
+     *
+     * @param dicomDate DICOM 날짜 문자열
+     * @return 파싱된 LocalDate, 유효하지 않은 경우 null
+     */
     private LocalDate parseDicomDate(String dicomDate) {
         if (dicomDate == null || dicomDate.isBlank() || "0".equals(dicomDate)) {
             return null;
@@ -180,6 +213,12 @@ public class AnonymizationReceiveService {
         }
     }
 
+    /**
+     * 정수 문자열을 파싱합니다.
+     *
+     * @param value 문자열 값
+     * @return 파싱된 Integer, 유효하지 않은 경우 null
+     */
     private Integer parseInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;

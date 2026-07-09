@@ -10,12 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * DICOM 검사(study)를 익명화하는 서비스입니다.
+ */
 @Service
 public class AnonymizationService {
 
     private final RestClient orthancRestClient;
     private final RestClient anonSpringRestClient;
 
+    /**
+     * AnonymizationService를 생성합니다.
+     *
+     * @param restClientBuilder REST 클라이언트 빌더
+     * @param orthancUrl Orthanc 서버 URL
+     * @param anonymizationSpringUrl 익명화 스프링 서버 URL
+     */
     public AnonymizationService(
             RestClient.Builder restClientBuilder,
             @Value("${orthanc.url}") String orthancUrl,
@@ -45,6 +55,11 @@ public class AnonymizationService {
             @JsonProperty("MainDicomTags") Map<String, String> mainDicomTags
     ) {}
 
+    /**
+     * Orthanc UID를 통해 검사(study) 목록을 익명화합니다.
+     *
+     * @param orthancUids 익명화할 Orthanc UID 목록
+     */
     public void anonymize(List<String> orthancUids) {
         if (orthancUids == null || orthancUids.isEmpty()) {
             return;
@@ -100,7 +115,7 @@ public class AnonymizationService {
 
         // 4단계: 익명화 Spring 서버에 StudyInstanceUID 전달
         anonSpringRestClient.post()
-                .uri("/api/dicom/get-anonymization")
+                .uri("/api/research/dicom/get-anonymization")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(anonymizedStudyUids)
                 .retrieve()

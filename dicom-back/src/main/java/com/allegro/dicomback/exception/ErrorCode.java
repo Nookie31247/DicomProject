@@ -3,14 +3,15 @@ package com.allegro.dicomback.exception;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 애플리케이션에서 사용되는 오류 코드의 열거형입니다.
+ */
 @Getter
 public enum ErrorCode {
     // 유저 관련 (1xxx)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "유저를 찾을 수 없습니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "USER_002", "비밀번호가 일치하지 않습니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_003", "이미 존재하는 아이디입니다."),
-    INVALID_USER_TYPE(HttpStatus.BAD_REQUEST, "USER_004", "올바르지 않은 회원 유형입니다."),
-
     // 환자 연동 관련
     PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PATIENT_001", "환자를 찾을 수 없습니다."),
 
@@ -22,7 +23,6 @@ public enum ErrorCode {
     STUDY_NOT_SYNCED(HttpStatus.CONFLICT, "DICOM_005", "해당 스터디가 아직 PACS와 동기화되지 않았습니다."),
     SERIES_NOT_SYNCED(HttpStatus.CONFLICT, "DICOM_006", "해당 시리즈가 아직 PACS와 동기화되지 않았습니다."),
     EMPTY_DOWNLOAD_SELECTION(HttpStatus.BAD_REQUEST, "DICOM_007", "다운로드할 항목이 선택되지 않았습니다."),
-    RESEARCHER_DOWNLOAD_NOT_READY(HttpStatus.FORBIDDEN, "DICOM_008", "연구원 계정은 익명화 다운로드 기능이 준비될 때까지 다운로드할 수 없습니다."),
 
     // JWT 관련 (3xxx)
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "JWT_001", "토큰이 만료되었습니다."),
@@ -37,6 +37,13 @@ public enum ErrorCode {
     private final String code;
     private final String message;
 
+    /**
+     * 새로운 ErrorCode를 구성합니다.
+     *
+     * @param status HTTP 상태
+     * @param code 오류 코드 문자열
+     * @param message 오류 메시지
+     */
     ErrorCode(HttpStatus status, String code, String message) {
         this.status = status;
         this.code = code;

@@ -6,10 +6,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Arrays;
 
+/**
+ * 전역 예외 처리기입니다.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     // TODO 나중에 println 지우기!!
-    // 우리가 정의한 비즈니스 예외 처리
+    /**
+     * BaseException을 처리합니다.
+     *
+     * @param e BaseException
+     * @return 오류 응답을 포함하는 ResponseEntity
+     */
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException e) {
         System.out.println(e.getMessage());
@@ -19,7 +27,12 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(errorCode));
     }
 
-    // 서버 내부 예외 처리 (예상치 못한 에러)
+    /**
+     * 일반적인 Exception을 처리합니다.
+     *
+     * @param e Exception
+     * @return 오류 응답을 포함하는 ResponseEntity
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception e) {
         Arrays.stream(e.getStackTrace()).forEach(System.out::println);

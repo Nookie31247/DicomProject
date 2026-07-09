@@ -2,13 +2,15 @@ package com.allegro.backanonymization.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 연구를 나타내는 엔티티입니다.
+ */
 @Entity
 @Table(name = "studies")
 @Getter

@@ -15,8 +15,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 
-// @AuditLogged가 붙은 메서드가 "정상적으로" 끝났을 때만 로그를 남긴다.
-// (AfterReturning은 예외가 나서 실패한 요청에는 실행되지 않는다 - 실패 요청까지 남기고 싶으면 별도 처리 필요)
+/**
+ * 감사 정보를 로깅하기 위한 Aspect입니다.
+ * @AuditLogged가 붙은 메서드가 "정상적으로" 끝났을 때만 로그를 남긴다.
+ * (AfterReturning은 예외가 나서 실패한 요청에는 실행되지 않는다 - 실패 요청까지 남기고 싶으면 별도 처리 필요)
+ */
 @Aspect
 @Component
 @RequiredArgsConstructor
@@ -26,6 +29,12 @@ public class AuditLogAspect {
     private final AuditLogRepository auditLogRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * 성공적인 실행 후 감사 정보를 로깅합니다.
+     *
+     * @param joinPoint 조인 포인트
+     * @param auditLogged 감사 로그 어노테이션
+     */
     @AfterReturning("@annotation(auditLogged)")
     public void logAfterSuccess(JoinPoint joinPoint, AuditLogged auditLogged) {
         try {
@@ -49,7 +58,12 @@ public class AuditLogAspect {
         }
     }
 
-    // 현재 요청의 쿠키에서 JWT를 꺼내 사용자 key를 알아낸다. 없거나 유효하지 않으면 null(익명 기록).
+    /**
+     * 요청 토큰에서 현재 사용자 키를 확인합니다.
+     * 현재 요청의 쿠키에서 JWT를 꺼내 사용자 key를 알아낸다. 없거나 유효하지 않으면 null(익명 기록).
+     *
+     * @return 사용자 키 또는 null
+     */
     private Long resolveCurrentUserKey() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null) return null;

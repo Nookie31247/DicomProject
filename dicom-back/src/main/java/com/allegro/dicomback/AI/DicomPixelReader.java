@@ -7,8 +7,18 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.Iterator;
 
-///압축 여부(JPEG, JPEG2000, RLE 등)에 상관없이 DICOM PixelData를 디코딩해주는 공용 유틸리티.
+/**
+ * DICOM PixelData를 디코딩하기 위한 유틸리티입니다.
+ * 압축 여부(JPEG, JPEG2000, RLE 등)에 상관없이 DICOM PixelData를 디코딩해주는 공용 유틸리티.
+ */
 public class DicomPixelReader {
+    /**
+     * 주어진 DICOM 바이트 배열을 BufferedImage로 디코딩합니다.
+     *
+     * @param dicomBytes DICOM 데이터 바이트
+     * @return 디코딩된 BufferedImage
+     * @throws Exception 디코딩 실패 시
+     */
     public static BufferedImage decode(byte[] dicomBytes) throws Exception {
         try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(dicomBytes))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);

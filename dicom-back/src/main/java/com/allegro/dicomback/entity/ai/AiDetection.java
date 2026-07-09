@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// AI가 탐지한 병변 박스 1개를 기록하는 엔티티.
+/**
+ * AI에 의해 감지된 단일 병변 상자를 기록하기 위한 엔티티입니다.
+ */
 @Entity
 @Table(name = "ai_detections")
 @Getter
@@ -15,13 +17,13 @@ public class AiDetection {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "DetectionKey")
-    private Long detectionKey; // long(원시타입) 대신 Long(래퍼클래스) 권장
+    private Long detectionKey;
 
-    // 이 박스가 어떤 AiResults(추론 작업)에서 나왔는지
+    // 이 박스가 어떤 AiResults(추론 작업)에서 나왔는지 기록
     @Column(name = "ResultKey")
     private Long resultKey;
 
-    // Orthanc가 부여한 instanceId(문자열)를 그대로 저장해 어떤 이미지인지 추적한다.
+    // Orthanc가 부여한 instanceId(문자열)를 그대로 저장해 어떤 이미지인지 추적
     @Column(name = "InstanceId", length = 128)
     private String instanceId;
 
