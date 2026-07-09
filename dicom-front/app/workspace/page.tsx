@@ -363,14 +363,67 @@ function WorkspaceDashboardPageInner() {
     startUpload(selectedPatientId, fileArray);
   };
 
-  // 업로드가 끝났을 때, 지금 보고 있는 환자가 그 업로드 대상과 같으면 검사 목록을 새로고침한다.
-  // 환자 목록의 검사 개수 뱃지도 같이 새로고침해야 새로고침 없이 바로 반영된다.
+  // 업로드가 끝나면, 방금 올라간 검사 때문에 그 환자의 "최근 검사 일자(recentStudy)"가 갱신되어
+  // 지금 화면에 적용된 환자 검색 기간(시작일~종료일) 밖으로 밀려날 수 있다. 백엔드가 환자 목록을
+  // recentStudy가 [시작일, 종료일] 안에 있는지로 걸러내기 때문에, 그대로 두면 다음 검색/새로고침
+  // 때 그 환자가 통째로 목록에서 사라진다. 그래서 필요하면 검색 기간을 자동으로 넓혀서 계속 보이게 한다.
+  const refreshAfterUpload = async (patientId: number) => {
+    let latestStudies: StudyDto[] = [];
+
+    try {
+      // getStudies는 start/end를 null로 보내면 백엔드가 넓은 기본 범위(150년)로 조회하므로,
+      // 날짜로 걸러지지 않은 이 환자의 실제 최신 검사 목록을 그대로 받아올 수 있다.
+      const res = await dicomApi.getStudies(patientId, null, null, null);
+      latestStudies = Array.isArray(res) ? (res as StudyDto[]) : [];
+    } catch (error) {
+      console.error("검사 목록 조회 실패", error);
+    }
+
+    if (patientId === selectedPatientId) {
+      setStudies(latestStudies);
+    }
+
+    const latestDatetime = latestStudies.reduce<string | null>((latest, s) => {
+      if (!s.datetime) {
+        return latest;
+      }
+      return !latest || s.datetime > latest ? s.datetime : latest;
+    }, null);
+
+    let nextStart = patientStartDate;
+    let nextEnd = patientEndDate;
+    let rangeWidened = false;
+
+    if (latestDatetime) {
+      const latestDateOnly = latestDatetime.split("T")[0];
+
+      if (latestDateOnly < patientStartDate) {
+        // 시작일보다 앞이면: 시작일을 그 검사 날짜로 당기고, 종료일은 그대로 유지.
+        nextStart = latestDateOnly;
+        rangeWidened = true;
+      } else if (latestDateOnly > patientEndDate) {
+        // 종료일보다 뒤라면: 종료일을 그 검사 날짜(혹은 오늘 중 더 늦은 쪽)로 늘리고, 시작일은 그대로 유지.
+        const today = getDefaultPatientEndDate();
+        nextEnd = latestDateOnly > today ? latestDateOnly : today;
+        rangeWidened = true;
+      }
+    }
+
+    if (rangeWidened) {
+      setPatientStartDate(nextStart);
+      setPatientEndDate(nextEnd);
+      // 이 페이지는 필터를 URL 쿼리에도 반영해야 하므로(뷰어 갔다 돌아왔을 때 복원용), 자동으로
+      // 넓힌 범위도 마찬가지로 URL에 반영해준다.
+      updateUrlParams({ start: nextStart, end: nextEnd });
+      showToast("업로드한 검사 날짜가 검색 기간을 벗어나 있어 조회 기간을 자동으로 넓혔습니다.");
+    }
+
+    void fetchPatients(patientSearchKeyword, nextStart, nextEnd);
+  };
+
   useEffect(() => {
     if (uploadResult && uploadResult.success) {
-      if (uploadResult.patientKey === selectedPatientId) {
-        void fetchStudies(selectedPatientId);
-      }
-      void fetchPatients();
+      void refreshAfterUpload(uploadResult.patientKey);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadResult]);
@@ -585,23 +638,36 @@ function WorkspaceDashboardPageInner() {
                     )}
                   </div>
 
-                  {isUploading && (
-                      <div className="flex flex-1 items-center gap-2 px-4 min-w-[120px]">
-                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-canvas">
-                          {uploadProgress >= 0 ? (
-                              <div
-                                  className="h-full rounded-full bg-mint-deep transition-[width] duration-200"
-                                  style={{ width: `${Math.round(uploadProgress * 100)}%` }}
-                              />
-                          ) : (
-                              <div className="h-full w-1/3 animate-pulse rounded-full bg-mint-deep" />
-                          )}
+                  {isUploading && (() => {
+                    // uploadProgress는 xhr.upload.onprogress 기준이라 "브라우저 -> 서버 전송"
+                    // 진행률일 뿐이다. 100%(1)에 도달해도 서버가 파일들을 실제로 처리(파싱/PACS
+                    // 업로드/DB 저장)하는 동안엔 isUploading이 계속 true로 남아있으니, 이 구간을
+                    // "전송 중"과 구분해서 보여준다.
+                    const isProcessing = uploadProgress >= 1;
+
+                    return (
+                        <div className="flex flex-1 items-center gap-2 px-4 min-w-[120px]">
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-canvas">
+                            {uploadProgress >= 0 ? (
+                                // 처리 중(isProcessing)이어도 바는 그대로 꽉 찬 상태를 유지한다.
+                                // 실제로 더 진행되는 게 없는데 인디터미닛(1/3) 바로 되돌아가면
+                                // "진행이 후퇴했다가 갑자기 끝난다"처럼 보여서 오히려 헷갈린다.
+                                <div
+                                    className="h-full rounded-full bg-mint-deep transition-[width] duration-200"
+                                    style={{ width: `${Math.round(uploadProgress * 100)}%` }}
+                                />
+                            ) : (
+                                <div className="h-full w-1/3 animate-pulse rounded-full bg-mint-deep" />
+                            )}
+                          </div>
+                          <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
+                            {isProcessing
+                                ? "서버에서 처리 중..."
+                                : uploadProgress >= 0 ? `${Math.round(uploadProgress * 100)}%` : "업로드 중..."}
+                          </span>
                         </div>
-                        <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
-                          {uploadProgress >= 0 ? `${Math.round(uploadProgress * 100)}%` : "업로드 중..."}
-                        </span>
-                      </div>
-                  )}
+                    );
+                  })()}
 
                   <div className="flex items-center gap-4">
                     {selectedPatient && (

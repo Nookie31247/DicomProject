@@ -40,8 +40,10 @@ server:
     max-http-form-post-size: 1500MB
     max-swallow-size: 1500MB
     # Spring Boot 3.5(Tomcat 10.1.39+)부터 멀티파트 요청의 파트(파일+필드) 개수를 기본 10개로 제한한다.
-    # DICOM 검사 하나에 인스턴스가 수백 장일 수 있어서 넉넉하게 올려둔다.
-    max-part-count: 1000
+    # DICOM 검사 하나에 인스턴스가 수천 장(폴더 업로드 시 5000장 이상)일 수 있어서 넉넉하게 올려둔다.
+    # 어차피 전체 요청 용량은 max-request-size(1500MB)로 이미 막혀 있어서, 파트 개수만 늘리는 건
+    # DoS 위험을 크게 키우지 않는다.
+    max-part-count: 10000
   anonAppUrl: ${ANON_APP_URL:http://localhost:8081}
 
 orthanc:
