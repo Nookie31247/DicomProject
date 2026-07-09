@@ -76,7 +76,7 @@ const formatDateInputValue = (date: Date) => {
 
 const getDefaultPatientStartDate = () => {
   const date = new Date();
-  date.setMonth(date.getMonth() - 3);
+  date.setMonth(date.getMonth() - 12);
 
   return formatDateInputValue(date);
 };

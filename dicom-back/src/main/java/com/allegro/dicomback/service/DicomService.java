@@ -69,8 +69,8 @@ public class DicomService {
 
         // 시작일, 종료일이 입력되지 않았을 때
         if (!StringUtils.hasText(start) || !StringUtils.hasText(end)) {
-            // 모든 검색 결과를 다 전송하면 랙걸리니까, 기본값은 최근 3개월로 제한
-            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(3);
+            // 모든 검색 결과를 다 전송하면 랙걸리니까, 기본값은 최근 1년으로 제한
+            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusYears(1);
             endDay = LocalDateTime.now();
         }
         // 시작일과 종료일이 모두 입력되었을 때
@@ -79,7 +79,7 @@ public class DicomService {
                 startDay = LocalDateTime.of(LocalDate.parse(start), LocalTime.MIN);
                 endDay = LocalDateTime.of(LocalDate.parse(end), LocalTime.MAX);
             } catch (DateTimeParseException e) {
-                startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(3);
+                startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusYears(1);
                 endDay = LocalDateTime.now();
                 System.out.println("날짜 형식이 안맞아요");
             }
@@ -124,9 +124,9 @@ public class DicomService {
         LocalDateTime endDay;
 
         // 시작 날짜(start)와 종료 날짜(end)가 입력되었을 때에는 검색 범위를 입력된 값으로 하고
-        // 입력되지 않았을 때에는 기본값인 최근으로부터 3개월치를 검색합니다. (임시로 10년까지)
+        // 입력되지 않았을 때에는 기본값인 최근으로부터 3개월치를 검색합니다. (임시로 150년까지)
         if (!StringUtils.hasText(start) || !StringUtils.hasText(end)) {
-            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(120);
+            startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(1800);
             endDay = LocalDateTime.now();
         }
         else {
@@ -135,7 +135,7 @@ public class DicomService {
                 endDay = LocalDateTime.of(LocalDate.parse(end), LocalTime.MAX);
             } catch (DateTimeParseException e) {
                 // 날짜 형식이 안맞으면 강제로 기본값으로 변경
-                startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(3);
+                startDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN).minusMonths(1800);
                 endDay = LocalDateTime.now();
                 System.out.println("날짜 형식이 안맞아요");
             }
