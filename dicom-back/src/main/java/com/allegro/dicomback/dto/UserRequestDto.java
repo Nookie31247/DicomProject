@@ -5,7 +5,7 @@ public class UserRequestDto {
     public record LoginRequest(String userId, String password) {}
 
     // 회원가입
-    public record SignupRequest(String userId, String password, String name, String userType) {}
+    public record SignupRequest(String userId, String password, String name) {}
 
     // 아이디 중복 확인(굳이 이거 안쓰고 String으로 해도 됨)
     public record IdCheckRequest(String userId) {}

@@ -58,14 +58,6 @@ public class SecurityConfig {
                     corsConfiguration.setAllowCredentials(true);
                     return corsConfiguration;
                 }));
-//        // TODO 배포 시 무조건 설정 변경할 것
-//        // 테스트용 보안 검사 안하는 설정
-//        http.csrf(AbstractHttpConfigurer::disable)
-//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
-//                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-//
-//
         return http.build();
     }
 }

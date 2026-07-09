@@ -21,10 +21,6 @@ public class User {
     @Column(name = "user_id", length = 50, nullable = false, unique = true)
     private String userId;
 
-    @Column(name = "user_type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private UserType userType;
-
     @Column(name = "user_password", nullable = false)
     private String userPassword;
 

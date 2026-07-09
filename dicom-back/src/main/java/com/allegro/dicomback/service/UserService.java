@@ -4,7 +4,6 @@ import com.allegro.dicomback.config.JwtTokenProvider;
 import com.allegro.dicomback.dto.UserRequestDto.*;
 import com.allegro.dicomback.dto.UserResponseDto;
 import com.allegro.dicomback.entity.User;
-import com.allegro.dicomback.entity.UserType;
 import com.allegro.dicomback.entity.ai.AuditLog;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
@@ -32,7 +31,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuditLogRepository auditLogRepository;
 
-    public record LoginServiceRes(String token, String username, String userType) {}
+    public record LoginServiceRes(String token, String username) {}
 
     // 로그인
     @Transactional
@@ -43,9 +42,8 @@ public class UserService {
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
 
-        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserType().getTypeString(), user.getKey());
+        String token = jwtTokenProvider.createToken(user.getUserId(), user.getKey());
         String username = user.getUserName();
-        String userType = user.getUserType().name();
 
         // 로그인 성공 시점에 감사 로그 기록
         AuditLog log = new AuditLog();
@@ -56,7 +54,7 @@ public class UserService {
         log.setCreatedAt(LocalDateTime.now());
         auditLogRepository.save(log);
 
-        return new LoginServiceRes(token, username, userType);
+        return new LoginServiceRes(token, username);
     }
 
     // 회원가입
@@ -71,7 +69,6 @@ public class UserService {
                 .userId(request.userId())
                 .userPassword(passwordEncoder.encode(request.password()))
                 .userName(request.name())
-                .userType(UserType.fromTypeString(request.userType()))
                 .build();
 
         userRepository.save(user);
@@ -135,10 +132,9 @@ public class UserService {
         String userId = jwtTokenProvider.getUserId(token);
         User user = findActiveUser(userId);
         String username = user.getUserName();
-        String userType = user.getUserType().getTypeString();
         LocalDate date = user.getCreatedAt().toLocalDate();
 
-        return new UserResponseDto.UserInfoRes(userId, username, userType, date);
+        return new UserResponseDto.UserInfoRes(userId, username, date);
     }
 
     // --- [공통] 유저 조회 (Private) ---

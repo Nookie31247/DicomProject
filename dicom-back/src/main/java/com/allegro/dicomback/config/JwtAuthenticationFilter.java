@@ -66,13 +66,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 3. 정보 추출
             String userId = jwtTokenProvider.getUserId(token);
-            String type = jwtTokenProvider.getUserType(token);
 
             // 4. SecurityContext에 인증 정보 저장
             var auth = new UsernamePasswordAuthenticationToken(
                     userId,
-                    null,
-                    List.of(new SimpleGrantedAuthority("TYPE_" + type))
+                    null
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
 

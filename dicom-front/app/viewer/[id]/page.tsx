@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
-import { apiFetch } from "@/app/api/apiFetch";
+import { medicalApiFetch } from "../../api/ApiFetch";
 
 type StudyDto = {
     "study-key": number;
@@ -107,8 +107,8 @@ export default function ViewerPage() {
                 setError(null);
 
                 const [studyData, seriesData]: [StudyDto, SeriesDto[]] = await Promise.all([
-                    apiFetch(`/api/dicom/studies/${studyKey}`, { credentials: "include" }),
-                    apiFetch(`/api/dicom/studies/${studyKey}/series`, { credentials: "include" }),
+                    medicalApiFetch(`/api/dicom/studies/${studyKey}`, { credentials: "include" }),
+                    medicalApiFetch(`/api/dicom/studies/${studyKey}/series`, { credentials: "include" }),
                 ]);
 
                 setStudy(studyData);
@@ -134,7 +134,7 @@ export default function ViewerPage() {
 
         async function loadInstances() {
             try {
-                const instances: InstanceInfo[] = await apiFetch(
+                const instances: InstanceInfo[] = await medicalApiFetch(
                     `/api/dicom/series/${selectedSeriesId}/instances`,
                     { credentials: "include" }
                 );

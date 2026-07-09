@@ -1,10 +1,12 @@
 // dicomApi.ts의 XHR 기반 업로드 진행률 추적 함수에서도 그대로 재사용한다.
-export const BASE_URL = typeof window === 'undefined'
-    ? (process.env.SERVER_API_URL || 'http://localhost:8080')
-    : (process.env.NEXT_PUBLIC_API_URL || "");
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  const response = await fetch(BASE_URL + path, options);
+export enum ApiServer {
+  MEDICAL_SERVER,
+  RESEARCH_SERVER
+}
+
+export async function ApiFetch(path: string, options: RequestInit = {}) {
+  const response = await fetch(path, options);
 
   // No Content (204) 일 때는 그냥 리턴
   if(response.status === 204) {

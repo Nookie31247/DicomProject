@@ -12,8 +12,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 아이디가 있는지 확인
     boolean existsByUserId(String userId);
-
-    // 로그인 및 회원 보안 인증용 조회
-    Optional<User> findByUserId(String userId);
-
 }

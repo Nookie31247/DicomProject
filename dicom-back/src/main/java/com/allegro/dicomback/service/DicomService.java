@@ -388,54 +388,7 @@ public class DicomService {
         );
     }
 
-    // 연구 활용이 허용된 스터디 목록을 이 의사(doctorKey) 기준으로 조회해서
-    // 화면에 필요한 시리즈 수를 채우는 메서드 (/research 페이지가 최초 로딩될 때 호출하는 API의 실제 로직)
-    public List<StudyDto> getResearchStudies() {
-
-        // 의사가 담당하는 환자들 중, 연구 허용 + 숨김 아님 조건에 맞는 Study 엔티티들을 DB에서 가져옴
-        // (StudyRepository.findResearchStudies의 JPQL 쿼리가 실제 필터링을 담당)
-        List<Study> studyList = studyRepository.findResearchStudies();
-
-        // 연구 허용된 스터디가 하나도 없으면 뒤 로직 돌릴 필요 없이 바로 빈 리스트 반환
-        if (studyList.isEmpty()) return List.of();
-
-        // 방금 가져온 스터디들의 key(PK)만을 뽑아서 리스트로 만든다.,
-        List<Long> studyKeys = studyList.stream().map(Study::getKey).toList();
-
-        // studyKeys에 해당하는 모든 스터디의 "시리즈 개수 + 영상 개수" 집계 결과를 한 번의 쿼리로 가져와서
-        // studyKey → 집계결과 로 바로 찾아볼 수 있는 Map으로 변환
-        // 스터디마다 따로따로 쿼리 날리면 N+1 문제가 생기니, 한 번에 다 가져와서 메모리에서 매칭하는 방식
-        Map<Long, SeriesRepository.SeriesAndImagesCount> countMap =
-                seriesRepository.getSeriesAndImagesCount(studyKeys)
-                        .stream()
-                        .collect(Collectors.toMap(
-                                SeriesRepository.SeriesAndImagesCount::getStudyKey, // Map의 key: studyKey
-                                Function.identity()                                 // Map의 value: 집계 결과 객체 그대로
-                        ));
-
-        // 스터디 목록을 하나씩 돌면서 화면(StudyDto)에 필요한 형태로 변환
-        return studyList.stream()
-                .map(study -> {
-                    // 이 스터디의 집계 결과를 Map에서 꺼내노다.
-                    SeriesRepository.SeriesAndImagesCount count = countMap.get(study.getKey());
-
-                    // 예외처리: count가 없는 시리즈가 없는 스터디면 0으로 처리, 있으면 실제 집계값 사용
-                    Long seriesNum = count == null ? 0L : count.getSeriesNum();
-                    Long imagesNum = count == null ? 0L : count.getImagesNum();
-
-                    return new StudyDto(
-                            study.getKey(),
-                            study.getDescription(),
-                            study.getCreatedAt(),
-                            seriesNum,
-                            imagesNum,
-                            study.getAllowResearch(),
-                            study.getHiddenFlag()
-                    );
-                })
-                .toList();
-    }
-
+    /// 환자 추가하기
     @Transactional
     public void addPatient(Long doctorKey, PatientRequestDto request) {
 

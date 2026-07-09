@@ -1,9 +1,9 @@
-import {apiFetch} from "@/app/api/apiFetch";
+import {ApiFetch} from "./ApiFetch";
 
 
 // 1. 로그인 (클라이언트 요청)
 export async function login(userId: string, password: string) {
-  return apiFetch("/api/users/login", {
+  return ApiFetch("/api/users/login", {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, password })
@@ -12,7 +12,7 @@ export async function login(userId: string, password: string) {
 
 // 2. 회원가입 (클라이언트 요청)
 export async function signup(userId: string, password: string, name: string, userType: string) {
-  return apiFetch("/api/users/signup", {
+  return ApiFetch("/api/users/signup", {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, password, name, userType})
@@ -21,7 +21,7 @@ export async function signup(userId: string, password: string, name: string, use
 
 // 3. 로그아웃 (클라이언트 요청)
 export async function logout() {
-  return apiFetch("/api/users/logout", {
+  return ApiFetch("/api/users/logout", {
     method: 'POST',
     credentials: 'include'
   })
@@ -29,7 +29,7 @@ export async function logout() {
 
 // 4. 아이디 중복 확인 (클라이언트 요청)
 export async function checkId(userId: string) {
-  return apiFetch("/api/users/check-id", {
+  return ApiFetch("/api/users/check-id", {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId })
@@ -38,7 +38,7 @@ export async function checkId(userId: string) {
 
 // 5. 비밀번호 수정 (클라이언트 요청)
 export async function changePassword(currentPassword: string, newPassword: string) {
-  return apiFetch("/api/users/change-password", {
+  return ApiFetch("/api/users/change-password", {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -48,7 +48,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 // 6. 회원탈퇴 (클라이언트 요청)
 export async function deleteUser(password: string) {
-  return apiFetch("/api/users/delete", {
+  return ApiFetch("/api/users/delete", {
     method: 'DELETE',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -58,7 +58,7 @@ export async function deleteUser(password: string) {
 
 // 7. 회원정보 불러오기 (서버 요청, 쿠키값 수동으로 넣을 것)
 export async function getUserInfo(token: string | undefined) {
-  return apiFetch("/api/users/info", {
+  return ApiFetch("/api/users/info", {
     method: 'GET',
     headers: { 'Cookie': `token=${token}` },
     cache: 'no-store',

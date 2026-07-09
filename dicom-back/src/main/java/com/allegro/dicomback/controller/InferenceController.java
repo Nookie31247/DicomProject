@@ -39,7 +39,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InferenceController {
     private final InferenceService service;
-    private final DicomService dicomService;
     private final AiModelRegistry modelRegistry;
     private final AiService aiService;
 

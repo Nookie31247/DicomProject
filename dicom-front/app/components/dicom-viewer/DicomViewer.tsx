@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import initCornerstone from "@/app/lib/cornerstoneInit";
 import { dicomTagDictionary } from "./dicom-dictionary";
 import {getTextDecoder, getElementDisplayValue} from "./dicom-charset"
-import { apiFetch } from "@/app/api/apiFetch";
+import { medicalApiFetch } from "../../api/ApiFetch";
 
 interface DicomViewerProps {
   dicomUrls: string[];
@@ -328,7 +328,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
       //현제 보고 있는 화면 dicom의 URL에서 seriesKey/instanceId를 뽑아낸다.
       //dicomUrls는 viewer/[id]/page.tsx가 "/api/dicom/series/{seriesKey}/instances/{id}/file" 형태로
       //이미 만들어서 내려주고 있어서 그 문자열만 파싱하면 되서 별도 prop을 추가할 필요는 없음
-      const res: DetectRawResponse = await apiFetch("/api/ai/detect-raw", {
+      const res: DetectRawResponse = await medicalApiFetch("/api/ai/detect-raw", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

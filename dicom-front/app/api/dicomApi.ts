@@ -1,4 +1,4 @@
-import {apiFetch, BASE_URL} from "@/app/api/apiFetch";
+import {ApiFetch} from "./ApiFetch";
 
 const dicomApi = {
   getPatients(start: string | null, end: string | null, search:string | null) {
@@ -13,13 +13,12 @@ const dicomApi = {
 
     const queryString = params.toString();
 
-    return apiFetch(
+    return ApiFetch(
         queryString
             ? `/api/dicom/patients?${queryString}`
             : `/api/dicom/patients`
     );
   },
-
   getStudies(patientId: number, start: string | null, end: string | null, search:string | null) {
     const params = new URLSearchParams();
     if (search !== null && search !== "") {
@@ -31,23 +30,23 @@ const dicomApi = {
     }
     params.append("patient-key", patientId.toString());
     const queryString = params.toString();
-    return apiFetch(`/api/dicom/studies?${queryString}`);
+    return ApiFetch(`/api/dicom/studies?${queryString}`);
   },
 
   getSeries(studyKey: number) {
-    return apiFetch(`/api/dicom/series?study-key=${studyKey}`);
+    return ApiFetch(`/api/dicom/series?study-key=${studyKey}`);
   },
 
   getResearchStudies() {
-    return apiFetch(`/api/dicom/studies/research`);
+    return ApiFetch(`/api/dicom/studies/research`);
   },
 
   getSeriesForResearch(studyKey: number) {
-    return apiFetch(`/api/dicom/studies/${studyKey}/series`);
+    return ApiFetch(`/api/dicom/studies/${studyKey}/series`);
   },
 
   setPatientHide(list: HiddenPatientList[]) {
-    return apiFetch("/api/dicom/patients/hide", {
+    return ApiFetch("/api/dicom/patients/hide", {
       method: 'POST',
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(list),
@@ -55,7 +54,7 @@ const dicomApi = {
   },
 
   setStudyHide(list: HiddenStudyList[]) {
-    return apiFetch("/api/dicom/studies/hide", {
+    return ApiFetch("/api/dicom/studies/hide", {
       method: 'POST',
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(list),
@@ -63,7 +62,7 @@ const dicomApi = {
   },
 
   setSeriesHide(list: HiddenSeriesList[]) {
-    return apiFetch("/api/dicom/series/hide", {
+    return ApiFetch("/api/dicom/series/hide", {
       method: 'POST',
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(list),
@@ -71,7 +70,7 @@ const dicomApi = {
   },
 
   setStudyResearch(list: StudyResearchList[]) {
-    return apiFetch("/api/dicom/studies/research-allow", {
+    return ApiFetch("/api/dicom/studies/research-allow", {
       method: 'POST',
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(list),
@@ -79,7 +78,7 @@ const dicomApi = {
   },
 
   addPatient(patient: { name: string; sex: string; birth: string }) {
-    return apiFetch("/api/dicom/patients", {
+    return ApiFetch("/api/dicom/patients", {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -103,7 +102,7 @@ const dicomApi = {
   ): Promise<unknown> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", BASE_URL + "/api/dicom/upload");
+      xhr.open("POST", "/api/dicom/upload");
 
       xhr.upload.onprogress = (e) => {
         if (!options?.onProgress) {
@@ -160,7 +159,7 @@ const dicomApi = {
   // 연구 자료 다운로드 페이지: 체크된 study/series 여러 개를 zip 하나로 묶어 받는다.
   // body가 있는 POST에 응답도 바이너리(zip)라서 텍스트 응답을 전제하는 apiFetch를 못 쓰고 fetch를 직접 써서 blob으로 받음
   downloadBatch: async (studyKeys: number[], seriesKeys: number[]): Promise<Blob> => {
-    const response = await fetch(BASE_URL + "/api/dicom/download/batch", {
+    const response = await fetch("/api/dicom/download/batch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
