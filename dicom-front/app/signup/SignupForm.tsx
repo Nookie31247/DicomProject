@@ -5,6 +5,7 @@ import { checkId, signup } from "@/app/api/authApi";
 import { useToast } from "@/app/context/ToastContext";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from 'lucide-react';
+import type { AccountType } from "@/app/api/ApiFetch";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function SignupForm() {
   const hiddenRadio = "pointer-events-none absolute m-0 h-px w-px border-0 p-0 opacity-0 [clip:rect(0_0_0_0)] [clip-path:inset(50%)]";
 
   const [form, setForm] = useState({ id: "", password: "", confirmPassword: "", username: "" });
-  const [memberType, setMemberType] = useState<"의료진" | "연구원">("의료진");
+  const [memberType, setMemberType] = useState<AccountType>("MEDICAL");
 
   const [checkStatus, setCheckStatus] = useState<{ msg: string, isChecked: boolean, isDuplicated: boolean }>({
     msg: "", isChecked: false, isDuplicated: false
@@ -60,8 +61,13 @@ export default function SignupForm() {
     setCheckStatus({ msg: "", isChecked: false, isDuplicated: false });
   };
 
+  const handleMemberTypeChange = (nextType: AccountType) => {
+    setMemberType(nextType);
+    setCheckStatus({ msg: "", isChecked: false, isDuplicated: false });
+  };
+
   const handleCheckId = async () => {
-    const res = await checkId(form.id);
+    const res = await checkId(form.id, memberType);
     if (!res.isUnique) {
       setCheckStatus({ msg: "사용 가능한 아이디입니다.", isChecked: true, isDuplicated: false });
     } else {
@@ -216,11 +222,11 @@ export default function SignupForm() {
           <fieldset className="field gap-2.5">
             <legend className="field-label">회원유형</legend>
             <div className="flex gap-3 max-[560px]:flex-col">
-              <label className={`${pillBase} ${memberType === "의료진" ? pillActive : pillIdle}`}>
-                <input type="radio" checked={memberType === "의료진"} onChange={() => setMemberType("의료진")} className={hiddenRadio} />의사
+              <label className={`${pillBase} ${memberType === "MEDICAL" ? pillActive : pillIdle}`}>
+                <input type="radio" checked={memberType === "MEDICAL"} onChange={() => handleMemberTypeChange("MEDICAL")} className={hiddenRadio} />의료진
               </label>
-              <label className={`${pillBase} ${memberType === "연구원" ? pillActive : pillIdle}`}>
-                <input type="radio" checked={memberType === "연구원"} onChange={() => setMemberType("연구원")} className={hiddenRadio} />연구원
+              <label className={`${pillBase} ${memberType === "RESEARCHER" ? pillActive : pillIdle}`}>
+                <input type="radio" checked={memberType === "RESEARCHER"} onChange={() => handleMemberTypeChange("RESEARCHER")} className={hiddenRadio} />연구원
               </label>
             </div>
           </fieldset>

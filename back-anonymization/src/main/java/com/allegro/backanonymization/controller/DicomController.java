@@ -1,48 +1,65 @@
 package com.allegro.backanonymization.controller;
 
-import com.allegro.backanonymization.config.JwtTokenProvider;
 import com.allegro.backanonymization.dto.AnonymizationRequestDto;
-import com.allegro.backanonymization.dto.DicomResponseDto.*;
+import com.allegro.backanonymization.dto.DicomRequestDto.BatchDownloadDto;
+import com.allegro.backanonymization.dto.DicomResponseDto.InstanceInfoDto;
+import com.allegro.backanonymization.dto.DicomResponseDto.SeriesDto;
+import com.allegro.backanonymization.dto.DicomResponseDto.StudyDto;
 import com.allegro.backanonymization.service.AnonymizationReceiveService;
 import com.allegro.backanonymization.service.DicomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/dicom")
-@RequiredArgsConstructor //의존성 주입
+@RequestMapping("/api/research/dicom")
+@RequiredArgsConstructor
 public class DicomController {
+
     private final DicomService dicomService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final AnonymizationReceiveService anonymizationReceiveService;
 
-//    //스터디 목록 불러오기
-//    @GetMapping("/studies")
-//    public ResponseEntity<List<StudyDto>> getStudies(
-//            @RequestParam(required = false) String start,
-//            @RequestParam(required = false) String end,
-//            @RequestParam(required = false) String search
-//    ) {
-//        return ResponseEntity.ok(dicomService.getStudies(start, end, search));
-//    }
+    @GetMapping("/studies")
+    public ResponseEntity<List<StudyDto>> getStudies(
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(dicomService.getStudiesData(start, end, search));
+    }
 
-    //시리즈 목록 불러오기
+    @GetMapping("/studies/research")
+    public ResponseEntity<List<StudyDto>> getResearchStudies(
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(dicomService.getStudiesData(start, end, search));
+    }
+
     @GetMapping("/series")
     public ResponseEntity<List<SeriesDto>> getSeries(
             @RequestParam(name = "study-key") Long studyKey
-        ) {
+    ) {
         return ResponseEntity.ok(dicomService.getSeriesData(studyKey));
     }
 
+    @GetMapping("/studies/{studyKey}/series")
+    public ResponseEntity<List<SeriesDto>> getStudySeries(@PathVariable Long studyKey) {
+        return ResponseEntity.ok(dicomService.getSeriesData(studyKey));
+    }
 
-    //스터디 다운로드
     @GetMapping("/studies/download")
     public ResponseEntity<StreamingResponseBody> downloadStudies(
             @RequestParam("study-key") Long studyKey
@@ -54,7 +71,6 @@ public class DicomController {
                 .body(stream);
     }
 
-    //시리즈 다운로드
     @GetMapping("/series/download")
     public ResponseEntity<StreamingResponseBody> downloadSeries(
             @RequestParam("series-key") Long seriesKey
@@ -66,8 +82,32 @@ public class DicomController {
                 .body(stream);
     }
 
-    // 원본 서버에서 받은 익명화 데이터 저장하기
-    @PostMapping(value = "/get-anonymization")
+    @PostMapping("/download/batch")
+    public ResponseEntity<StreamingResponseBody> downloadBatch(@RequestBody BatchDownloadDto request) {
+        StreamingResponseBody stream = dicomService.downloadBatchAsZip(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"research_dicom.zip\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
+    }
+
+    @GetMapping("/series/{seriesKey}/instances")
+    public ResponseEntity<List<InstanceInfoDto>> getInstances(@PathVariable Long seriesKey) {
+        return ResponseEntity.ok(dicomService.getInstancesBySeries(seriesKey));
+    }
+
+    @GetMapping("/series/{seriesKey}/instances/{instanceId}/file")
+    public ResponseEntity<StreamingResponseBody> getInstanceFile(
+            @PathVariable Long seriesKey,
+            @PathVariable String instanceId
+    ) {
+        StreamingResponseBody stream = dicomService.getInstanceFile(seriesKey, instanceId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/dicom"))
+                .body(stream);
+    }
+
+    @PostMapping("/get-anonymization")
     public ResponseEntity<Void> getAnonymization(@RequestBody List<AnonymizationRequestDto> request) {
         anonymizationReceiveService.saveStudies(request);
         return ResponseEntity.ok().build();

@@ -30,7 +30,7 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyStr));
     }
 
-    // 토큰 생성 (userId, userType, userKey를 담음)
+    // 토큰 생성 (userId, userKey를 담음)
     public String createToken(String userId, Long userKey) {
         Date now = new Date();
 

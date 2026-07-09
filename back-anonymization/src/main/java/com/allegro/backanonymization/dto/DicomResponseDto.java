@@ -35,7 +35,12 @@ public class DicomResponseDto {
             @JsonProperty("series-index") Number seriesIndex,
             @JsonProperty("datetime") LocalDateTime dateTime,
             @JsonProperty("series-num") Number seriesNum,
-            @JsonProperty("body-part") String bodyPart,
+            @JsonProperty("bodypart") String bodyPart,
             @JsonProperty("hidden") boolean hidden
+    ) {}
+
+    public record InstanceInfoDto(
+            @JsonProperty("instance-id") String instanceId,
+            @JsonProperty("number-of-frames") int numberOfFrames
     ) {}
 }

@@ -30,8 +30,8 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyStr));
     }
 
-    // 토큰 생성 (userId, userType, userKey를 담음)
-    public String createToken(String userId, String userType, Long userKey) {
+    // 토큰 생성 (userId, userKey를 담음)
+    public String createToken(String userId, Long userKey) {
         Date now = new Date();
 
         // 토큰 유효기간: 24시간
@@ -40,7 +40,6 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(userId)
                 .claim("userKey", userKey)
-                .claim("userType", userType)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + EXPIRE_TIME))
                 .signWith(key, Jwts.SIG.HS256)
@@ -70,11 +69,6 @@ public class JwtTokenProvider {
     // 4. 토큰에서 유저 ID 추출
     public String getUserId(String token) {
         return getClaims(token).getSubject();
-    }
-
-    // 5. 토큰에서 유저 유형(type) 추출
-    public String getUserType(String token) {
-        return getClaims(token).get("userType", String.class);
     }
 
     // UserKey 추출 메서드

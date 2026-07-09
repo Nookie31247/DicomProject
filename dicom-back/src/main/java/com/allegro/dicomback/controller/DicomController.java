@@ -25,7 +25,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/dicom")
+@RequestMapping("/api/medical/dicom")
 @RequiredArgsConstructor //의존성 주입
 public class DicomController {
     private final DicomService dicomService;
@@ -64,7 +64,7 @@ public class DicomController {
 
     ///스터디 목록 불러오기
     //patientKey가 파라미터 4번째=인덱스3(patientkey)
-    //api/dicom/studies?patient-key=1 호출할 경우
+    //api/medical/dicom/studies?patient-key=1 호출할 경우
     //Log: ActionType=SEARCH, TargetType=STUDY, TargetUID=1 (몇 번 환자의 검사 목록을 열람하였는지)
     @AuditLogged(action = "SEARCH", targetType = "STUDY", targetArgIndex = 3)
     @GetMapping("/studies")

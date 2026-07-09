@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {logout} from "@/app/api/authApi";
 import { useUpload } from "@/app/context/UploadContext";
+import { clearStoredAuth, getStoredAccountType } from "@/app/api/ApiFetch";
 
 export default function NavUser() {
   const router = useRouter();
@@ -18,32 +19,40 @@ export default function NavUser() {
   const [userType, setUserType] = useState(""); // "연구원" 배지 표시용
 
   useEffect(() => {
-    const name = localStorage.getItem("username");
-    const type = localStorage.getItem("userType");
-    if (name) {
-      setUsername(name);
-      setUserType(type ?? "");
-      setIsLogin(true);
-    }
-    else {
-      setUsername("");
-      setUserType("");
-      setIsLogin(false)
-    }
+    const syncAuthState = () => {
+      const name = localStorage.getItem("username");
+      const type = localStorage.getItem("userType");
+      if (name) {
+        setUsername(name);
+        setUserType(type ?? "");
+        setIsLogin(true);
+      } else {
+        setUsername("");
+        setUserType("");
+        setIsLogin(false);
+      }
+    };
+
+    syncAuthState();
+    window.addEventListener("auth-state-changed", syncAuthState);
+    return () => window.removeEventListener("auth-state-changed", syncAuthState);
   }, [pathname]);
 
   const handleLogout = async () => {
-    // 서버가 /api/dicom/** 요청의 로그인 여부를 검사하지 않기 때문에, 로그아웃해도
+    // 서버가 /api/medical/dicom/** 요청의 로그인 여부를 검사하지 않기 때문에, 로그아웃해도
     // 서버가 알아서 업로드를 막아주지 않는다. 그래서 로그아웃 처리 전에 여기서
     // 직접 진행 중인 업로드를 취소한다.
     cancelUpload();
-    await logout();
-    localStorage.removeItem("username");
-    localStorage.removeItem("userType");
-    setIsLogin(false);
-    setUsername("");
-    setUserType("");
-    router.push("/");
+    const accountType = getStoredAccountType();
+    try {
+      await logout(accountType);
+    } finally {
+      clearStoredAuth();
+      setIsLogin(false);
+      setUsername("");
+      setUserType("");
+      router.push("/");
+    }
   };
 
   return (

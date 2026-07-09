@@ -33,7 +33,7 @@ public class InferenceService {
     // YOLO가 뱉어낼 결과물 그릇 (박스 좌표와 확률) - 640x640 모델 좌표 기준
     public record BoundingBox(float x_min, float y_min, float x_max, float y_max, float confidence) {}
 
-    //  로컬 파일 경로로 추론, 640x640 좌표 그대로 반환 (/api/ai/infer, /api/ai/visualize 용)
+    //  로컬 파일 경로로 추론, 640x640 좌표 그대로 반환 (/api/medical/ai/infer, /api/medical/ai/visualize 용)
     // inferAndRescale()을 태워서 여기서 바로 원본 좌표로 반환
     public List<BoundingBox> infer(Path dicomPath, Path modelPath) throws Exception {
         var t = preprocessor.preprocess(dicomPath, YOLO_INPUT_SIZE);

@@ -11,5 +11,23 @@ import java.util.List;
 
 public interface StudyRepository extends JpaRepository<Study, Long> {
     List<Study> findStudiesByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    @Query("""
+        select s
+        from Study s
+        where s.createdAt between :start and :end
+          and (
+            :search is null
+            or :search = ''
+            or lower(coalesce(s.description, '')) like lower(concat('%', :search, '%'))
+          )
+        order by s.createdAt desc
+        """)
+    List<Study> findStudiesForResearch(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("search") String search
+    );
+
     boolean existsByUid(String uid);
 }

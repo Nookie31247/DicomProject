@@ -11,7 +11,6 @@ import com.allegro.dicomback.repository.AuditLogRepository;
 import com.allegro.dicomback.entity.ai.AiDetection;
 import com.allegro.dicomback.entity.ai.AiResults;
 import com.allegro.dicomback.service.AiService;
-import com.allegro.dicomback.service.DicomService;
 import com.allegro.dicomback.service.InferenceService;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/medical/ai")
 @RequiredArgsConstructor
 public class InferenceController {
     private final InferenceService service;

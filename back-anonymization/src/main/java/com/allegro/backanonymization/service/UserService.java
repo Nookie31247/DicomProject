@@ -4,7 +4,6 @@ import com.allegro.backanonymization.config.JwtTokenProvider;
 import com.allegro.backanonymization.dto.UserRequestDto.*;
 import com.allegro.backanonymization.dto.UserResponseDto;
 import com.allegro.backanonymization.entity.User;
-import com.allegro.backanonymization.entity.UserType;
 import com.allegro.backanonymization.exception.BaseException;
 import com.allegro.backanonymization.exception.ErrorCode;
 import com.allegro.backanonymization.repository.UserRepository;
@@ -36,7 +35,7 @@ public class UserService {
         // 비밀번호 검증
         validatePassword(request.password(), user.getUserPassword());
 
-        String token = jwtTokenProvider.createToken(user.getUserId(), user.getUserType().getTypeString(), user.getKey());
+        String token = jwtTokenProvider.createToken(user.getUserId(), user.getKey());
         String username = user.getUserName();
 
         return new LoginServiceRes(token, username);
@@ -54,7 +53,6 @@ public class UserService {
                 .userId(request.userId())
                 .userPassword(passwordEncoder.encode(request.password()))
                 .userName(request.name())
-                .userType(UserType.fromTypeString(request.userType()))
                 .build();
 
         userRepository.save(user);
@@ -104,10 +102,9 @@ public class UserService {
         String userId = jwtTokenProvider.getUserId(token);
         User user = findActiveUser(userId);
         String username = user.getUserName();
-        String userType = user.getUserType().getTypeString();
         LocalDate date = user.getCreatedAt().toLocalDate();
 
-        return new UserResponseDto.UserInfoRes(userId, username, userType, date);
+        return new UserResponseDto.UserInfoRes(userId, username, date);
     }
 
     // --- [공통] 유저 조회 (Private) ---

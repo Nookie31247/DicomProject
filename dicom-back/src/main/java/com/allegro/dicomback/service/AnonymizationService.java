@@ -100,7 +100,7 @@ public class AnonymizationService {
 
         // 4단계: 익명화 Spring 서버에 StudyInstanceUID 전달
         anonSpringRestClient.post()
-                .uri("/api/dicom/get-anonymization")
+                .uri("/api/research/dicom/get-anonymization")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(anonymizedStudyUids)
                 .retrieve()

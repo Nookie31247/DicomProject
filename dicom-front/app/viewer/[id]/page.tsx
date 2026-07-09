@@ -61,7 +61,7 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     };
 
     instances.forEach((inst) => {
-        const baseUrl = `/api/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`;
+        const baseUrl = `/api/medical/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`;
         const frameCount = inst["number-of-frames"] || 1;
 
         if (frameCount <= 1) {
@@ -107,8 +107,8 @@ export default function ViewerPage() {
                 setError(null);
 
                 const [studyData, seriesData]: [StudyDto, SeriesDto[]] = await Promise.all([
-                    medicalApiFetch(`/api/dicom/studies/${studyKey}`, { credentials: "include" }),
-                    medicalApiFetch(`/api/dicom/studies/${studyKey}/series`, { credentials: "include" }),
+                    medicalApiFetch(`/api/medical/dicom/studies/${studyKey}`, { credentials: "include" }),
+                    medicalApiFetch(`/api/medical/dicom/studies/${studyKey}/series`, { credentials: "include" }),
                 ]);
 
                 setStudy(studyData);
@@ -135,7 +135,7 @@ export default function ViewerPage() {
         async function loadInstances() {
             try {
                 const instances: InstanceInfo[] = await medicalApiFetch(
-                    `/api/dicom/series/${selectedSeriesId}/instances`,
+                    `/api/medical/dicom/series/${selectedSeriesId}/instances`,
                     { credentials: "include" }
                 );
                 setClips(buildClips(selectedSeriesId as number, instances));

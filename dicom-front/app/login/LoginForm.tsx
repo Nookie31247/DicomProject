@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { login } from "@/app/api/authApi";
+import type { AccountType } from "@/app/api/ApiFetch";
 
 export default function LoginForm() {
     const router = useRouter();
@@ -11,6 +12,12 @@ export default function LoginForm() {
     const [password, setPassword] = useState<string>("");
     const [showPassword, setShowPassword] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string>("");
+    const [accountType, setAccountType] = useState<AccountType>("MEDICAL");
+
+    const pillBase = "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-[13px] text-base transition-[border-color,background,color] duration-150";
+    const pillActive = "border-mint-deep bg-[rgba(76,255,157,0.3)] text-ink font-bold";
+    const pillIdle = "border-line bg-canvas text-ink-soft font-semibold";
+    const hiddenRadio = "pointer-events-none absolute m-0 h-px w-px border-0 p-0 opacity-0 [clip:rect(0_0_0_0)] [clip-path:inset(50%)]";
 
     // 비밀번호 입력창을 가리키는 ref
     const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -18,10 +25,11 @@ export default function LoginForm() {
     const doLogin = async () => {
         try {
             setErrorMsg("");
-            const loginRes = await login(id, password);
+            const loginRes = await login(id, password, accountType);
             localStorage.setItem("username", loginRes.username);
-            localStorage.setItem("userType", loginRes.userType); // NavUser 배지, research 페이지 분기 등에서 사용
-            router.push(loginRes.userType === "RESEARCHER" ? "/research" : "/workspace");
+            localStorage.setItem("userType", accountType); // NavUser 배지, research 페이지 분기 등에서 사용
+            window.dispatchEvent(new Event("auth-state-changed"));
+            router.push(accountType === "RESEARCHER" ? "/research" : "/workspace");
         } catch (err: unknown) {
             setErrorMsg("아이디 혹은 비밀번호가 일치하지 않습니다.");
         }
@@ -77,6 +85,18 @@ export default function LoginForm() {
                     </button>
                 </div>
             </label>
+
+            <fieldset className="field gap-2.5">
+                <legend className="field-label">회원유형</legend>
+                <div className="flex gap-3 max-[560px]:flex-col">
+                    <label className={`${pillBase} ${accountType === "MEDICAL" ? pillActive : pillIdle}`}>
+                        <input type="radio" checked={accountType === "MEDICAL"} onChange={() => setAccountType("MEDICAL")} className={hiddenRadio} />의료진
+                    </label>
+                    <label className={`${pillBase} ${accountType === "RESEARCHER" ? pillActive : pillIdle}`}>
+                        <input type="radio" checked={accountType === "RESEARCHER"} onChange={() => setAccountType("RESEARCHER")} className={hiddenRadio} />연구원
+                    </label>
+                </div>
+            </fieldset>
 
             {/* 로그인 실패 시 메시지 출력 */}
             {errorMsg && (

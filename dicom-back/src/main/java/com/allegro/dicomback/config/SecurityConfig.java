@@ -41,12 +41,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS).permitAll()
                         .requestMatchers(
                                 "/actuator/health",
-                                "/api/users/login",
-                                "/api/users/signup",
-                                "/api/users/check-id",
-                                "/api/dicom/**",
-                                "/api/admin/**",
-                                "/api/ai/**"
+                                "/api/medical/users/login",
+                                "/api/medical/users/signup",
+                                "/api/medical/users/check-id",
+                                "/api/medical/dicom/**",
+                                "/api/medical/admin/**",
+                                "/api/medical/ai/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

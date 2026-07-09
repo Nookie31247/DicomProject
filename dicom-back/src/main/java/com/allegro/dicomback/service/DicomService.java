@@ -286,7 +286,7 @@ public class DicomService {
     }
 
     /// 시리즈 전체 ZIP 다운로드
-    //GET http://localhost:8080/api/dicom/series/download?series-key=1
+    //GET http://localhost:8080/api/medical/dicom/series/download?series-key=1
     public StreamingResponseBody downloadSeriesAsZip(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
@@ -309,7 +309,7 @@ public class DicomService {
     }
 
     /// 스터디 전체 ZIP 다운로드
-    //GET http://localhost:8080/api/dicom/studies/download?study-key=1
+    //GET http://localhost:8080/api/medical/dicom/studies/download?study-key=1
     public StreamingResponseBody downloadStudyAsZip(Long studyKey) {
         Study study = studyRepository.findById(studyKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
