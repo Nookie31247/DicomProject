@@ -1,5 +1,8 @@
 import { medicalApiFetch, researchApiFetch } from "./ApiFetch";
 
+/**
+ * DICOM 관련 작업을 위한 API 클라이언트입니다.
+ */
 const dicomApi = {
   getPatients(start: string | null, end: string | null, search: string | null) {
     const params = new URLSearchParams();
@@ -185,21 +188,33 @@ const dicomApi = {
   },
 };
 
+/**
+ * 숨길 환자를 나타내는 인터페이스입니다.
+ */
 export interface HiddenPatientList {
   "patient-key": number;
   "hidden": boolean;
 }
 
+/**
+ * 숨길 연구를 나타내는 인터페이스입니다.
+ */
 export interface HiddenStudyList {
   "study-key": number;
   "hidden": boolean;
 }
 
+/**
+ * 숨길 시리즈를 나타내는 인터페이스입니다.
+ */
 export interface HiddenSeriesList {
   "series-key": number;
   "hidden": boolean;
 }
 
+/**
+ * 연구 목적으로 허용된 연구를 나타내는 인터페이스입니다.
+ */
 export interface StudyResearchList {
   "study-key": number;
   "allow-research": boolean;

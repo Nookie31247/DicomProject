@@ -35,6 +35,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * DICOM 작업을 위한 서비스입니다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,6 +52,14 @@ public class DicomService {
     @Value("${orthanc.url:http://localhost:8043}")
     private String orthancUrl;
 
+    /**
+     * 연구 데이터를 가져옵니다.
+     *
+     * @param start 시작 날짜
+     * @param end 종료 날짜
+     * @param search 검색어
+     * @return 연구 DTO 목록
+     */
     public List<StudyDto> getStudiesData(String start, String end, String search) {
         DateRange range = resolveDateRange(start, end);
         List<Study> studyList = studyRepository.findStudiesForResearch(range.start(), range.end(), search);
@@ -88,6 +99,12 @@ public class DicomService {
                 .toList();
     }
 
+    /**
+     * 연구에 대한 시리즈 데이터를 가져옵니다.
+     *
+     * @param studyKey 연구 키
+     * @return 시리즈 DTO 목록
+     */
     public List<SeriesDto> getSeriesData(Long studyKey) {
         if (!studyRepository.existsById(studyKey)) {
             throw new BaseException(ErrorCode.STUDY_NOT_FOUND);
@@ -106,6 +123,12 @@ public class DicomService {
                 .toList();
     }
 
+    /**
+     * 시리즈를 ZIP으로 다운로드합니다.
+     *
+     * @param seriesKey 시리즈 키
+     * @return 스트리밍 응답 본문
+     */
     public StreamingResponseBody downloadSeriesAsZip(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
@@ -123,6 +146,12 @@ public class DicomService {
         });
     }
 
+    /**
+     * 연구를 ZIP으로 다운로드합니다.
+     *
+     * @param studyKey 연구 키
+     * @return 스트리밍 응답 본문
+     */
     public StreamingResponseBody downloadStudyAsZip(Long studyKey) {
         Study study = studyRepository.findById(studyKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
@@ -140,6 +169,12 @@ public class DicomService {
         });
     }
 
+    /**
+     * 연구/시리즈의 배치를 ZIP으로 다운로드합니다.
+     *
+     * @param request 배치 다운로드 요청
+     * @return 스트리밍 응답 본문
+     */
     public StreamingResponseBody downloadBatchAsZip(BatchDownloadDto request) {
         List<String> orthancIds = new ArrayList<>();
 
@@ -189,6 +224,12 @@ public class DicomService {
         );
     }
 
+    /**
+     * 시리즈에 대한 인스턴스 데이터를 가져옵니다.
+     *
+     * @param seriesKey 시리즈 키
+     * @return 인스턴스 DTO 목록
+     */
     public List<InstanceInfoDto> getInstancesBySeries(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));
@@ -206,6 +247,13 @@ public class DicomService {
                 .toList();
     }
 
+    /**
+     * 특정 인스턴스 파일을 가져옵니다.
+     *
+     * @param seriesKey 시리즈 키
+     * @param instanceId 인스턴스 ID
+     * @return 스트리밍 응답 본문
+     */
     public StreamingResponseBody getInstanceFile(Long seriesKey, String instanceId) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.SERIES_NOT_FOUND));

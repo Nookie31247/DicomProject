@@ -13,6 +13,12 @@ type UserInfo = {
   registerDay: string;
 };
 
+/**
+ * 사용자 계정 정보를 표시하는 MyPage 컴포넌트입니다.
+ * 사용자가 비밀번호를 변경하고 계정을 탈퇴할 수 있도록 합니다.
+ *
+ * @returns MyPage 인터페이스
+ */
 export default function MyPage() {
   const [userdata, setUserdata] = useState<UserInfo | null>(null);
   const [accountType, setAccountType] = useState<AccountType>("MEDICAL");

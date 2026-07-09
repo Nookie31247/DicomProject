@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * 시스템의 사용자를 나타내는 엔티티입니다.
+ */
 @Entity
 @Table(name = "users")
 @Getter
@@ -38,9 +41,12 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 사용자 ID에 접미사를 추가하고 상태를 false로 설정하여 사용자 계정을 비활성화합니다.
+     */
     public void deactivate() {
         this.userId = this.userId + "$deactivate";
         this.userStatus = false;
-        this.deletedAt = LocalDateTime.now(); //탈퇴 시간 기록
+        this.deletedAt = LocalDateTime.now();
     }
 }

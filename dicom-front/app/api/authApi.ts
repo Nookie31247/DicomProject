@@ -13,6 +13,14 @@ function userApiBase(accountType: AccountType = getStoredAccountType()) {
   return USER_API_BASE[accountType];
 }
 
+/**
+ * 사용자를 로그인합니다.
+ *
+ * @param userId - 사용자 ID
+ * @param password - 사용자 비밀번호
+ * @param accountType - 계정 유형
+ * @returns 로그인 요청에 대한 응답 데이터
+ */
 export async function login(userId: string, password: string, accountType: AccountType) {
   return ApiFetch(`${userApiBase(accountType)}/login`, {
     method: "POST",
@@ -21,6 +29,15 @@ export async function login(userId: string, password: string, accountType: Accou
   });
 }
 
+/**
+ * 새로운 사용자를 가입시킵니다.
+ *
+ * @param userId - 사용자 ID
+ * @param password - 사용자 비밀번호
+ * @param name - 사용자 이름
+ * @param accountType - 계정 유형
+ * @returns 가입 요청에 대한 응답 데이터
+ */
 export async function signup(userId: string, password: string, name: string, accountType: AccountType) {
   return ApiFetch(`${userApiBase(accountType)}/signup`, {
     method: "POST",
@@ -29,6 +46,12 @@ export async function signup(userId: string, password: string, name: string, acc
   });
 }
 
+/**
+ * 현재 사용자를 로그아웃합니다.
+ *
+ * @param accountType - 계정 유형
+ * @returns 로그아웃 요청에 대한 응답 데이터
+ */
 export async function logout(accountType: AccountType = getStoredAccountType()) {
   return ApiFetch(`${userApiBase(accountType)}/logout`, {
     method: "POST",
@@ -36,6 +59,13 @@ export async function logout(accountType: AccountType = getStoredAccountType()) 
   });
 }
 
+/**
+ * 사용자 ID가 사용 가능한지 확인합니다.
+ *
+ * @param userId - 확인할 사용자 ID
+ * @param accountType - 계정 유형
+ * @returns ID 확인 요청에 대한 응답 데이터
+ */
 export async function checkId(userId: string, accountType: AccountType) {
   return ApiFetch(`${userApiBase(accountType)}/check-id`, {
     method: "POST",
@@ -44,6 +74,14 @@ export async function checkId(userId: string, accountType: AccountType) {
   });
 }
 
+/**
+ * 사용자의 비밀번호를 변경합니다.
+ *
+ * @param currentPassword - 현재 비밀번호
+ * @param newPassword - 새 비밀번호
+ * @param accountType - 계정 유형
+ * @returns 비밀번호 변경 요청에 대한 응답 데이터
+ */
 export async function changePassword(
   currentPassword: string,
   newPassword: string,
@@ -57,6 +95,13 @@ export async function changePassword(
   });
 }
 
+/**
+ * 사용자 계정을 삭제합니다.
+ *
+ * @param password - 사용자 비밀번호
+ * @param accountType - 계정 유형
+ * @returns 삭제 요청에 대한 응답 데이터
+ */
 export async function deleteUser(password: string, accountType: AccountType = getStoredAccountType()) {
   return ApiFetch(`${userApiBase(accountType)}/delete`, {
     method: "DELETE",
@@ -66,6 +111,12 @@ export async function deleteUser(password: string, accountType: AccountType = ge
   });
 }
 
+/**
+ * 사용자의 정보를 검색합니다.
+ *
+ * @param accountType - 계정 유형
+ * @returns 사용자 정보를 포함하는 응답 데이터
+ */
 export async function getUserInfo(accountType: AccountType = getStoredAccountType()) {
   return ApiFetch(`${userApiBase(accountType)}/info`, {
     method: "GET",

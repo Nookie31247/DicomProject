@@ -7,6 +7,12 @@ const CHARSET_MAP: Record<string, string> = {
     "GB18030": "gb18030",
 };
 
+/**
+ * DICOM 데이터셋의 Specific Character Set을 기반으로 TextDecoder 인스턴스를 가져옵니다.
+ *
+ * @param ds - DICOM 데이터셋
+ * @returns 설정된 TextDecoder
+ */
 export function getTextDecoder(ds: any): TextDecoder {
     const raw = ds.string("x00080005") || "ISO_IR 6";
     const primary = raw.split("\\")[0].trim(); // 확장 문자셋(\\로 연결)이면 첫 값만 사용
@@ -21,6 +27,14 @@ export function getTextDecoder(ds: any): TextDecoder {
 //문자열 VR만 raw byte로 직접 디코딩
 const MULTIBYTE_VRS = new Set(["PN", "LO", "SH", "ST", "LT", "UT", "CS"]);
 
+/**
+ * 다중 바이트 VR을 처리하면서 DICOM 데이터셋에서 문자열 요소 값을 읽습니다.
+ *
+ * @param ds - DICOM 데이터셋
+ * @param tag - 읽을 DICOM 태그
+ * @param decoder - 다중 바이트 값에 사용할 TextDecoder
+ * @returns 디코딩된 문자열 값
+ */
 export function readElementValue(ds: any, tag: string, decoder: TextDecoder): string {
     const element = ds.elements[tag];
     if (!element) return "";
@@ -50,6 +64,14 @@ const NUMERIC_VRS: Record<string, (ds: any, tag: string) => number | undefined> 
     FD: (ds, tag) => ds.double(tag),
 };
 
+/**
+ * DICOM 요소의 표시 가능한 문자열 값을 가져옵니다.
+ *
+ * @param ds - DICOM 데이터셋
+ * @param tag - 읽을 DICOM 태그
+ * @param decoder - 문자열 값에 대한 TextDecoder
+ * @returns 표시 문자열 또는 해당하지 않는 경우 null
+ */
 export function getElementDisplayValue(ds: any, tag: string, decoder: TextDecoder): string | null {
     const element = ds.elements[tag];
     if (!element) return null;

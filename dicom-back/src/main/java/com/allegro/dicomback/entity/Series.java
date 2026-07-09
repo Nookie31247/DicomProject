@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * DICOM 시리즈를 나타내는 엔티티입니다.
+ */
 @Entity
 @Table(name = "series")
 @Getter
@@ -35,26 +38,29 @@ public class Series {
     @Column(name = "body_part", length = 64)
     private String bodyPart;
 
-    //series 설명을 저장하는 컴험
     @Column(name = "series_description", length = 255)
     private String seriesDescription;
 
     @Column(name = "modality", length = 16)
     private String modality;
 
-    //orthancSeriesId-> orthanc의 해시값을 받아서 Series 다운로드 용도으로 사용
+    // orthancSeriesId -> orthanc의 해시값을 받아서 Series 다운로드 용도로 사용
     @Column(name = "orthanc_id")
     private String orthancId;
 
     @Column(name = "total_images_conut")
-    private Integer totalImagesCount = 0; // 해당 시리즈 내의 이미지 개수
+    private Integer totalImagesCount = 0;
 
     // 소프트 삭제 여부 (0: 정상, 1: 삭제)
     @Builder.Default
     @Column(name = "hidden_flag", nullable = false)
     private Boolean hiddenFlag = false;
 
-    // 시리즈 숨김 여부 설정
+    /**
+     * 숨김 플래그를 설정하여 시리즈를 소프트 삭제하거나 복원합니다.
+     *
+     * @param isHidden 숨기려면 true, 복원하려면 false
+     */
     public void setHidden(boolean isHidden) {
         this.hiddenFlag = isHidden;
     }

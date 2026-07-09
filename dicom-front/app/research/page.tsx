@@ -26,6 +26,12 @@ interface SeriesItem {
     hidden: boolean;
 }
 
+/**
+ * 역할 기반 접근 제어가 있는 연구 데이터 페이지 컴포넌트 래퍼입니다.
+ * RESEARCHER 계정으로의 접근을 제한합니다.
+ *
+ * @returns 권한이 있는 경우 연구 데이터 페이지
+ */
 export default function ResearchDataPage() {
     return (
         <RoleGuard allow="RESEARCHER">
@@ -34,6 +40,12 @@ export default function ResearchDataPage() {
     );
 }
 
+/**
+ * 연구 데이터 페이지의 내부 컴포넌트입니다.
+ * 익명화된 DICOM 데이터를 가져오고 필터링하고 다운로드하는 것을 처리합니다.
+ *
+ * @returns 연구 데이터 관리 인터페이스
+ */
 function ResearchDataPageInner() {
     //상태 : 예시 데이터
     const [studies, setStudies] = useState<StudyItem[]>([]);

@@ -1,12 +1,16 @@
 package com.allegro.backanonymization.entity;
 
 import jakarta.persistence.*;
+
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * 사용자를 나타내는 엔티티입니다.
+ */
 @Entity
 @Table(name = "users")
 @Getter
@@ -41,9 +45,12 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 사용자 계정을 비활성화합니다.
+     */
     public void deactivate() {
         this.userId = this.userId + "$deactivate";
         this.userStatus = false;
-        this.deletedAt = LocalDateTime.now(); //탈퇴 시간 기록
+        this.deletedAt = LocalDateTime.now();
     }
 }

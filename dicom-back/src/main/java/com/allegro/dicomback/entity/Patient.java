@@ -6,6 +6,9 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 환자를 나타내는 엔티티입니다.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -19,23 +22,18 @@ public class Patient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long key;
 
-    // 환자 성명
     @Column(name = "name", length = 64, nullable = false)
     private String name;
 
-    // 환자 생년월일
     @Column(name = "birth", nullable = false)
     private LocalDate birth;
 
-    // 환자 성별
     @Column(name = "sex", length = 2, nullable = false)
     private String sex;
 
-    // 환자 최신 검사일자
     @Column(name = "recent_study")
     private LocalDateTime recentStudy;
 
-    // 환자 Study 횟수
     @Builder.Default
     @Column(name = "study_count", nullable = false)
     private Integer studyCount = 0;
@@ -50,7 +48,11 @@ public class Patient {
     @JoinColumn(name = "doctor_key",  nullable = false)
     private User doctorKey;
 
-    /// 환자 숨김 여부 설정(true: 숨김 설정, false: 숨김 해제)
+    /**
+     * 숨김 플래그를 설정하여 환자를 소프트 삭제하거나 복원합니다.
+     *
+     * @param isHidden 숨기려면 true, 복원하려면 false
+     */
     public void setHidden(boolean isHidden) {
         this.hiddenFlag = isHidden;
     }

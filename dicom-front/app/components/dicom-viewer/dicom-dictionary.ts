@@ -1,5 +1,7 @@
-// DICOM 파일의 메타데이터 태그값을 String 설명문으로 변경하는 코드
-
+/**
+ * DICOM 파일의 메타데이터 태그값을 String 설명문으로 변경하는 코드
+ * DICOM 태그를 설명적인 이름에 매핑하는 딕셔너리입니다.
+ */
 export const dicomTagDictionary: Record<string, string> = {
   // File Meta Information (0002)
   "(0002,0000)": "File Meta Information Group Length",

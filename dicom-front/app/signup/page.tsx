@@ -2,6 +2,12 @@ import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 import SignupForm from "@/app/signup/SignupForm";
 
+/**
+ * 회원가입 페이지 컴포넌트입니다.
+ * 홍보 이미지와 함께 회원가입 폼을 표시합니다.
+ *
+ * @returns 회원가입 페이지 인터페이스
+ */
 export default function SignupPage() {
   return (
     <div className="page">

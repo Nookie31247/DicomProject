@@ -7,6 +7,12 @@ import {logout} from "@/app/api/authApi";
 import { useUpload } from "@/app/context/UploadContext";
 import { clearStoredAuth, getStoredAccountType } from "@/app/api/ApiFetch";
 
+/**
+ * 사용자 정보 및 로그아웃 기능을 표시하는 내비게이션 사용자 컴포넌트입니다.
+ * 또한 로그인 상태 동기화를 처리합니다.
+ *
+ * @returns 내비게이션 사용자 인터페이스
+ */
 export default function NavUser() {
   const router = useRouter();
   const pathname = usePathname();

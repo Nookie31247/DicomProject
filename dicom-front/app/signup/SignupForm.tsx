@@ -7,6 +7,12 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from 'lucide-react';
 import type { AccountType } from "@/app/api/ApiFetch";
 
+/**
+ * 새로운 사용자 등록을 처리하는 회원가입 폼 컴포넌트입니다.
+ * ID 중복 확인 및 비밀번호 유효성 검사를 포함합니다.
+ *
+ * @returns 회원가입 폼 인터페이스
+ */
 export default function SignupForm() {
   const router = useRouter();
   const { showToast } = useToast();

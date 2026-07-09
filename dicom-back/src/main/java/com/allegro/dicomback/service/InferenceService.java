@@ -1,6 +1,5 @@
 package com.allegro.dicomback.service;
 
-
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
@@ -13,6 +12,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * DICOM 이미지에 대한 AI 추론을 실행하기 위한 서비스입니다.
+ */
 @Service
 public class InferenceService {
     private final Preprocessor preprocessor;
@@ -27,29 +29,59 @@ public class InferenceService {
     // NMS: 두 박스가 이 비율 이상 겹치면 같은 대상으로 보고 낮은 확률 쪽을 제거
     private static final float NMS_IOU_THRESHOLD = 0.45f;
 
-    // YOLO가 뱉어낼 결과물 그릇 (박스 좌표와 확률) - 640x640 모델 좌표 기준
     InferenceService(Preprocessor p) { this.preprocessor = p; }
 
     // YOLO가 뱉어낼 결과물 그릇 (박스 좌표와 확률) - 640x640 모델 좌표 기준
     public record BoundingBox(float x_min, float y_min, float x_max, float y_max, float confidence) {}
 
-    //  로컬 파일 경로로 추론, 640x640 좌표 그대로 반환 (/api/medical/ai/infer, /api/medical/ai/visualize 용)
-    // inferAndRescale()을 태워서 여기서 바로 원본 좌표로 반환
+    /**
+     * 로컬 DICOM 파일 경로에서 추론을 실행하고 640x640 모델 좌표의 바운딩 박스를 반환합니다.
+     * inferAndRescale()을 태워서 여기서 바로 원본 좌표로 반환
+     *
+     * @param dicomPath DICOM 파일의 경로
+     * @param modelPath 모델 파일의 경로
+     * @return 바운딩 박스 목록
+     * @throws Exception 추론에 실패한 경우
+     */
     public List<BoundingBox> infer(Path dicomPath, Path modelPath) throws Exception {
         var t = preprocessor.preprocess(dicomPath, YOLO_INPUT_SIZE);
         return inferAndRescale(t, modelPath, DEFAULT_CONFIDENCE_THRESHOLD);
     }
 
-    // 뷰어 연동용: Orthanc에서 받은 byte[]로 추론하고, 결과를 640 좌표가 아니라 원본 DICOM 이미지 픽셀 좌표로 변환해서 반환한다. 프론트는 이 좌표를 그대를 cornerstone.pixelToCanvas()에 넘긴다.
-    // 압축 DICOM을 서버가 다시 디코딩해야 하므로 dcm4che-imageio-opencv가 필요함
+    /**
+     * DICOM 바이트 배열에서 추론을 실행하고 원본 이미지 픽셀 좌표의 바운딩 박스를 반환합니다.
+     * 뷰어 연동용: Orthanc에서 받은 byte[]로 추론하고, 결과를 640 좌표가 아니라 원본 DICOM 이미지 픽셀 좌표로 변환해서 반환한다. 프론트는 이 좌표를 그대를 cornerstone.pixelToCanvas()에 넘긴다.
+     * 압축 DICOM을 서버가 다시 디코딩해야 하므로 dcm4che-imageio-opencv가 필요함
+     *
+     * @param dicomBytes 원본 DICOM 바이트
+     * @param modelPath 모델 파일의 경로
+     * @return 바운딩 박스 목록
+     * @throws Exception 추론에 실패한 경우
+     */
     public List<BoundingBox> inferOnOriginalImage(byte[] dicomBytes, Path modelPath) throws Exception {
         var t = preprocessor.preprocess(dicomBytes, YOLO_INPUT_SIZE);
         return inferAndRescale(t, modelPath, DEFAULT_CONFIDENCE_THRESHOLD);
     }
 
-    // 뷰어 연동용현재 사용: cornerstone가 이미 압축을 풀어놓은 픽셀 배열을 그대로 받아서 추론
-    // 서버가 DICOM을 다시 디코딩할 필요가 없음
-    // windowCenter/windowWidth는 null이면 preprocessRaw가 백분위수 기준으로 계산한다
+    /**
+     * 원시 픽셀에서 추론을 실행하고 바운딩 박스를 반환합니다.
+     * 뷰어 연동용현재 사용: cornerstone가 이미 압축을 풀어놓은 픽셀 배열을 그대로 받아서 추론
+     * 서버가 DICOM을 다시 디코딩할 필요가 없음
+     * windowCenter/windowWidth는 null이면 preprocessRaw가 백분위수 기준으로 계산한다
+     *
+     * @param rows 행의 수
+     * @param cols 열의 수
+     * @param windowCenter 윈도우 중심
+     * @param windowWidth 윈도우 너비
+     * @param slope 재조정 기울기
+     * @param intercept 재조정 절편
+     * @param signed 픽셀의 부호 여부
+     * @param pixelBytes 원시 픽셀 바이트
+     * @param modelPath 모델 파일의 경로
+     * @param confidenceThreshold 신뢰도 임계값
+     * @return 바운딩 박스 목록
+     * @throws Exception 추론에 실패한 경우
+     */
     public List<BoundingBox> inferOnRawPixels(int rows, int cols, Double windowCenter, Double windowWidth,
                                               double slope, double intercept, boolean signed,
                                               byte[] pixelBytes, Path modelPath, float confidenceThreshold) throws Exception {
@@ -87,14 +119,12 @@ public class InferenceService {
                     java.nio.FloatBuffer.wrap(t.data()), t.shape());
 
             try (var results = session.run(Map.of(inputName, tensor))) {
-                // YOLO의 출력 모양은 일반적으로 [1, 분류+좌표(예: 84), 그리드수(예: 8400)] 형태입니다.
                 float[][][] out = (float[][][]) results.get(0).getValue();
                 float[][] predictions = out[0];
 
                 int numClasses = predictions.length - 4; // 보통 첫 4개는 x, y, w, h 입니다.
                 int numAnchors = predictions[0].length;
 
-                // 8400개의 예측 박스들을 모두 뒤져서 확률이 높은 진짜 종양 박스만 걸러냅니다.
                 for (int i = 0; i < numAnchors; i++) {
                     float maxClassProb = 0;
                     for (int c = 0; c < numClasses; c++) {

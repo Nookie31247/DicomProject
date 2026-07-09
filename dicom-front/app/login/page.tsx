@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   title: "로그인 — DICOM!",
 };
 
+/**
+ * 로그인 페이지 컴포넌트입니다.
+ * 홍보 이미지와 함께 로그인 폼을 표시합니다.
+ *
+ * @returns 로그인 페이지 인터페이스
+ */
 export default function LoginPage() {
 
   return (

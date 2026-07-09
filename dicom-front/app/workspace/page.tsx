@@ -82,6 +82,12 @@ const getDefaultPatientEndDate = () => {
 
 // useSearchParams()를 쓰는 페이지는 Suspense 경계로 감싸야 한다(안 그러면 빌드 시
 // "useSearchParams() should be wrapped in a suspense boundary" 에러가 난다).
+/**
+ * 역할 기반 접근 제어가 있는 작업 공간 대시보드 페이지 래퍼입니다.
+ * MEDICAL 계정으로의 접근을 제한하고 suspense 경계를 제공합니다.
+ *
+ * @returns 권한이 있는 경우 작업 공간 대시보드
+ */
 export default function WorkspaceDashboardPage() {
   return (
     <RoleGuard allow="MEDICAL">
@@ -92,6 +98,12 @@ export default function WorkspaceDashboardPage() {
   );
 }
 
+/**
+ * 작업 공간 대시보드의 내부 컴포넌트입니다.
+ * 환자 관리, DICOM 업로드 및 검사 가시성을 처리합니다.
+ *
+ * @returns 작업 공간 대시보드 인터페이스
+ */
 function WorkspaceDashboardPageInner() {
   const router = useRouter();
   const pathname = usePathname();

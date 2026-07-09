@@ -11,6 +11,9 @@ const HOME_BY_ACCOUNT_TYPE = {
 
 const SERVER_AUTH_STATE = "__server_auth_state__";
 
+/**
+ * 인증 상태 변경을 구독합니다.
+ */
 function subscribeAuthState(onStoreChange: () => void) {
   window.addEventListener("auth-state-changed", onStoreChange);
   window.addEventListener("storage", onStoreChange);
@@ -21,6 +24,9 @@ function subscribeAuthState(onStoreChange: () => void) {
   };
 }
 
+/**
+ * 로컬 스토리지에서 인증 상태를 읽습니다.
+ */
 function readStoredAuthState() {
   return JSON.stringify({
     username: localStorage.getItem("username"),
@@ -28,10 +34,16 @@ function readStoredAuthState() {
   });
 }
 
+/**
+ * 정적 서버 인증 상태를 반환합니다.
+ */
 function readServerAuthState() {
   return SERVER_AUTH_STATE;
 }
 
+/**
+ * 저장된 인증 상태를 가져오는 훅입니다.
+ */
 function useStoredAuth() {
   const authState = useSyncExternalStore(
     subscribeAuthState,
@@ -59,6 +71,18 @@ function useStoredAuth() {
   };
 }
 
+/**
+ * 계정 유형에 따라 접근을 제한하는 RoleGuard 컴포넌트입니다.
+ * 권한이 없는 사용자를 적절한 홈페이지나 로그인 페이지로 리디렉션합니다.
+ *
+ * @param props - 컴포넌트 속성
+ * @param props.allow - 허용되는 계정 유형
+ * @param props.children - 권한이 있을 경우 렌더링할 자식 컴포넌트
+ * @returns 권한이 있을 경우 감싸진 컴포넌트, 그렇지 않으면 null
+ */
+/**
+ * 계정 유형에 따라 접근을 제한하는 가드 컴포넌트입니다.
+ */
 export function RoleGuard({
   allow,
   children,
@@ -87,6 +111,14 @@ export function RoleGuard({
   return auth.hydrated && auth.username && auth.accountType === allow ? <>{children}</> : null;
 }
 
+/**
+ * 인증된 사용자를 적절한 홈페이지로 리디렉션하는 컴포넌트입니다.
+ *
+ * @returns null
+ */
+/**
+ * 인증된 사용자를 각각의 홈페이지로 리디렉션합니다.
+ */
 export function HomeRedirect() {
   const router = useRouter();
   const auth = useStoredAuth();

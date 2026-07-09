@@ -32,6 +32,9 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * AI 추론 요청을 처리하는 컨트롤러입니다.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/medical/ai")
@@ -41,7 +44,7 @@ public class InferenceController {
     private final AiModelRegistry modelRegistry;
     private final AiService aiService;
 
-    //ai 결과 Db 저장
+    // ai 결과 Db 저장
     private final AiResultsRepository aiResultsRepository;
     private final AiDetectionRepository aiDetectionRepository;
     private final AuditLogRepository auditLogRepository;
@@ -50,14 +53,31 @@ public class InferenceController {
     @Value("${ai.model-path:models/CR_pneumonia_yolov8n.onnx}")
     private String modelPath;
 
-    // 레거시/디버그용: 서버 로컬 파일 경로를 직접 읽어서 고정 모델로 추론. 실제 뷰어는 안 씀.
+    /**
+     * 레거시/디버그용: 서버 로컬 파일 경로를 직접 읽어서 고정 모델로 추론. 실제 뷰어는 안 씀.
+     *
+     * @param req DICOM 경로를 포함하는 추론 요청
+     * @return 감지된 경계 상자 목록
+     * @throws Exception 추론 실패 시
+     */
     @PostMapping("/infer")
     public List<InferenceService.BoundingBox> infer(@RequestBody InferRequest req) throws Exception {
         return service.infer(Path.of(req.dicomPath()), Path.of("models/CR_pneumonia_yolov8n.onnx"));
     }
+    
+    /**
+     * 레거시 추론 요청을 위한 DTO입니다.
+     */
     record InferRequest(String dicomPath) {}
 
-    // 레거시 경로: 서버가 Orthanc에서 원본 DICOM byte[]를 다시 받아 직접 디코딩(dcm4che-imageio-opencv 필요)
+    /**
+     * 레거시 경로: 서버가 Orthanc에서 원본 DICOM byte[]를 다시 받아 직접 디코딩(dcm4che-imageio-opencv 필요)
+     *
+     * @param seriesKey 시리즈 키
+     * @param instanceId 인스턴스 ID
+     * @return BoxDto 목록
+     * @throws Exception 감지 실패 시
+     */
     @GetMapping("/series/{seriesKey}/instances/{instanceId}/detect")
     public List<BoxDto> detect(@PathVariable Long seriesKey, @PathVariable String instanceId) throws Exception {
         byte[] dicomBytes = aiService.getInstanceBytes(seriesKey, instanceId);
@@ -74,12 +94,19 @@ public class InferenceController {
                 .toList();
     }
 
-    // 현재 뷰어가 실제로 호출하는 경로: 프론트가 화면에 띄우면서 이미 압축을 풀어놓은 픽셀 배열을 그대로 받는다.
-    // modality(+bodyPart)로 AiModelRegistry가 어떤 onnx를 쓸지 자동으로 고른다.
-    // - 확정되면 바로 추론해서 boxes를 채워 반환
-    // - 애매하면(같은 modality를 여러 모델이 공유하는데 bodyPart로도 못 좁힐 때(솔직히 혹시 몰라서 넣은거지 이럴일은 없을듯?)) candidates만 채워 반환 → 프론트가 선택 UI를 띄움
-    // - 아예 지원 안 하면(태그 없음/미등록 modality) unsupportedReason만 채워 반환
-    // modelKey가 요청에 실려오면(사용자가 candidates 중 하나를 직접 골랐을 때) 자동 판단을 건너뛰고 그 모델을 강제로 사용(아까말한 대로 솔직히 안 할 것 같음)
+    /**
+     * 현재 뷰어가 실제로 호출하는 경로: 프론트가 화면에 띄우면서 이미 압축을 풀어놓은 픽셀 배열을 그대로 받는다.
+     * modality(+bodyPart)로 AiModelRegistry가 어떤 onnx를 쓸지 자동으로 고른다.
+     * - 확정되면 바로 추론해서 boxes를 채워 반환
+     * - 애매하면(같은 modality를 여러 모델이 공유하는데 bodyPart로도 못 좁힐 때(솔직히 혹시 몰라서 넣은거지 이럴일은 없을듯?)) candidates만 채워 반환 → 프론트가 선택 UI를 띄움
+     * - 아예 지원 안 하면(태그 없음/미등록 modality) unsupportedReason만 채워 반환
+     * modelKey가 요청에 실려오면(사용자가 candidates 중 하나를 직접 골랐을 때) 자동 판단을 건너뛰고 그 모델을 강제로 사용(아까말한 대로 솔직히 안 할 것 같음)
+     *
+     * @param req 원시 감지 요청 데이터
+     * @param token 사용자 식별을 위한 JWT 토큰
+     * @return 경계 상자, 후보 모델 또는 지원되지 않는 이유를 포함하는 DetectRawResponse
+     * @throws Exception 처리 실패 시
+     */
     @PostMapping("/detect-raw")
     public DetectRawResponse detectRaw(
             @RequestBody RawDetectRequest req,
@@ -134,9 +161,17 @@ public class InferenceController {
         return new DetectRawResponse(boxDtos, null, null);
     }
 
-    // I 추론 결과와 탐지 박스를 DB에 저장하고, 감사 로그도 함께 남긴다.
-    //DB저장이 실패해도 사용자에게 보여줄 AI 판독 결과에는 영향이 없도록 예외처리
-    //저장 실패 시 서버 로그에 경고만 남기고 API 응답은 정상적으로 나간다
+    /**
+     * 추론 결과와 탐지 박스를 DB에 저장하고, 감사 로그도 함께 남긴다.
+     * DB저장이 실패해도 사용자에게 보여줄 AI 판독 결과에는 영향이 없도록 예외처리
+     * 저장 실패 시 서버 로그에 경고만 남기고 API 응답은 정상적으로 나간다.
+     *
+     * @param seriesKey  Series Key
+     * @param instanceId Instance ID
+     * @param rule       Model Rule
+     * @param boxes      List of inferred bounding boxes
+     * @param token      JWT Token
+     */
     private void saveInferenceResult(
             Long seriesKey, String instanceId,
             AiModelRegistry.ModelRule rule,
@@ -184,19 +219,26 @@ public class InferenceController {
         }
     }
 
-    // 쿠키에 담긴 JWT 토큰 문자열을 넣으면 그 안에 들어있는 사용자 고유 번호(userKey)를 꺼내고
-    // token이 null이면 토큰이 만료/위조되어 파싱에 실패하면 예외 대신 null을 반환해서
-    // 로그인 안 한 사람이 요청했다 정도로 처리하고 넘어간다.
+    /**
+     * 쿠키에 담긴 JWT 토큰 문자열을 넣으면 그 안에 들어있는 사용자 고유 번호(userKey)를 꺼내고
+     * token이 null이면 토큰이 만료/위조되어 파싱에 실패하면 예외 대신 null을 반환해서
+     * 로그인 안 한 사람이 요청했다 정도로 처리하고 넘어간다.
+     *
+     * @param token JWT 토큰 문자열
+     * @return 사용자 키, 토큰이 유효하지 않거나 null이면 null 반환
+     */
     private Long resolveUserKeyOrNull(String token) {
         if (token == null) return null;
         try { return jwtTokenProvider.getUserKey(token); } catch (Exception e) { return null; }
     }
 
-    // 프론트 cornerstone image 객체에서 그대로 뽑아 보낸다.
-    // windowCenter/windowWidth는 nullable(Double)이다 - 프론트는  데이터셋에(0028,1050)/(0028,1051) 태그의 유무 판단있 있으면 그 값을 그대로 보내고
-    // 없으면 null을 보낸다. 서버는 null일 때만 Preprocessor.preprocessRaw의 백분위수 fallback을 쓴다.
-    // modality/bodyPart: AiModelRegistry가 자동으로 모델을 고르는 데 쓴다.
-    // modelKey: candidates 중 사용자가 직접 골랐을 때만 채워서 보낸다 . 그 외엔 null
+    /**
+     * 프론트 cornerstone image 객체에서 그대로 뽑아 보낸다.
+     * windowCenter/windowWidth는 nullable(Double)이다 - 프론트는 데이터셋에(0028,1050)/(0028,1051) 태그의 유무 판단있 있으면 그 값을 그대로 보내고
+     * 없으면 null을 보낸다. 서버는 null일 때만 Preprocessor.preprocessRaw의 백분위수 fallback을 쓴다.
+     * modality/bodyPart: AiModelRegistry가 자동으로 모델을 고르는 데 쓴다.
+     * modelKey: candidates 중 사용자가 직접 골랐을 때만 채워서 보낸다. 그 외엔 null
+     */
     public record RawDetectRequest(
             int rows,
             int cols,
@@ -211,20 +253,26 @@ public class InferenceController {
             String modelKey,
             //API가 받던 JSON에는 이게 몇 번 시리즈의 어떤 이미지인가에 대해서는 정보가 아예 없기에 AI 판독은 결과를 DB에 저장하기 위해서 추가
             Long seriesKey,
-            String instanceId   //
+            String instanceId
     ) {}
 
-    // detect-raw 응답: boxes(성공)
-    // candidates(모델 선택 필요)
-    // unsupportedReason(지원 안 함)
+    /**
+     * detect-raw 응답: boxes(성공), candidates(모델 선택 필요), unsupportedReason(지원 안 함)
+     */
     public record DetectRawResponse(
             List<BoxDto> boxes,
             List<ModelChoiceDto> candidates,
             String unsupportedReason
     ) {}
 
+    /**
+     * 여러 모델을 선택하기 위한 모델 선택 DTO입니다.
+     */
     public record ModelChoiceDto(String key, String displayName) {}
 
+    /**
+     * 경계 상자 DTO입니다.
+     */
     public record BoxDto(
             @JsonProperty("x") float x,
             @JsonProperty("y") float y,
@@ -233,11 +281,18 @@ public class InferenceController {
             @JsonProperty("confidence") float confidence
     ) {}
 
+    /**
+     * DICOM 이미지 위에 감지된 상자를 시각화합니다.
+     *
+     * @param dicomPath DICOM 파일 경로
+     * @return JPEG 이미지의 바이트 배열
+     * @throws Exception 시각화 실패 시
+     */
     @GetMapping(value = "/visualize", produces = MediaType.IMAGE_JPEG_VALUE)
     public byte[] visualize(@RequestParam String dicomPath) throws Exception {
 
         //infer에서 원본 Dicom 픽셀 좌표를 받아옴
-        //createDicomImage()가 만드는 img도 가로: cols, 세로 rows로 변환(원본 크기로 그리기
+        //createDicomImage()가 만드는 img도 가로: cols, 세로 rows로 변환(원본 크기로 그리기)
         List<InferenceService.BoundingBox> boxes = service.infer(Path.of(dicomPath), Path.of("models/CR_pneumonia_yolov8n.onnx"));
 
         BufferedImage img = createDicomImage(Path.of(dicomPath));
@@ -248,14 +303,6 @@ public class InferenceController {
         g.setFont(new Font("Arial", Font.BOLD, 20));
 
         for (var b : boxes) {
-//            double scaleX = (double) img.getWidth() / 640.0;
-//            double scaleY = (double) img.getHeight() / 640.0;
-//
-//            int x = (int) (b.x_min() * scaleX);
-//            int y = (int) (b.y_min() * scaleY);
-//            int w = (int) ((b.x_max() - b.x_min()) * scaleX);
-//            int h = (int) ((b.y_max() - b.y_min()) * scaleY);
-
             int x=(int) b.x_min();
             int y=(int) b.y_min();
             int w=(int) (b.x_max() - b.x_min());
@@ -271,6 +318,13 @@ public class InferenceController {
         return baos.toByteArray();
     }
 
+    /**
+     * DICOM 파일 경로에서 BufferedImage를 생성합니다.
+     *
+     * @param dicomPath DICOM 파일 경로
+     * @return DICOM의 BufferedImage 표현
+     * @throws Exception 읽기 실패 시
+     */
     private BufferedImage createDicomImage(Path dicomPath) throws Exception {
         byte[] dicomBytes = Files.readAllBytes(dicomPath);
         Attributes a;

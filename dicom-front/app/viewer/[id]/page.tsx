@@ -11,7 +11,7 @@ type StudyDto = {
     description: string;
     datetime: string;
     "series-num": number;
-    // "images-num": number;
+
     "allow-research": boolean;
     hidden: boolean;
     patient: {
@@ -26,7 +26,7 @@ type SeriesDto = {
     datetime: string | null;
     "series-num": number;
     bodypart: string;
-    // "images-num": number;
+
     description: string;
     hidden: boolean;
 };
@@ -50,6 +50,13 @@ type Clip = {
 // - 프레임이 2장 이상인 인스턴스(초음파 시네 루프, 혈관조영 시네 등)는 그 자체로 독립된 클립이 된다.
 //   같은 시리즈 안에 서로 다른 각도/시점의 시네이 여러 개 섞여 있어도 하나로 뭉치지 않도록 분리하기 위함.
 //   ex: 시리즈 하나에 100프레임/16프레임/150프레임짜리 혈관조영 시네이 3개 섞여 있으면 클립 3개로 분리됨
+/**
+ * 인스턴스 목록을 클립 목록으로 재구성합니다.
+ *
+ * @param seriesKey - 시리즈 식별자
+ * @param instances - 인스턴스 목록
+ * @returns 구성된 클립 목록
+ */
 function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     const clips: Clip[] = [];
     let currentStack: string[] = [];
@@ -81,6 +88,12 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     return clips;
 }
 
+/**
+ * 역할 기반 접근 제어가 있는 뷰어 페이지 래퍼입니다.
+ * MEDICAL 계정으로의 접근을 제한합니다.
+ *
+ * @returns 권한이 있는 경우 뷰어 페이지
+ */
 export default function ViewerPage() {
     return (
         <RoleGuard allow="MEDICAL">
@@ -89,6 +102,12 @@ export default function ViewerPage() {
     );
 }
 
+/**
+ * 뷰어 페이지의 내부 컴포넌트입니다.
+ * DICOM 데이터를 가져오고 뷰어를 렌더링하는 것을 처리합니다.
+ *
+ * @returns 뷰어 인터페이스
+ */
 function ViewerPageInner() {
     const params = useParams();
     const router = useRouter();

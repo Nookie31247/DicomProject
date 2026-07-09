@@ -5,15 +5,33 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * User 엔티티를 위한 레포지토리 인터페이스입니다.
+ */
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // 상태 값이 활성(True)인 유저만 아이디로 찾기
+    /**
+     * 사용자 ID와 활성 상태로 사용자를 찾습니다.
+     *
+     * @param userId 사용자 ID
+     * @return 찾은 경우 User를 포함하는 Optional
+     */
     Optional<User> findByUserIdAndUserStatusTrue(String userId);
 
-    // 아이디가 있는지 확인
+    /**
+     * 사용자 ID가 존재하는지 확인합니다.
+     *
+     * @param userId 사용자 ID
+     * @return 존재하면 true, 그렇지 않으면 false
+     */
     boolean existsByUserId(String userId);
 
-    // 로그인 및 회원 보안 인증용 조회
+    /**
+     * 사용자 ID로 사용자를 찾습니다.
+     *
+     * @param userId 사용자 ID
+     * @return 찾은 경우 User를 포함하는 Optional
+     */
     Optional<User> findByUserId(String userId);
 
 }

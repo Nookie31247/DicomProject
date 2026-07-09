@@ -3,13 +3,15 @@ package com.allegro.dicomback.exception;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 애플리케이션에서 사용되는 오류 코드의 열거형입니다.
+ */
 @Getter
 public enum ErrorCode {
     // 유저 관련 (1xxx)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "유저를 찾을 수 없습니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "USER_002", "비밀번호가 일치하지 않습니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_003", "이미 존재하는 아이디입니다."),
-
     // 환자 연동 관련
     PATIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PATIENT_001", "환자를 찾을 수 없습니다."),
 
@@ -35,6 +37,13 @@ public enum ErrorCode {
     private final String code;
     private final String message;
 
+    /**
+     * 새로운 ErrorCode를 구성합니다.
+     *
+     * @param status HTTP 상태
+     * @param code 오류 코드 문자열
+     * @param message 오류 메시지
+     */
     ErrorCode(HttpStatus status, String code, String message) {
         this.status = status;
         this.code = code;

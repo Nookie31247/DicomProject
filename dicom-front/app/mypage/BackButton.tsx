@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 // 그냥 <Link href="/workspace">로 이동하면 workspace가 URL 쿼리로 들고 있던 선택
 // 환자/날짜 필터가 초기화된 채로 이동하게 된다. router.back()은 브라우저 뒤로가기와
 // 동일하게 동작해서 원래 있던 페이지(대개 workspace)의 상태를 그대로 복원해준다.
+/**
+ * 기록 상의 이전 페이지로 이동하는 뒤로 가기 버튼 컴포넌트입니다.
+ * URL 쿼리(예: 작업 공간 필터)와 같은 상태를 유지합니다.
+ *
+ * @returns 뒤로 가기 버튼 요소
+ */
 export default function BackButton() {
   const router = useRouter();
 

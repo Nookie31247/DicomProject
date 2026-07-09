@@ -5,9 +5,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+
+/**
+ * DICOM 응답을 위한 DTO입니다.
+ */
 public class DicomResponseDto {
 
-    // 환자 목록 응답 DTO
+    /**
+     * 환자 정보를 위한 DTO입니다.
+     */
     public record PatientDto(
             @JsonProperty("patient-key") Long pId,
             @JsonProperty("patient-name") String pName,
@@ -18,7 +24,9 @@ public class DicomResponseDto {
             @JsonProperty("hidden") boolean hidden
     ) {}
 
-    // Study 목록 응답 DTO
+    /**
+     * 연구 정보를 위한 DTO입니다.
+     */
     public record StudyDto(
             @JsonProperty("study-key") Long studyKey,
             @JsonProperty("description") String description,
@@ -29,7 +37,9 @@ public class DicomResponseDto {
             @JsonProperty("hidden") boolean hidden
     ) {}
 
-    // Series 목록 응답 DTO
+    /**
+     * 시리즈 정보를 위한 DTO입니다.
+     */
     public record SeriesDto(
             @JsonProperty("series-key") Long seriesKey,
             @JsonProperty("series-index") Number seriesIndex,
@@ -39,6 +49,9 @@ public class DicomResponseDto {
             @JsonProperty("hidden") boolean hidden
     ) {}
 
+    /**
+     * 인스턴스 정보를 위한 DTO입니다.
+     */
     public record InstanceInfoDto(
             @JsonProperty("instance-id") String instanceId,
             @JsonProperty("number-of-frames") int numberOfFrames

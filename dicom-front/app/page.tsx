@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   title: "DICOM! — DICOM 파일을 보다 간편하게",
 };
 
+/**
+ * 서비스 기능을 설명하는 홈페이지 컴포넌트입니다.
+ * 히어로 섹션과 홍보 콘텐츠를 표시합니다.
+ *
+ * @returns 홈페이지 인터페이스
+ */
 export default function Home() {
   const heroPoints = [
     "DICOM 파일을 웹에서 손쉽게 볼 수 있습니다.",

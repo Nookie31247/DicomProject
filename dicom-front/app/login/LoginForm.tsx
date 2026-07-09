@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { login } from "@/app/api/authApi";
 import type { AccountType } from "@/app/api/ApiFetch";
 
+/**
+ * 사용자 인증을 처리하는 로그인 폼 컴포넌트입니다.
+ *
+ * @returns 로그인 폼 인터페이스
+ */
 export default function LoginForm() {
     const router = useRouter();
     const [id, setId] = useState<string>("");

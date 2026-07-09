@@ -43,13 +43,15 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * DICOM 관련 비즈니스 로직을 처리하는 서비스입니다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DicomService {
 
-    // 레포지토리 의존성 주입하기
     private final SeriesRepository seriesRepository;
     private final StudyRepository studyRepository;
     private final PatientRepository patientRepository;
@@ -60,7 +62,15 @@ public class DicomService {
     @Value("${orthanc.url:http://localhost:8042}")
     private String orthancUrl;
 
-    /// 매개변수로 입력받은 정보를 통해 환자 정보를 필터링한 후 가져옵니다.
+    /**
+     * 주어진 매개변수로 필터링된 환자 목록을 검색합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param start 시작 날짜 (yyyy-MM-dd)
+     * @param end 종료 날짜 (yyyy-MM-dd)
+     * @param search 검색어
+     * @return PatientDto 목록
+     */
     public List<PatientDto> getPatients(Long doctorKey, String start, String end, String search) {
         List<Patient> patientList;
         List<PatientDto> patientDtoList = new ArrayList<>();
@@ -107,7 +117,16 @@ public class DicomService {
         return patientDtoList;
     }
 
-    /// 매개변수로 입력받은 정보를 통해 스터디 정보를 필터링한 후 가져옵니다.
+    /**
+     * 주어진 매개변수로 필터링된 검사(study) 목록을 검색합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param patientKey 환자 키
+     * @param start 시작 날짜
+     * @param end 종료 날짜
+     * @param search 검색어
+     * @return StudyDto 목록
+     */
     public List<StudyDto> getStudies(Long doctorKey, Long patientKey, String start, String end, String search) {
         List<Study> studyList;
         LocalDateTime startDay;
@@ -148,7 +167,7 @@ public class DicomService {
                     patientKey,
                     startDay,
                     endDay
-            );
+                );
         }
 
         if (studyList.isEmpty()) {
@@ -190,7 +209,13 @@ public class DicomService {
                 .toList();
     }
 
-    /// 매개변수로 입력받은 정보를 통해 시리즈 정보를 필터링한 후 가져옵니다.
+    /**
+     * 주어진 매개변수로 필터링된 시리즈 목록을 검색합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param studyKey 검사(study) 키
+     * @return SeriesDto 목록
+     */
     public List<SeriesDto> getSeries(Long doctorKey, Long studyKey) {
         List<Series> seriesList = seriesRepository.getSeries(doctorKey, studyKey);
         List<SeriesDto> seriesDtoList = new ArrayList<>();
@@ -206,11 +231,15 @@ public class DicomService {
         );
 
         return seriesDtoList;
-
     }
 
-    // 정보를 수정하는 메서드에는 @Transactional(readOnly = true)를 사용할 수 없다.
-    /// 환자 숨김 설정 여부를 저장합니다.
+    /**
+     * 지정된 환자에 대한 숨김 플래그를 설정합니다.
+     * 정보를 수정하는 메서드에는 @Transactional(readOnly = true)를 사용할 수 없다.
+     *
+     * @param doctorKey 의사 키
+     * @param requests 숨김 설정을 포함하는 PatientHideDto 목록
+     */
     @Transactional
     public void setHidePatients(Long doctorKey, List<PatientHideDto> requests) {
         List<Long> hiddenPatients = new ArrayList<>();
@@ -228,7 +257,12 @@ public class DicomService {
             patientRepository.changeHiddenFlag(doctorKey, showPatients, false);
     }
 
-    /// 스터디 숨김 설정 여부를 저장합니다.
+    /**
+     * 지정된 검사(study)에 대한 숨김 플래그를 설정합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param requests 숨김 설정을 포함하는 StudyHideDto 목록
+     */
     @Transactional
     public void setHideStudies(Long doctorKey, List<StudyHideDto> requests) {
         List<Long> hiddenStudies = new ArrayList<>();
@@ -246,7 +280,12 @@ public class DicomService {
             studyRepository.changeHiddenFlag(doctorKey, showStudies, false);
     }
 
-    /// 시리즈 숨김 설정 여부를 설정합니다.
+    /**
+     * 지정된 시리즈에 대한 숨김 플래그를 설정합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param requests 숨김 설정을 포함하는 SeriesHideDto 목록
+     */
     @Transactional
     public void setHideSeries(Long doctorKey, List<SeriesHideDto> requests) {
         List<Long> hiddenSeries = new ArrayList<>();
@@ -264,7 +303,12 @@ public class DicomService {
             seriesRepository.changeHiddenFlag(doctorKey, showSeries, false);
     }
 
-    /// 스터디를 연구 목적으로 사용하는 것을 허용하도록 설정합니다.
+    /**
+     * 지정된 검사(study)에 대한 연구 허용 플래그를 설정합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param requests 연구 설정을 포함하는 StudyResearchDto 목록
+     */
     @Transactional
     public void setAllowResearchStudies(Long doctorKey, List<StudyResearchDto> requests) {
         List<Long> allowedStudies = new ArrayList<>();
@@ -285,8 +329,13 @@ public class DicomService {
         anonymizationService.anonymize(orthancUids);
     }
 
-    /// 시리즈 전체 ZIP 다운로드
-    //GET http://localhost:8080/api/medical/dicom/series/download?series-key=1
+    /**
+     * 전체 시리즈를 ZIP 파일로 다운로드합니다.
+     * GET http://localhost:8080/api/medical/dicom/series/download?series-key=1
+     *
+     * @param seriesKey 시리즈 키
+     * @return ZIP 파일을 포함하는 스트리밍 응답 본문
+     */
     public StreamingResponseBody downloadSeriesAsZip(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
@@ -308,8 +357,13 @@ public class DicomService {
         };
     }
 
-    /// 스터디 전체 ZIP 다운로드
-    //GET http://localhost:8080/api/medical/dicom/studies/download?study-key=1
+    /**
+     * 전체 검사(study)를 ZIP 파일로 다운로드합니다.
+     * GET http://localhost:8080/api/medical/dicom/studies/download?study-key=1
+     *
+     * @param studyKey 검사(study) 키
+     * @return ZIP 파일을 포함하는 스트리밍 응답 본문
+     */
     public StreamingResponseBody downloadStudyAsZip(Long studyKey) {
         Study study = studyRepository.findById(studyKey)
                 .orElseThrow(() -> new BaseException(ErrorCode.STUDY_NOT_FOUND));
@@ -331,10 +385,16 @@ public class DicomService {
         };
     }
 
-    // 연구 자료 다운로드 페이지에서 체크된 study/series 여러 개를 zip 하나로 묶어서 받는다
-    // 원래는 각각 따로 호출해서 <a> 태그를 여러 번 클릭시키는 방식이었는데 이렇게 자동 다운로드를 연달아 여러 번 트리거하면 브라우저에서 막히는 경우 발생함
-    // Orthanc의 /tools/create-archive는 여러 리소스(Study/Series) ID를 한 번에 넘기면 그걸 다 합친 zip 하나를 만들어줌
-    // 해당 기능으로 하나의 zip으로 묶어서 1회의 요청으로 처리함
+    /**
+     * 여러 검사(study)와 시리즈를 단일 ZIP 파일로 다운로드합니다.
+     * 연구 자료 다운로드 페이지에서 체크된 study/series 여러 개를 zip 하나로 묶어서 받는다
+     * 원래는 각각 따로 호출해서 <a> 태그를 여러 번 클릭시키는 방식이었는데 이렇게 자동 다운로드를 연달아 여러 번 트리거하면 브라우저에서 막히는 경우 발생함
+     * Orthanc의 /tools/create-archive는 여러 리소스(Study/Series) ID를 한 번에 넘기면 그걸 다 합친 zip 하나를 만들어줌
+     * 해당 기능으로 하나의 zip으로 묶어서 1회의 요청으로 처리함
+     *
+     * @param request 일괄 다운로드 요청 DTO
+     * @return ZIP 파일을 포함하는 스트리밍 응답 본문
+     */
     public StreamingResponseBody downloadBatchAsZip(BatchDownloadDto request) {
         List<String> orthancIds = new ArrayList<>();
 
@@ -388,7 +448,12 @@ public class DicomService {
         );
     }
 
-    /// 환자 추가하기
+    /**
+     * 새 환자를 추가합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param request 환자 요청 DTO
+     */
     @Transactional
     public void addPatient(Long doctorKey, PatientRequestDto request) {
 
@@ -407,6 +472,13 @@ public class DicomService {
         patientRepository.save(patient);
     }
 
+    /**
+     * 업로드된 DICOM 파일을 처리하여 태그를 추출하고 Orthanc에 업로드합니다.
+     *
+     * @param patientKey 환자 키
+     * @param file 업로드된 multipart DICOM 파일
+     * @throws IOException 파일 읽기에 실패한 경우
+     */
     @Transactional
     public void processDicomFile(Long patientKey, MultipartFile file) throws IOException {
         // Orthanc 업로드용으로 바이트를 한 번만 읽어서 재사용한다.
@@ -539,8 +611,14 @@ public class DicomService {
         }
     }
 
-    // Orthanc REST API로 DICOM 파일 원본을 그대로 POST 업로드한다.
-    // 응답에 이 인스턴스가 속한 Study/Series의 Orthanc 내부 ID(ParentStudy/ParentSeries)가 들어있다.
+    /**
+     * REST API를 통해 Orthanc에 원본 DICOM 파일을 업로드합니다.
+     * Orthanc REST API로 DICOM 파일 원본을 그대로 POST 업로드한다.
+     * 응답에 이 인스턴스가 속한 Study/Series의 Orthanc 내부 ID(ParentStudy/ParentSeries)가 들어있다.
+     *
+     * @param fileBytes DICOM 파일 바이트
+     * @return Orthanc 인스턴스 응답
+     */
     private OrthancInstanceResponse uploadToOrthanc(byte[] fileBytes) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/dicom"));
@@ -558,8 +636,11 @@ public class DicomService {
         return response;
     }
 
-    // Orthanc의 POST /instances 응답 중 우리가 필요한 필드만 뽑아서 받는 record.
-    // 예) {"ID": "...", "ParentStudy": "...", "ParentSeries": "...", "Status": "Success"}
+    /**
+     * Orthanc POST /instances 응답을 나타내는 Record입니다.
+     * Orthanc의 POST /instances 응답 중 우리가 필요한 필드만 뽑아서 받는 record.
+     * 예) {"ID": "...", "ParentStudy": "...", "ParentSeries": "...", "Status": "Success"}
+     */
     private record OrthancInstanceResponse(
             @JsonProperty("ID") String id,
             @JsonProperty("ParentStudy") String parentStudy,
@@ -567,7 +648,13 @@ public class DicomService {
             @JsonProperty("Status") String status
     ) {}
 
-    // "7", "007" 같은 DICOM 숫자 태그 문자열을 정수로 안전하게 변환한다. 값이 없거나 이상하면 0.
+    /**
+     * DICOM 숫자 문자열을 정수로 안전하게 구문 분석합니다.
+     * "7", "007" 같은 DICOM 숫자 태그 문자열을 정수로 안전하게 변환한다. 값이 없거나 이상하면 0.
+     *
+     * @param value 문자열 값
+     * @return 구문 분석된 정수
+     */
     private Integer parseIntTag(String value) {
         if (!StringUtils.hasText(value)) {
             return 0;
@@ -579,8 +666,15 @@ public class DicomService {
         }
     }
 
-    // DICOM Date(yyyyMMdd) + Time(HHmmss.ffffff)을 LocalDateTime으로 합쳐준다.
-    // Study/Series 양쪽에서 재사용. 날짜/시간이 없거나 형식이 이상하면 최대한 방어적으로 처리한다.
+    /**
+     * DICOM 날짜 및 시간을 LocalDateTime으로 구문 분석합니다.
+     * DICOM Date(yyyyMMdd) + Time(HHmmss.ffffff)을 LocalDateTime으로 합쳐준다.
+     * Study/Series 양쪽에서 재사용. 날짜/시간이 없거나 형식이 이상하면 최대한 방어적으로 처리한다.
+     *
+     * @param date 날짜 문자열
+     * @param time 시간 문자열
+     * @return 구문 분석된 LocalDateTime
+     */
     private LocalDateTime parseDicomDateTime(String date, String time) {
         if (!StringUtils.hasText(date)) {
             log.warn("날짜 태그가 없어 현재 시각으로 대체합니다.");

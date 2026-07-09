@@ -9,11 +9,17 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import Toast from "@/app/components/message-box/Toast";
 
+/**
+ * 단일 토스트 메시지를 나타냅니다.
+ */
 interface ToastItem {
   id: number;
   message: string;
 }
 
+/**
+ * 토스트 제공자의 컨텍스트 값입니다.
+ */
 interface ToastContextValue {
   showToast: (message: string) => void;
 }
@@ -22,6 +28,9 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 let nextToastId = 1;
 
+/**
+ * 토스트 컨텍스트의 제공자입니다.
+ */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
@@ -49,6 +58,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * 토스트 컨텍스트를 사용하는 훅입니다.
+ */
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {

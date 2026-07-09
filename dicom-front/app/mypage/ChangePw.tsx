@@ -3,6 +3,12 @@
 import {useState, type SubmitEvent} from "react";
 import {changePassword} from "@/app/api/authApi";
 
+/**
+ * 사용자의 비밀번호를 변경하는 컴포넌트입니다.
+ * 비밀번호 유효성 검사 및 API 제출을 처리합니다.
+ *
+ * @returns 비밀번호 변경 인터페이스
+ */
 export default function ChangePw() {
   const pwInput = "w-full rounded-xl border-[1.5px] border-line bg-canvas px-4 py-[13px] text-base text-ink outline-none transition-[border-color,background] duration-150 placeholder:text-[#9aa3b2] focus:border-mint-deep focus:bg-paper";
   const pwFieldLabel = "text-base font-semibold text-ink";

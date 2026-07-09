@@ -13,12 +13,18 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import dicomApi from "@/app/api/dicomApi";
 import { useToast } from "@/app/context/ToastContext";
 
+/**
+ * DICOM 업로드 작업의 결과입니다.
+ */
 interface UploadResult {
   patientKey: number;
   success: boolean;
   at: number;
 }
 
+/**
+ * 업로드 제공자의 컨텍스트 값입니다.
+ */
 interface UploadContextValue {
   isUploading: boolean;
   // 0~1 사이 진행률. lengthComputable이 안 되는 드문 경우엔 -1(진행률 알 수 없음).
@@ -32,6 +38,9 @@ interface UploadContextValue {
 
 const UploadContext = createContext<UploadContextValue | null>(null);
 
+/**
+ * DICOM 파일 업로드를 관리하는 제공자입니다.
+ */
 export function UploadProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
@@ -96,6 +105,9 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
   return <UploadContext.Provider value={value}>{children}</UploadContext.Provider>;
 }
 
+/**
+ * 업로드 컨텍스트를 사용하는 훅입니다.
+ */
 export function useUpload() {
   const ctx = useContext(UploadContext);
   if (!ctx) {

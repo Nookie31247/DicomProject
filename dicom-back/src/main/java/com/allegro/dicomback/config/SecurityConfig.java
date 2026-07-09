@@ -18,6 +18,9 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
+/**
+ * 보안 설정 클래스입니다.
+ */
 @Configuration
 @EnableMethodSecurity
 @EnableWebSecurity
@@ -27,11 +30,25 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
+    /**
+     * PasswordEncoder 빈을 제공합니다.
+     *
+     * @return BCryptPasswordEncoder 인스턴스
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * 보안 필터 체인을 구성합니다.
+     *
+     * @param http 수정할 HttpSecurity
+     * @param jwtTokenProvider JWT 토큰 제공자
+     * @param redisTemplate Redis 템플릿
+     * @return 구성된 SecurityFilterChain
+     * @throws Exception 오류 발생 시
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)

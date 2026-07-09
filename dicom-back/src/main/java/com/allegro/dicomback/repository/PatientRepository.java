@@ -1,4 +1,5 @@
 package com.allegro.dicomback.repository;
+
 import com.allegro.dicomback.entity.Patient;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -8,15 +9,41 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * {@link Patient} 엔티티를 위한 레포지토리 인터페이스입니다.
+ * 표준 CRUD 및 사용자 정의 쿼리 작업을 제공하기 위해 JpaRepository를 확장합니다.
+ */
 public interface PatientRepository extends JpaRepository<Patient, Long> {
 
-    // 검사 기간으로 검색
+    /**
+     * 최근 검사가 지정된 날짜 범위 내에 있는 특정 의사의 환자 목록을 검색합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param start 범위의 시작 날짜
+     * @param end 범위의 종료 날짜
+     * @return 조건과 일치하는 {@link Patient} 목록
+     */
     List<Patient> findByDoctorKey_KeyAndRecentStudyBetween(Long doctorKey, LocalDateTime start, LocalDateTime end);
 
-    // 검사 기간과 이름 검색어로 검색
+    /**
+     * 이름(포함) 및 최근 검사 날짜 범위로 특정 의사의 환자 목록을 검색합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param name 검색할 이름 또는 일부 이름
+     * @param start 범위의 시작 날짜
+     * @param end 범위의 종료 날짜
+     * @return 조건과 일치하는 {@link Patient} 목록
+     */
     List<Patient> findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(Long doctorKey, String name, LocalDateTime start, LocalDateTime end);
 
-    // 환자 키 리스트 기반으로 검색하여 hiddenFlag를 변경함
+    /**
+     * 특정 의사에게 할당된 여러 환자의 숨김 플래그를 업데이트합니다.
+     *
+     * @param doctorKey 의사 키
+     * @param patientKeys 업데이트할 환자 키 목록
+     * @param isHidden 새로운 숨김 플래그 상태
+     * @return 업데이트된 레코드 수
+     */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
     """
@@ -31,9 +58,17 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("isHidden") boolean isHidden
     );
 
-    // 특정 의사에게 등록된 환자
-    // 검색어가 있으면 name 조건 걸고, 없으면 조건x
-    // 최근 검사일이 시작일과 종료일 안에 들어갔거나, 아예 존재하지 않는 경우
+    /**
+     * 특정 의사에게 등록된 환자를 검색합니다.
+     * 제공된 경우 이름이 포함되었는지 선택적으로 필터링하고, 최근 검사 날짜로 필터링합니다
+     * (범위 내에 있거나 환자의 최근 검사가 없는 경우).
+     *
+     * @param doctorKey 의사 키
+     * @param name 필터링할 이름 (선택 사항)
+     * @param start 범위의 시작 날짜
+     * @param end 범위의 종료 날짜
+     * @return 조건과 일치하는 {@link Patient} 목록
+     */
     @Query("""
         select p from Patient p
         where p.doctorKey.key = :doctorKey
@@ -47,4 +82,3 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("end") LocalDateTime end
     );
 }
-
