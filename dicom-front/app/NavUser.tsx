@@ -1,11 +1,11 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {usePathname, useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {logout} from "@/app/api/authApi";
-import {useUpload} from "@/app/context/UploadContext";
-import {clearStoredAuth, getStoredAccountType} from "@/app/api/ApiFetch";
+import { useUpload } from "@/app/context/UploadContext";
+import { clearStoredAuth, getStoredAccountType } from "@/app/api/ApiFetch";
 
 /**
  * 사용자 정보 및 로그아웃 기능을 표시하는 내비게이션 사용자 컴포넌트입니다.

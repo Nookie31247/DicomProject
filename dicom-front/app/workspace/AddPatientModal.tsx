@@ -1,12 +1,8 @@
 "use client";
 
-import {useState} from "react";
+import { useState } from "react";
 import dicomApi from "../api/dicomApi";
-import {
-  clampDateInputValue,
-  getMaxDateInputValue,
-  getMinDateInputValue
-} from "@/services/dateInputValue";
+import { clampDateInputValue, getMaxDateInputValue, getMinDateInputValue } from "@/services/dateInputValue";
 
 interface Props {
     onClose: () => void;

@@ -13,7 +13,7 @@ import {ConfirmProvider} from "@/app/context/ConfirmContext";
  * @param props.children - 제공자로 감쌀 애플리케이션 컴포넌트
  * @returns 감싸진 제공자 컴포넌트
  */
-export default function Providers({ children }: { children: <React className="Re"></React>actNode }) {
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
       <ToastProvider>
         <UploadProvider>

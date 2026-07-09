@@ -1,17 +1,9 @@
 "use client"
 
-import {useEffect, useState} from "react";
-import {
-  AlertCircle,
-  Calendar,
-  ChevronDown,
-  ChevronRight,
-  Download,
-  FileText,
-  ShieldCheck
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, ChevronDown, Download, ShieldCheck, FileText, AlertCircle, Calendar } from "lucide-react";
 import dicomApi from "@/app/api/dicomApi";
-import {RoleGuard} from "@/app/components/auth/RouteAccess";
+import { RoleGuard } from "@/app/components/auth/RouteAccess";
 
 interface StudyItem {
     "study-key": number;

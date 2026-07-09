@@ -6,7 +6,7 @@
 // 같은 토스트 큐를 공유하게 된다. 그래서 "업로드 중 다른 페이지로 이동해도
 // 완료/실패 토스트가 뜬다" 같은 요구사항을 만족할 수 있다.
 
-import {createContext, useCallback, useContext, useMemo, useState} from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import Toast from "@/app/components/message-box/Toast";
 
 /**

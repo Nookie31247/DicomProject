@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect} from "react";
+import { useEffect } from "react";
 
 /**
  * 토스트 알림 컴포넌트입니다.
