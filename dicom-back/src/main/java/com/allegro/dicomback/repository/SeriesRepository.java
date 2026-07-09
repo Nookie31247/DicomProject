@@ -60,4 +60,9 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
             @Param("seriesKeys") List<Long> seriesKeys,
             @Param("isHidden") boolean isHidden
     );
+    // study에 속한 시리즈 목록 조회
+    List<Series> findByStudyKey_KeyAndHiddenFlag(Long studyKey, Boolean hiddenFlag);
+
+    // uid(Series Instance UID)로 기존 Series를 찾기 (있으면 재사용, 없으면 신규 생성)
+    java.util.Optional<Series> findByUid(String uid);
 }

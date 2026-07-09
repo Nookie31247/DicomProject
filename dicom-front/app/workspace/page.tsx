@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {useState, useEffect, useRef} from "react";
 import { useRouter } from "next/navigation";
 import dicomApi from "../api/dicomApi";
+import AddPatientModal from "@/app/workspace/AddPatientModal";
+import { useToast } from "@/app/context/ToastContext";
+import { useUpload } from "@/app/context/UploadContext";
 
 // ── 스타일 변수 ──
 const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
@@ -84,9 +87,11 @@ const getDefaultPatientEndDate = () => {
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { isUploading, uploadProgress, uploadResult, startUpload } = useUpload();
 
   // =========================== 환자 설정 ==================================
-  const [, setIsAddPatientModalOpen] = useState(false);
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
   const [patients, setPatients] = useState<PatientDto[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [checkedPatientIds, setCheckedPatientIds] = useState<Set<number>>(new Set());
@@ -94,6 +99,9 @@ export default function WorkspaceDashboardPage() {
   const [patientSearchKeyword, setPatientSearchKeyword] = useState("");
   const [patientStartDate, setPatientStartDate] = useState(getDefaultPatientStartDate);
   const [patientEndDate, setPatientEndDate] = useState(getDefaultPatientEndDate);
+  const [showUploadMenu, setShowUploadMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // 서버에서 환자 목록 가져오기
   const fetchPatients = async (
@@ -101,10 +109,10 @@ export default function WorkspaceDashboardPage() {
       start: string | null = patientStartDate,
       end: string | null = patientEndDate,
   ) => {
-      const res = await dicomApi.getPatients(start || null, end || null, search?.trim() || null);
+    const res = await dicomApi.getPatients(start || null, end || null, search?.trim() || null);
 
-      setPatients(res as PatientDto[]);
-    };
+    setPatients(res as PatientDto[]);
+  };
 
   // 환자 선택하기 (선택한 환자는 하이라이팅되며, 환자의 스터디가 로딩된다.)
   const handleSelectPatient = (id: number) => {
@@ -234,6 +242,35 @@ export default function WorkspaceDashboardPage() {
     setStudyError(null);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    if (!selectedPatientId) {
+      showToast("환자를 먼저 선택해주세요.");
+      return;
+    }
+
+    const fileArray = Array.from(files);
+
+    // 같은 파일(목록)을 다시 선택해도 change 이벤트가 발생하도록 값 초기화.
+    // startUpload에는 이미 배열로 복사한 파일 목록을 넘기므로 안전하다.
+    e.target.value = "";
+
+    // 업로드는 전역 UploadContext가 들고 있는다. 페이지를 이동해도(workspace를 벗어나도)
+    // 업로드 자체와 완료/실패 토스트 표시는 계속 진행된다.
+    startUpload(selectedPatientId, fileArray);
+  };
+
+  // 업로드가 끝났을 때, 지금 보고 있는 환자가 그 업로드 대상과 같으면 검사 목록을 새로고침한다.
+  useEffect(() => {
+    if (uploadResult && uploadResult.success && uploadResult.patientKey === selectedPatientId) {
+      void fetchStudies(selectedPatientId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadResult]);
+
   const updateCheckedPatientsHidden = async (hidden: boolean) => {
     const selectedIds = Array.from(checkedPatientIds);
 
@@ -292,10 +329,11 @@ export default function WorkspaceDashboardPage() {
                     </h2>
                     <span className={wsCountClass}>{displayedPatients.length}명</span>
                   </div>
-                  <button type="button" className="btn btn-small" onClick={() => setIsAddPatientModalOpen(true)}>
+                  <button type="button" className="btn btn-small w-20 h-[48px] text-sm" onClick={() => setIsAddPatientModalOpen(true)}>
                     환자 추가
                   </button>
                 </div>
+
 
                 <div className="flex gap-2 mt-2 items-stretch">
                   <div className="flex flex-col flex-1 gap-2">
@@ -332,7 +370,7 @@ export default function WorkspaceDashboardPage() {
 
                   <button
                       type="button"
-                      className="w-18 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
+                      className="w-20 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
                       onClick={handlePatientSearch}
                   >
                     검색
@@ -428,9 +466,35 @@ export default function WorkspaceDashboardPage() {
                     )}
                   </div>
 
+                  {isUploading && (
+                      <div className="flex flex-1 items-center gap-2 px-4 min-w-[120px]">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-canvas">
+                          {uploadProgress >= 0 ? (
+                              <div
+                                  className="h-full rounded-full bg-mint-deep transition-[width] duration-200"
+                                  style={{ width: `${Math.round(uploadProgress * 100)}%` }}
+                              />
+                          ) : (
+                              <div className="h-full w-1/3 animate-pulse rounded-full bg-mint-deep" />
+                          )}
+                        </div>
+                        <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
+                          {uploadProgress >= 0 ? `${Math.round(uploadProgress * 100)}%` : "업로드 중..."}
+                        </span>
+                      </div>
+                  )}
+
                   <div className="flex items-center gap-4">
                     {selectedPatient && (
                         <div className="flex gap-2">
+                          {/*다운로드 버튼(주소 이동)*/}
+                          <button
+                              type="button"
+                              onClick={() => router.push("/research")}
+                              className="px-2 py-1 text-xs cursor-pointer"
+                          >
+                            다운로드
+                          </button>
                           <button
                               type="button"
                               onClick={clearCheckedStudies}
@@ -467,9 +531,72 @@ export default function WorkspaceDashboardPage() {
                         </div>
                     )}
 
-                    <button type="button" className="btn btn-medium whitespace-nowrap">
-                      파일 추가
-                    </button>
+                    {/* 파일 업로드용 숨겨진 input */}
+                    <div className="relative">
+                      <button
+                          type="button"
+                          className="btn btn-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => setShowUploadMenu(prev => !prev)}
+                          disabled={isUploading}
+                      >
+                        {isUploading ? "업로드 중..." : "파일 추가"}
+                      </button>
+
+                      {/* 버튼 눌렀을 때만 아래에 뜨는 작은 선택 메뉴 */}
+                      {showUploadMenu && (
+                          <div className="absolute mt-1 flex flex-col border rounded bg-white shadow z-10">
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  setShowUploadMenu(false);
+                                  if (!selectedPatientId) {
+                                    showToast("환자를 먼저 선택해주세요.");
+                                    return;
+                                  }
+                                  fileInputRef.current?.click(); // 숨겨진 일반 파일 input을 대신 클릭
+                                }}
+                            >
+                              파일로 추가
+                            </button>
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  setShowUploadMenu(false);
+                                  if (!selectedPatientId) {
+                                    showToast("환자를 먼저 선택해주세요.");
+                                    return;
+                                  }
+                                  folderInputRef.current?.click(); // 숨겨진 폴더 input을 대신 클릭
+                                }}
+                            >
+                              폴더로 추가
+                            </button>
+                          </div>
+                      )}
+
+                      {/* 일반 파일 여러 개 선택용 화면엔 안 보임 */}
+                      <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          onChange={handleFileUpload}
+                      />
+
+                      {/* 폴더 전체(하위 폴더 포함) 선택용, 화면엔 안 보임 */}
+                      <input
+                          ref={folderInputRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          // @ts-expect-error - React 타입 정의에 webkitdirectory가 없어서 타입 에러 무시
+                          webkitdirectory=""
+                          directory=""
+                          onChange={handleFileUpload}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -496,34 +623,34 @@ export default function WorkspaceDashboardPage() {
                         <li className="p-4 text-center text-sm text-red-600">{studyError}</li>
                     ) : displayedStudies.length > 0 ? (
                         displayedStudies.map((it) => (
-                              <li key={it["study-key"]}>
-                                <div
-                                    className="study-row grid items-center gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] border-transparent rounded-xl bg-transparent font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 hover:bg-canvas"
-                                    onDoubleClick={() => router.push(`/viewer/${it["study-key"]}`)}
-                                    style={{ gridTemplateColumns: studyGridColumns }}
-                                    title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
+                            <li key={it["study-key"]}>
+                              <div
+                                  className="study-row grid items-center gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] border-transparent rounded-xl bg-transparent font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 hover:bg-canvas"
+                                  onDoubleClick={() => router.push(`/viewer/${it["study-key"]}`)}
+                                  style={{ gridTemplateColumns: studyGridColumns }}
+                                  title="더블클릭하면 DICOM 뷰어 화면으로 이동합니다."
+                              >
+                                <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+                                  <input
+                                      type="checkbox"
+                                      checked={checkedStudyIds.has(it["study-key"])}
+                                      onChange={() => toggleStudyCheck(it["study-key"])}
+                                      className="cursor-pointer"
+                                  />
+                                </div>
+                                <span className={colDescClass}>{it.description ? it.description : "-"}</span>
+                                <span className={colDateClass}>{formatDate(it.datetime)}</span>
+                                <span className={colSeriesClass}>#{it["series-num"]}</span>
+                                <span className={colImagesClass}>{it["images-num"]}</span>
+                                <span
+                                    className={`text-center font-bold ${
+                                        it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
+                                    }`}
                                 >
-                                  <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedStudyIds.has(it["study-key"])}
-                                        onChange={() => toggleStudyCheck(it["study-key"])}
-                                        className="cursor-pointer"
-                                    />
-                                  </div>
-                                  <span className={colDescClass}>{it.description}</span>
-                                  <span className={colDateClass}>{formatDate(it.datetime)}</span>
-                                  <span className={colSeriesClass}>#{it["series-num"]}</span>
-                                  <span className={colImagesClass}>{it["images-num"]}</span>
-                                  <span
-                                      className={`text-center font-bold ${
-                                          it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
-                                      }`}
-                                  >
                                     {it["allow-research"] ? "예" : "아니오"}
                                   </span>
-                                </div>
-                              </li>
+                              </div>
+                            </li>
                         ))
                     ) : (
                         <li className="p-4 text-center text-slate-500 text-sm">
@@ -539,7 +666,7 @@ export default function WorkspaceDashboardPage() {
             )}
           </section>
         </section>
-        {/*{isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchMyPatients} />}*/}
+        {isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchPatients} />}
       </div>
   );
 }

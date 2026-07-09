@@ -30,5 +30,21 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("patientKeys") List<Long> patientKeys,
             @Param("isHidden") boolean isHidden
     );
+
+    // 특정 의사에게 등록된 환자
+    // 검색어가 있으면 name 조건 걸고, 없으면 조건x
+    // 최근 검사일이 시작일과 종료일 안에 들어갔거나, 아예 존재하지 않는 경우
+    @Query("""
+        select p from Patient p
+        where p.doctorKey.key = :doctorKey
+          and (:name is null or p.name like %:name%)
+          and (p.recentStudy is null or p.recentStudy between :start and :end)
+    """)
+    List<Patient> findByDoctorKeyWithOptionalRecentStudy(
+            @Param("doctorKey") Long doctorKey,
+            @Param("name") String name,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
 

@@ -9,6 +9,6 @@ public interface AiDetectionRepository extends JpaRepository<AiDetection, Long> 
     // 특정 AI 분석 결과(ResultKey)에 속한 박스 목록 조회
     List<AiDetection> findByResultKey(Long resultKey);
 
-    // 특정 단면 이미지(ImageKey)에서 탐지된 병변만 필터링
-    List<AiDetection> findByImageKey(Long imageKey);
+    // 특정 인스턴스에서 탐지된 병변만 필터링
+    List<AiDetection> findByInstanceId(String  instanceId);
 }

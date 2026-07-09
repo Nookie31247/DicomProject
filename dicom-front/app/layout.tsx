@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import NavUser from "./NavUser";
+import Providers from "./Providers";
 
 
 const geistSans = Geist({
@@ -31,13 +32,15 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-canvas text-ink font-sans min-h-full flex flex-col">
-        <header className="flex items-center justify-between border-b border-line bg-paper py-7 px-[clamp(24px,5vw,62px)] max-[560px]:px-5 max-[560px]:py-5 shrink-0">
-          <Link href="/" className="font-bold no-underline text-3xl tracking-[-0.01em] text-ink">
-            DICOM!
-          </Link>
-          <NavUser />
-        </header>
-        {children}
+        <Providers>
+          <header className="flex items-center justify-between border-b border-line bg-paper py-7 px-[clamp(24px,5vw,62px)] max-[560px]:px-5 max-[560px]:py-5 shrink-0">
+            <Link href="/" className="font-bold no-underline text-3xl tracking-[-0.01em] text-ink">
+              DICOM!
+            </Link>
+            <NavUser />
+          </header>
+          {children}
+        </Providers>
       </body>
     </html>
   );

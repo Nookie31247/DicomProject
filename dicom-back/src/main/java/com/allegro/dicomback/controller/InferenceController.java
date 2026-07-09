@@ -2,6 +2,14 @@ package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.AI.AiModelRegistry;
 import com.allegro.dicomback.AI.DicomPixelReader;
+import lombok.extern.slf4j.Slf4j;
+import com.allegro.dicomback.config.JwtTokenProvider;
+import com.allegro.dicomback.entity.ai.AuditLog;
+import com.allegro.dicomback.repository.AiDetectionRepository;
+import com.allegro.dicomback.repository.AiResultsRepository;
+import com.allegro.dicomback.repository.AuditLogRepository;
+import com.allegro.dicomback.entity.ai.AiDetection;
+import com.allegro.dicomback.entity.ai.AiResults;
 import com.allegro.dicomback.service.AiService;
 import com.allegro.dicomback.service.DicomService;
 import com.allegro.dicomback.service.InferenceService;
@@ -22,8 +30,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
@@ -31,12 +41,18 @@ public class InferenceController {
     private final InferenceService service;
     private final DicomService dicomService;
     private final AiModelRegistry modelRegistry;
-
     private final AiService aiService;
+
+    //ai 결과 Db 저장
+    private final AiResultsRepository aiResultsRepository;
+    private final AiDetectionRepository aiDetectionRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${ai.model-path:models/CR_pneumonia_yolov8n.onnx}")
     private String modelPath;
 
+    // 레거시/디버그용: 서버 로컬 파일 경로를 직접 읽어서 고정 모델로 추론. 실제 뷰어는 안 씀.
     @PostMapping("/infer")
     public List<InferenceService.BoundingBox> infer(@RequestBody InferRequest req) throws Exception {
         return service.infer(Path.of(req.dicomPath()), Path.of("models/CR_pneumonia_yolov8n.onnx"));
@@ -67,7 +83,12 @@ public class InferenceController {
     // - 아예 지원 안 하면(태그 없음/미등록 modality) unsupportedReason만 채워 반환
     // modelKey가 요청에 실려오면(사용자가 candidates 중 하나를 직접 골랐을 때) 자동 판단을 건너뛰고 그 모델을 강제로 사용(아까말한 대로 솔직히 안 할 것 같음)
     @PostMapping("/detect-raw")
-    public DetectRawResponse detectRaw(@RequestBody RawDetectRequest req) throws Exception {
+    public DetectRawResponse detectRaw(
+            @RequestBody RawDetectRequest req,
+            // token 파라미터 추가: 이 요청을 보낸 사람이 누군지 알아내서 감사 로그(AuditLog)에 userKey로 남기기 위함.
+            // required = false인 이유는 쿠키가 없을 수도 있기 때문에 없으면 그냥 "누가 했는지 모름(null)"으로 기록하고 넘어간다.
+            @CookieValue(name = "token", required = false) String token
+    ) throws Exception {
         AiModelRegistry.ModelRule rule;
 
         if (req.modelKey() != null && !req.modelKey().isBlank()) {
@@ -107,7 +128,70 @@ public class InferenceController {
                         b.confidence()
                 ))
                 .toList();
+
+        if (req.seriesKey() != null) {
+            saveInferenceResult(req.seriesKey(), req.instanceId(), rule, boxes, token);
+        }
+
         return new DetectRawResponse(boxDtos, null, null);
+    }
+
+    // I 추론 결과와 탐지 박스를 DB에 저장하고, 감사 로그도 함께 남긴다.
+    //DB저장이 실패해도 사용자에게 보여줄 AI 판독 결과에는 영향이 없도록 예외처리
+    //저장 실패 시 서버 로그에 경고만 남기고 API 응답은 정상적으로 나간다
+    private void saveInferenceResult(
+            Long seriesKey, String instanceId,
+            AiModelRegistry.ModelRule rule,
+            List<InferenceService.BoundingBox> boxes,
+            String token) {
+        try {
+            //추론 작업 자체를 기록
+            AiResults result = new AiResults();
+            result.setSeriesKey(seriesKey);
+            result.setModelKey(rule.key());             //"tumor(조양)" / "pneumonia(폐렴)" 같은 내부 식별자
+            result.setModelName(rule.displayName());     //"뇌종양(CT/MR)" 같은 화면 표시용 이름
+            result.setCreatedAt(LocalDateTime.now());    //지금은 동기 처리 시작 시각
+            result.setFinishedAt(LocalDateTime.now());   //종료 시각도 시작 시각이랑 사실상 거의 같은 시점
+            //박스가 하나도 없으면 "NO_DETECTION", 있으면 "SUCCESS"으로 상태 표시
+            result.setStatus(boxes.isEmpty() ? "NO_DETECTION" : "SUCCESS");
+            aiResultsRepository.save(result);
+
+            //박스 하나당 한 행씩. resultKey로 result 행과 연결.
+            for (InferenceService.BoundingBox b : boxes) {
+                AiDetection d = new AiDetection();
+                d.setResultKey(result.getResultKey());
+                d.setInstanceId(instanceId); //정확하게 어떤 인스턴스에서 나온 박스인지 표시
+                d.setConfidence(b.confidence());
+                // BoundingBox는 x_min,y_min,x_max,y_max인데
+                // 테이블은 x,y,width,height 형태라 변환해서 저장
+                d.setBoxX((int) b.x_min());
+                d.setBoxY((int) b.y_min());
+                d.setBoxWidth((int) (b.x_max() - b.x_min()));
+                d.setBoxHeight((int) (b.y_max() - b.y_min()));
+                d.setClassName(rule.displayName()); // 모델당 클래스가 1개뿐이라 모델 이름을 그대로 병변명으로 사용
+                aiDetectionRepository.save(d);
+            }
+
+            //AI 추론도 환자 영상 데이터를 들여다본 행위이므로 반드시 로그에 남긴다.
+            AuditLog log = new AuditLog();
+            log.setUserKey(resolveUserKeyOrNull(token)); // 토큰이 없거나 이상하면 null(익명)로 기록
+            log.setActionType("AI_INFER");
+            log.setTargetType("SERIES");
+            log.setTargetUID(String.valueOf(seriesKey));
+            log.setCreatedAt(LocalDateTime.now());
+            auditLogRepository.save(log);
+        } catch (Exception e) {
+            // DB 저장 중 어떤 이유로든 실패하면 경고 로그를 남긴다.
+            log.warn("AI 결과 저장 실패 (seriesKey={}): {}", seriesKey, e.getMessage());
+        }
+    }
+
+    // 쿠키에 담긴 JWT 토큰 문자열을 넣으면 그 안에 들어있는 사용자 고유 번호(userKey)를 꺼내고
+    // token이 null이면 토큰이 만료/위조되어 파싱에 실패하면 예외 대신 null을 반환해서
+    // 로그인 안 한 사람이 요청했다 정도로 처리하고 넘어간다.
+    private Long resolveUserKeyOrNull(String token) {
+        if (token == null) return null;
+        try { return jwtTokenProvider.getUserKey(token); } catch (Exception e) { return null; }
     }
 
     // 프론트 cornerstone image 객체에서 그대로 뽑아 보낸다.
@@ -126,7 +210,10 @@ public class InferenceController {
             String pixelDataBase64,
             String modality,
             String bodyPart,
-            String modelKey
+            String modelKey,
+            //API가 받던 JSON에는 이게 몇 번 시리즈의 어떤 이미지인가에 대해서는 정보가 아예 없기에 AI 판독은 결과를 DB에 저장하기 위해서 추가
+            Long seriesKey,
+            String instanceId   //
     ) {}
 
     // detect-raw 응답: boxes(성공)

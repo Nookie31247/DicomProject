@@ -1,4 +1,5 @@
-const BASE_URL = typeof window === 'undefined'
+// dicomApi.ts의 XHR 기반 업로드 진행률 추적 함수에서도 그대로 재사용한다.
+export const BASE_URL = typeof window === 'undefined'
     ? (process.env.SERVER_API_URL || 'http://localhost:8080')
     : (process.env.NEXT_PUBLIC_API_URL || "");
 
