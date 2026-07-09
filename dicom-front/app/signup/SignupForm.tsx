@@ -17,6 +17,14 @@ export default function SignupForm() {
   const router = useRouter();
   const { showToast } = useToast();
 
+  useEffect(() => {
+    const username = localStorage.getItem("username");
+    if (username) {
+      const userType = localStorage.getItem("userType");
+      router.replace(userType === "RESEARCHER" ? "/research" : "/workspace");
+    }
+  }, [router]);
+
   // 포커스 제어를 위한 Ref들
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const confirmPasswordInputRef = useRef<HTMLInputElement>(null);

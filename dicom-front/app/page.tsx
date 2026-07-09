@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
+import HeroCta from "@/app/HeroCta";
 import { HomeRedirect } from "@/app/components/auth/RouteAccess";
 
 export const metadata: Metadata = {
@@ -44,20 +45,21 @@ export default function Home() {
             ))}
           </ul>
 
-          <div className="flex gap-4.5 max-[560px]:flex-wrap">
-            <Link
-              href="/login"
-              className="btn btn-big text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
-            >
-              로그인
-            </Link>
-            <Link
-              href="/signup"
-              className="btn btn-big text-paper bg-slate hover:-translate-y-0.5 hover:bg-[#0f1722] text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"
-            >
-              시작하기
-            </Link>
-          </div>
+          {/*<div className="flex gap-4.5 max-[560px]:flex-wrap">*/}
+          {/*  <Link*/}
+          {/*    href="/login"*/}
+          {/*    className="btn btn-big text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"*/}
+          {/*  >*/}
+          {/*    로그인*/}
+          {/*  </Link>*/}
+          {/*  <Link*/}
+          {/*    href="/signup"*/}
+          {/*    className="btn btn-big text-paper bg-slate hover:-translate-y-0.5 hover:bg-[#0f1722] text-xl px-9 py-4.5 max-[560px]:flex-1 max-[560px]:px-5 max-[560px]:py-4 max-[560px]:text-lg"*/}
+          {/*  >*/}
+          {/*    시작하기*/}
+          {/*  </Link>*/}
+          {/*</div>*/}
+            <HeroCta />
         </div>
 
         <div className="flex justify-center max-[900px]:-order-1" aria-hidden="true">
