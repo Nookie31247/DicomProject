@@ -70,6 +70,14 @@ const dicomApi = {
     });
   },
 
+  setStudyResearch(list: StudyResearchList[]) {
+    return apiFetch("/api/dicom/studies/research-allow", {
+      method: 'POST',
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(list),
+    });
+  },
+
   addPatient(patient: { name: string; sex: string; birth: string }) {
     return apiFetch("/api/dicom/patients", {
       method: 'POST',
@@ -163,6 +171,11 @@ export interface HiddenStudyList {
 export interface HiddenSeriesList {
   "series-key" : number;
   "hidden" : boolean;
+}
+
+export interface StudyResearchList {
+  "study-key" : number;
+  "allow-research" : boolean;
 }
 
 export default dicomApi;

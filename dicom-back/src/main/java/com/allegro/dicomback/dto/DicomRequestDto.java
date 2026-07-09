@@ -19,6 +19,12 @@ public class DicomRequestDto {
             @JsonProperty("hidden") boolean hidden
     ) {}
 
+    //스터디 연구 목적 활용 허용 설정
+    public record StudyResearchDto(
+            @JsonProperty("study-key") Long studyKey,
+            @JsonProperty("allow-research") boolean allowResearch
+    ) {}
+
     //시리즈 목록 숨기기/보이기 설정
     public record SeriesHideDto(
             @JsonProperty("series-key") Long seriesKey,

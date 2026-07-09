@@ -76,7 +76,7 @@ const formatDateInputValue = (date: Date) => {
 
 const getDefaultPatientStartDate = () => {
   const date = new Date();
-  date.setMonth(date.getMonth() - 3);
+  date.setMonth(date.getMonth() - 12);
 
   return formatDateInputValue(date);
 };
@@ -212,8 +212,32 @@ export default function WorkspaceDashboardPage() {
     }
   };
 
-  const requestResearchAllowApi = () => {
-    console.warn("연구 목적 활용 허용 API가 아직 연결되지 않았습니다.", Array.from(checkedStudyIds));
+  const requestResearchAllowApi = async () => {
+    const selectedIds = Array.from(checkedStudyIds);
+
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    try {
+      await dicomApi.setStudyResearch(
+          selectedIds.map((id) => ({
+            "study-key": id,
+            "allow-research": true,
+          })),
+      );
+
+      const selectedIdSet = new Set(selectedIds);
+      setStudies((prev) =>
+          prev.map((study) =>
+              selectedIdSet.has(study["study-key"]) ? { ...study, "allow-research": true } : study,
+          ),
+      );
+      setCheckedStudyIds(new Set());
+    } catch (error) {
+      console.error("연구 목적 활용 허용 설정 실패", error);
+      showToast("연구 목적 활용 허용 설정에 실패했습니다.");
+    }
   };
 
   const displayedStudies = !selectedPatient
@@ -522,7 +546,9 @@ export default function WorkspaceDashboardPage() {
                           </button>
                           <button
                               type="button"
-                              onClick={requestResearchAllowApi}
+                              onClick={() => {
+                                void requestResearchAllowApi();
+                              }}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"
                           >

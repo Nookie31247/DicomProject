@@ -72,6 +72,25 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             @Param("isHidden") boolean isHidden
     );
 
+    // 연구 목적 활용 허용 여부(allowResearch) 변경
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+            """
+                update Study s
+                set s.allowResearch = :isAllowed
+                where s.key in :studyKeys
+                and exists(
+                    select 1 from Patient p
+                    where p = s.patientKey
+                    and p.doctorKey.key = :doctorKey
+                )
+            """)
+    int changeAllowResearch(
+            @Param("doctorKey") Long doctorKey,
+            @Param("studyKeys") List<Long> studyKeys,
+            @Param("isAllowed") boolean isAllowed
+    );
+
     // 담당 의사의 환자들 중 연구 활용 허용된 스터디 전체 조회
     @Query("""
     select s
