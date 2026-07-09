@@ -3,16 +3,23 @@ version: '3.8'
 services:
   pacs-server:
     image: orthancteam/orthanc:latest # 굳이 full 안 쓰고 기본 latest 써도 충분함!
-    container_name: orthanc_pacs
+    container_name: pacs-orthanc
     ports:
       - "8042:8042" # 웹 UI 및 DICOMweb REST API 포트
       - "4242:4242" # DICOM 통신 포트
     environment:
-      ORTHANC__NAME: "Hanul_Hospital_PACS"
+      ORTHANC__NAME: "PACS_MAIN"
+      ORTHANC__DICOM_AET: "PACS_MAIN"
 
       # DICOMweb 플러그인 활성화
       DICOM_WEB_PLUGIN_ENABLED: "true"
       ORTHANC__DICOM_WEB__ENABLE: "true"
+
+      # (중요) 여기에 익명화 Orthanc 서버 정보 등록하기
+      DICOM_MODALITIES: |
+        {
+          "anonymization-server": ["PACS_ANON", "192.168.7.17", 4243]
+        }
 
       # Orthanc Explorer 2 플러그인 활성화
       ORTHANC_EXPLORER_2_PLUGIN_ENABLED: "true"
@@ -24,19 +31,28 @@ services:
       ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
 
     volumes:
-      - orthanc-db:/var/lib/orthanc/db
+      - pacs-orthanc:/var/lib/orthanc/db
 
   pacs-db:
     image: mysql:8.0
-    container_name: pacs
+    container_name: pacs-db
     ports:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: "pacs_password"
-      MYSQL_DATABASE: "pacs"
+      MYSQL_DATABASE: "pacsdb"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - pacs-db:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    container_name: pacs-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - pacs-redis:/var/lib/redis
 
 volumes:
-  orthanc-db:
-  mysql-data:
+  pacs-orthanc:
+  pacs-db:
+  pacs-redis:

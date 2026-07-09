@@ -1,152 +1,348 @@
 "use client";
 
-import { useState } from "react";
+import {useState, useEffect, useRef} from "react";
 import { useRouter } from "next/navigation";
-import { patients, studies } from "@/mock-data";
+import dicomApi from "../api/dicomApi";
+import AddPatientModal from "@/app/workspace/AddPatientModal";
+import { useToast } from "@/app/context/ToastContext";
+import { useUpload } from "@/app/context/UploadContext";
+
+// ── 스타일 변수 ──
+const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
+const wsPanelHeadClass = "flex shrink-0 items-start justify-between gap-3 pt-4.5 px-4.5 pb-4 border-b border-line";
+const wsHeadLeftClass = "flex min-w-0 flex-1 flex-col gap-1.25";
+const wsPanelTitleClass = "m-0 font-bold text-xl text-ink tracking-[-0.01em]";
+const wsCountClass = "font-semibold text-sm text-mint-deep";
+const wsSubLabelClass = "text-left font-medium text-sm text-ink-soft leading-[1.4]";
+const patientRowBase = "flex w-full cursor-pointer items-center text-left gap-3 p-3 border-[1.5px] rounded-[14px] bg-transparent font-[inherit] transition-[background,border-color] duration-150 hover:bg-canvas";
+const patientRowActive = "bg-[rgba(76,255,157,0.14)] border-mint-deep";
+const patientRowInactive = "border-transparent";
+const patientAvatarClass = "flex shrink-0 items-center justify-center rounded-full font-bold w-9.5 h-9.5 text-base text-slate bg-mint";
+const patientMainClass = "flex min-w-0 flex-1 flex-col gap-[3px]";
+const patientNameClass = "font-semibold text-base text-ink";
+const patientSubClass = "overflow-hidden whitespace-nowrap text-ellipsis text-xs text-ink-soft";
+const patientBadgeBase = "flex items-center justify-center font-bold shrink-0 min-w-6 h-6 px-1.5 rounded-xl text-sm";
+const patientBadgeDefault = "bg-canvas text-ink-soft";
+const patientBadgeActive = "bg-mint-deep text-paper";
+const colDescClass = "col-desc overflow-hidden whitespace-nowrap font-semibold text-ellipsis";
+const colDateClass = "col-date text-ink-soft";
+const colSeriesClass = "col-series text-right tabular-nums text-ink-soft";
+const colImagesClass = "col-images text-right tabular-nums text-ink-soft";
+const studyGridColumns = "30px minmax(260px,2.7fr) 104px 70px 74px 100px";
+
+interface PatientDto {
+  "patient-key": number;
+  "patient-name": string;
+  "patient-sex": string;
+  "patient-birth": string | null;
+  "latest-study-datetime": string | null;
+  "study-count": number;
+  hidden: boolean;
+}
+
+interface StudyDto {
+  "study-key": number;
+  description: string;
+  datetime: string;
+  "series-num": number;
+  "images-num": number;
+  "allow-research": boolean;
+  hidden: boolean;
+}
+
+const sexLabel = (sex: string | null | undefined) => {
+  if (sex === "M") {
+    return "남";
+  }
+
+  if (sex === "F") {
+    return "여";
+  }
+
+  return sex || "정보 없음";
+};
+
+const formatDate = (value: string | null | undefined, fallback = "기록 없음") => {
+  return value?.split("T")[0] || fallback;
+};
+
+const formatDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultPatientStartDate = () => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 12);
+
+  return formatDateInputValue(date);
+};
+
+const getDefaultPatientEndDate = () => {
+  return formatDateInputValue(new Date());
+};
 
 export default function WorkspaceDashboardPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { isUploading, uploadProgress, uploadResult, startUpload } = useUpload();
 
-  // ── 환자(Patient) 관련 상태 ──
-  const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.["patient-id"]);
-  const [checkedPatientIds, setCheckedPatientIds] = useState<Set<string>>(new Set());
+  // =========================== 환자 설정 ==================================
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
+  const [patients, setPatients] = useState<PatientDto[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [checkedPatientIds, setCheckedPatientIds] = useState<Set<number>>(new Set());
   const [showHiddenPatients, setShowHiddenPatients] = useState(false);
+  const [patientSearchKeyword, setPatientSearchKeyword] = useState("");
+  const [patientStartDate, setPatientStartDate] = useState(getDefaultPatientStartDate);
+  const [patientEndDate, setPatientEndDate] = useState(getDefaultPatientEndDate);
+  const [showUploadMenu, setShowUploadMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // ── 검사(Study/DICOM) 관련 상태 ──
-  const [checkedStudyIds, setCheckedStudyIds] = useState<Set<string>>(new Set());
-  const [showHiddenStudies, setShowHiddenStudies] = useState(false);
+  // 서버에서 환자 목록 가져오기
+  const fetchPatients = async (
+      search: string | null = patientSearchKeyword,
+      start: string | null = patientStartDate,
+      end: string | null = patientEndDate,
+  ) => {
+    const res = await dicomApi.getPatients(start || null, end || null, search?.trim() || null);
 
-  // ==========================================
-  // 1. 환자 목록 컨트롤 로직
-  // ==========================================
-  const handleSelectPatient = (id: string) => {
-    setSelectedPatientId(id);
-    setCheckedStudyIds(new Set()); // 환자 변경 시 검사 선택 초기화
+    setPatients(res as PatientDto[]);
   };
 
-  const togglePatientCheck = (id: string) => {
+  // 환자 선택하기 (선택한 환자는 하이라이팅되며, 환자의 스터디가 로딩된다.)
+  const handleSelectPatient = (id: number) => {
+    setSelectedPatientId(id);
+    setCheckedStudyIds(new Set());
+    setShowHiddenStudies(false);
+    setStudies([]);
+    void fetchStudies(id);
+  };
+
+  // 환자 체크박스로 선택하기
+  const togglePatientCheck = (id: number) => {
     setCheckedPatientIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
-  const executePatientAction = (logMessage: string) => {
-    console.log(logMessage, Array.from(checkedPatientIds));
-    setCheckedPatientIds(new Set());
+  const selectedPatient = patients.find((p) => p["patient-key"] === selectedPatientId) ?? null;
+  const displayedPatients = patients.filter((p) => p.hidden === showHiddenPatients);
+
+  // ================================== 스터디 영역 =========================================
+  const [studies, setStudies] = useState<StudyDto[]>([]);
+  const [checkedStudyIds, setCheckedStudyIds] = useState<Set<number>>(new Set());
+  const [showHiddenStudies, setShowHiddenStudies] = useState(false);
+  const [isStudyLoading, setIsStudyLoading] = useState(false);
+  const [studyError, setStudyError] = useState<string | null>(null);
+
+  // 서버에서 스터디 목록 가져오기
+  const fetchStudies = async (patientId: number) => {
+    setIsStudyLoading(true);
+    setStudyError(null);
+
+    try {
+      const res = await dicomApi.getStudies(patientId, null, null, null);
+
+      setStudies(Array.isArray(res) ? (res as StudyDto[]) : []);
+    } catch (error) {
+      console.error("스터디 목록 조회 실패", error);
+      setStudies([]);
+      setStudyError("검사 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsStudyLoading(false);
+    }
   };
 
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [appliedFilters, setAppliedFilters] = useState({ keyword: "", start: "", end: "" });
-
-  const handleSearch = () => {
-    setAppliedFilters({ keyword: searchKeyword, start: startDate, end: endDate });
-  };
-
-  const toggleShowHiddenPatients = () => {
-    setShowHiddenPatients((prev) => !prev);
-    setCheckedPatientIds(new Set());
-  };
-
-  const displayedPatients = patients.filter(p => {
-    if (p.hidden !== showHiddenPatients) return false;
-    
-    if (appliedFilters.keyword) {
-      const kw = appliedFilters.keyword.toLowerCase();
-      if (!p["patient-name"].toLowerCase().includes(kw) && !p["patient-id"].toLowerCase().includes(kw)) {
-        return false;
-      }
-    }
-    
-    if (appliedFilters.start) {
-      if (!p["latest-study-datetime"]) return false;
-      const studyDate = p["latest-study-datetime"].split("T")[0];
-      if (studyDate < appliedFilters.start) return false;
-    }
-    
-    if (appliedFilters.end) {
-      if (!p["latest-study-datetime"]) return false;
-      const studyDate = p["latest-study-datetime"].split("T")[0];
-      if (studyDate > appliedFilters.end) return false;
-    }
-    
-    return true;
-  });
-  const selectedPatient = patients.find((p) => p["patient-id"] === selectedPatientId) ?? null;
-
-  // ==========================================
-  // 2. 검사(DICOM) 목록 컨트롤 로직
-  // ==========================================
-  const toggleStudyCheck = (id: string) => {
+  const toggleStudyCheck = (id: number) => {
     setCheckedStudyIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
-  const executeStudyAction = (logMessage: string) => {
-    console.log(logMessage, Array.from(checkedStudyIds));
+  const clearCheckedStudies = () => {
     setCheckedStudyIds(new Set());
   };
 
-  const toggleShowHiddenStudies = () => {
+  const switchStudyVisibilityView = () => {
     setShowHiddenStudies((prev) => !prev);
     setCheckedStudyIds(new Set());
   };
 
-  const displayedStudies = !selectedPatient
-      ? []
-      : studies.filter(s => s["patient-id"] === selectedPatientId && s.hidden === showHiddenStudies);
+  const updateCheckedStudiesHidden = async (hidden: boolean) => {
+    const selectedIds = Array.from(checkedStudyIds);
 
-  // ==========================================
-  // 기타 헬퍼 및 스타일
-  // ==========================================
-  const sexLabel = (s: "M" | "F") => (s === "M" ? "남" : "여");
+    if (selectedIds.length === 0) {
+      return;
+    }
 
-  // ── Tailwind 스타일 변수 (globals.css에서 이관) ──
-  const wsPanelClass = "flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px]";
-  const wsPanelHeadClass = "flex shrink-0 items-start justify-between gap-3 pt-4.5 px-4.5 pb-4 border-b border-line";
-  const wsHeadLeftClass = "flex min-w-0 flex-1 flex-col gap-1.25";
-  const wsPanelTitleClass = "m-0 font-bold text-xl text-ink tracking-[-0.01em]";
-  const wsCountClass = "font-semibold text-sm text-mint-deep";
-  const wsSubLabelClass = "text-left font-medium text-sm text-ink-soft leading-[1.4]";
-  const patientRowBase = "flex w-full cursor-pointer items-center text-left gap-3 p-3 border-[1.5px] rounded-[14px] bg-transparent font-[inherit] transition-[background,border-color] duration-150 hover:bg-canvas";
-  const patientRowActive = "bg-[rgba(76,255,157,0.14)] border-mint-deep";
-  const patientRowInactive = "border-transparent";
-  const patientAvatarClass = "flex shrink-0 items-center justify-center rounded-full font-bold w-9.5 h-9.5 text-base text-slate bg-mint";
-  const patientMainClass = "flex min-w-0 flex-1 flex-col gap-[3px]";
-  const patientNameClass = "font-semibold text-base text-ink";
-  const patientSubClass = "overflow-hidden whitespace-nowrap text-ellipsis text-xs text-ink-soft";
-  const patientBadgeBase = "flex items-center justify-center font-bold shrink-0 min-w-6 h-6 px-1.5 rounded-xl text-sm";
-  const patientBadgeDefault = "bg-canvas text-ink-soft";
-  const patientBadgeActive = "bg-mint-deep text-paper";
-  const colDescClass = "col-desc overflow-hidden whitespace-nowrap font-semibold text-ellipsis";
-  const colDateClass = "col-date text-ink-soft";
-  const colSeriesClass = "col-series text-right tabular-nums text-ink-soft";
-  const colImagesClass = "col-images text-right tabular-nums text-ink-soft";
-  const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
-  const modalityColors: Record<string, string> = {
-    ct: "bg-[#2563eb]",
-    mr: "bg-[#7c3aed]",
-    cr: "bg-[#0e7490]",
-    us: "bg-[#c2410c]",
-    pt: "bg-[#be185d]",
+    try {
+      await dicomApi.setStudyHide(
+          selectedIds.map((id) => ({
+            "study-key": id,
+            hidden,
+          })),
+      );
+
+      const selectedIdSet = new Set(selectedIds);
+      setStudies((prev) =>
+          prev.map((study) =>
+              selectedIdSet.has(study["study-key"]) ? { ...study, hidden } : study,
+          ),
+      );
+      setCheckedStudyIds(new Set());
+    } catch (error) {
+      console.error("검사 숨김 상태 변경 실패", error);
+    }
   };
 
-  // ★ 수정 포인트 1: 기존 "30px 84px 1.6fr 1fr 1fr 70px 70px 100px" 에서 검사 부위에 해당하는 1fr 제거
-  const studyGridColumns = "30px 84px 1.6fr 1fr 70px 70px 100px";
+  const requestResearchAllowApi = async () => {
+    const selectedIds = Array.from(checkedStudyIds);
+
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    try {
+      await dicomApi.setStudyResearch(
+          selectedIds.map((id) => ({
+            "study-key": id,
+            "allow-research": true,
+          })),
+      );
+
+      const selectedIdSet = new Set(selectedIds);
+      setStudies((prev) =>
+          prev.map((study) =>
+              selectedIdSet.has(study["study-key"]) ? { ...study, "allow-research": true } : study,
+          ),
+      );
+      setCheckedStudyIds(new Set());
+    } catch (error) {
+      console.error("연구 목적 활용 허용 설정 실패", error);
+      showToast("연구 목적 활용 허용 설정에 실패했습니다.");
+    }
+  };
+
+  const displayedStudies = !selectedPatient
+      ? []
+      : studies.filter(s => s.hidden === showHiddenStudies);
+
+  const handlePatientSearch = () => {
+    setCheckedPatientIds(new Set());
+    setSelectedPatientId(null);
+    setCheckedStudyIds(new Set());
+    setStudies([]);
+    setStudyError(null);
+    void fetchPatients(patientSearchKeyword, patientStartDate, patientEndDate);
+  };
+
+  const clearCheckedPatients = () => {
+    setCheckedPatientIds(new Set());
+  };
+
+  const switchPatientVisibilityView = (showHidden: boolean) => {
+    setShowHiddenPatients(showHidden);
+    setCheckedPatientIds(new Set());
+    setSelectedPatientId(null);
+    setCheckedStudyIds(new Set());
+    setStudies([]);
+    setStudyError(null);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    if (!selectedPatientId) {
+      showToast("환자를 먼저 선택해주세요.");
+      return;
+    }
+
+    const fileArray = Array.from(files);
+
+    // 같은 파일(목록)을 다시 선택해도 change 이벤트가 발생하도록 값 초기화.
+    // startUpload에는 이미 배열로 복사한 파일 목록을 넘기므로 안전하다.
+    e.target.value = "";
+
+    // 업로드는 전역 UploadContext가 들고 있는다. 페이지를 이동해도(workspace를 벗어나도)
+    // 업로드 자체와 완료/실패 토스트 표시는 계속 진행된다.
+    startUpload(selectedPatientId, fileArray);
+  };
+
+  // 업로드가 끝났을 때, 지금 보고 있는 환자가 그 업로드 대상과 같으면 검사 목록을 새로고침한다.
+  useEffect(() => {
+    if (uploadResult && uploadResult.success && uploadResult.patientKey === selectedPatientId) {
+      void fetchStudies(selectedPatientId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadResult]);
+
+  const updateCheckedPatientsHidden = async (hidden: boolean) => {
+    const selectedIds = Array.from(checkedPatientIds);
+
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    try {
+      await dicomApi.setPatientHide(
+          selectedIds.map((id) => ({
+            "patient-key": id,
+            hidden,
+          })),
+      );
+
+      const selectedIdSet = new Set(selectedIds);
+      setPatients((prev) =>
+          prev.map((patient) =>
+              selectedIdSet.has(patient["patient-key"]) ? { ...patient, hidden } : patient,
+          ),
+      );
+      setCheckedPatientIds(new Set());
+
+      if (selectedPatientId !== null && selectedIdSet.has(selectedPatientId)) {
+        setSelectedPatientId(null);
+        setCheckedStudyIds(new Set());
+        setStudies([]);
+        setStudyError(null);
+      }
+    } catch (error) {
+      console.error("환자 숨김 상태 변경 실패", error);
+    }
+  };
+
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchPatients(null, patientStartDate, patientEndDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
       <div className="page">
-        {/* ───────────── Workspace ───────────── */}
-        <section className="grid flex-1 items-stretch gap-5 pt-6 px-[clamp(20px,4vw,48px)] pb-8 min-h-0 h-[calc(100vh-93px)] transition-[grid-template-columns] duration-200 max-[1100px]:grid-cols-1 max-[1100px]:h-auto max-[1100px]:auto-rows-[minmax(280px,auto)] max-[560px]:px-4 max-[560px]:pt-4.5 max-[560px]:pb-7 max-[560px]:gap-3.5"
-                 style={{ gridTemplateColumns: "480px 1fr" }}>
-
-          {/* ── 1. 환자 목록 패널 ── */}
+        <section
+            className="grid flex-1 items-stretch gap-5 pt-6 px-[clamp(20px,4vw,48px)] pb-8 min-h-0 h-[calc(100vh-93px)] transition-[grid-template-columns] duration-200 max-[1100px]:grid-cols-1 max-[1100px]:h-auto max-[1100px]:auto-rows-[minmax(280px,auto)] max-[560px]:px-4 max-[560px]:pt-4.5 max-[560px]:pb-7 max-[560px]:gap-3.5"
+            style={{ gridTemplateColumns: "480px 1fr" }}
+        >
+          {/* 1. 환자 목록 패널 */}
           <aside className={`${wsPanelClass} flex flex-col`}>
             <div className={wsPanelHeadClass}>
               <div className={`${wsHeadLeftClass} w-full`}>
@@ -157,43 +353,49 @@ export default function WorkspaceDashboardPage() {
                     </h2>
                     <span className={wsCountClass}>{displayedPatients.length}명</span>
                   </div>
-                  <button type="button" className="btn btn-small" onClick={() => {}}>환자 추가</button>
+                  <button type="button" className="btn btn-small w-20 h-[48px] text-sm" onClick={() => setIsAddPatientModalOpen(true)}>
+                    환자 추가
+                  </button>
                 </div>
 
-                {/* 검색 필터 UI */}
+
                 <div className="flex gap-2 mt-2 items-stretch">
-                  {/* 왼쪽: 검색창 & 날짜 */}
                   <div className="flex flex-col flex-1 gap-2">
                     <input
-                      type="text"
-                      placeholder="환자 이름 또는 ID 검색"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-[#14b876]"
-                      value={searchKeyword}
-                      onChange={(e) => setSearchKeyword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        type="text"
+                        placeholder="환자 이름 또는 ID 검색"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-[#14b876]"
+                        value={patientSearchKeyword}
+                        onChange={(e) => setPatientSearchKeyword(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handlePatientSearch();
+                          }
+                        }}
                     />
                     <div className="flex items-center gap-1">
                       <input
-                        type="date"
-                        className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                          type="date"
+                          aria-label="시작일"
+                          className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
+                          value={patientStartDate}
+                          onChange={(e) => setPatientStartDate(e.target.value)}
                       />
                       <span className="text-slate-400">-</span>
                       <input
-                        type="date"
-                        className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                          type="date"
+                          aria-label="종료일"
+                          className="flex-1 w-0 px-2 py-1.5 border border-slate-200 rounded-xl text-[12px] text-slate-800 focus:outline-none focus:border-[#14b876]"
+                          value={patientEndDate}
+                          onChange={(e) => setPatientEndDate(e.target.value)}
                       />
                     </div>
                   </div>
-                  
-                  {/* 오른쪽: 검색 버튼 */}
+
                   <button
-                    type="button"
-                    className="w-18 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
-                    onClick={handleSearch}
+                      type="button"
+                      className="w-20 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center cursor-pointer"
+                      onClick={handlePatientSearch}
                   >
                     검색
                   </button>
@@ -204,34 +406,36 @@ export default function WorkspaceDashboardPage() {
             <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-2.5">
               {displayedPatients.length > 0 ? (
                   displayedPatients.map((p) => (
-                      <li key={p["patient-id"]} className="flex items-center pl-2 gap-2">
+                      <li key={p["patient-key"]} className="flex items-center pl-2 gap-2">
                         <input
                             type="checkbox"
-                            checked={checkedPatientIds.has(p["patient-id"])}
-                            onChange={() => togglePatientCheck(p["patient-id"])}
+                            checked={checkedPatientIds.has(p["patient-key"])}
+                            onChange={() => togglePatientCheck(p["patient-key"])}
                             className="cursor-pointer"
                         />
                         <button
                             type="button"
                             className={`${patientRowBase} flex-1 ${
-                                p["patient-id"] === selectedPatientId ? patientRowActive : patientRowInactive
+                                p["patient-key"] === selectedPatientId ? patientRowActive : patientRowInactive
                             }`}
-                            onClick={() => handleSelectPatient(p["patient-id"])}
+                            onClick={() => handleSelectPatient(p["patient-key"])}
                         >
-                          <span className={patientAvatarClass}>{p["patient-name"].charAt(0)}</span>
+                          <span className={patientAvatarClass}>{p["patient-name"]?.charAt(0)}</span>
                           <span className={patientMainClass}>
-                      <span className={patientNameClass}>{p["patient-name"]}</span>
-                      <span className={patientSubClass}>
-                        {sexLabel(p["patient-sex"])} · {p["patient-birth"]} · 최근 진료: {p["latest-study-datetime"]?.split('T')[0]}
-                      </span>
-                    </span>
-                          <span className={`${patientBadgeBase} ${p["patient-id"] === selectedPatientId ? patientBadgeActive : patientBadgeDefault}`}>{p["study-count"]}</span>
+                            <span className={patientNameClass}>{p["patient-name"]}</span>
+                            <span className={patientSubClass}>
+                              {sexLabel(p["patient-sex"])} · {formatDate(p["patient-birth"], "정보 없음")} · 최근 진료: {formatDate(p["latest-study-datetime"])}
+                            </span>
+                          </span>
+                          <span className={`${patientBadgeBase} ${p["patient-key"] === selectedPatientId ? patientBadgeActive : patientBadgeDefault}`}>
+                            {p["study-count"]}
+                          </span>
                         </button>
                       </li>
                   ))
               ) : (
                   <li className="p-4 text-center text-slate-500 text-sm">
-                    표시할 환자가 없습니다.
+                    {showHiddenPatients ? "숨긴 환자가 없습니다." : "표시할 환자가 없습니다."}
                   </li>
               )}
             </ul>
@@ -239,7 +443,7 @@ export default function WorkspaceDashboardPage() {
             <div className="ws-panel-footer p-3 border-t border-[#eee] flex gap-2 flex-wrap">
               <button
                   type="button"
-                  onClick={() => setCheckedPatientIds(new Set())}
+                  onClick={clearCheckedPatients}
                   disabled={checkedPatientIds.size === 0}
                   className="px-2 py-1 text-xs cursor-pointer"
               >
@@ -247,7 +451,9 @@ export default function WorkspaceDashboardPage() {
               </button>
               <button
                   type="button"
-                  onClick={() => executePatientAction("백엔드로 전송할 환자 ID 리스트:")}
+                  onClick={() => {
+                    void updateCheckedPatientsHidden(!showHiddenPatients);
+                  }}
                   disabled={checkedPatientIds.size === 0}
                   className="px-2 py-1 text-xs cursor-pointer"
               >
@@ -255,7 +461,7 @@ export default function WorkspaceDashboardPage() {
               </button>
               <button
                   type="button"
-                  onClick={toggleShowHiddenPatients}
+                  onClick={() => switchPatientVisibilityView(!showHiddenPatients)}
                   className="px-2 py-1 text-xs cursor-pointer ml-auto"
               >
                 {showHiddenPatients ? "일반 환자 보기" : "숨긴 환자 보기"}
@@ -263,7 +469,7 @@ export default function WorkspaceDashboardPage() {
             </div>
           </aside>
 
-          {/* ── 2. 검사(DICOM) 목록 패널 ── */}
+          {/* 2. 검사(DICOM) 목록 패널 */}
           <section className={`${wsPanelClass} flex flex-col`}>
             <div className={wsPanelHeadClass}>
               <div className={`${wsHeadLeftClass} w-full`}>
@@ -277,19 +483,45 @@ export default function WorkspaceDashboardPage() {
                     </div>
                     {selectedPatient ? (
                         <span className={wsSubLabelClass}>
-                      {selectedPatient["patient-name"]} · {sexLabel(selectedPatient["patient-sex"])} · {selectedPatient["patient-birth"]}
-                    </span>
+                          {selectedPatient["patient-name"]} · {sexLabel(selectedPatient["patient-sex"])} · {formatDate(selectedPatient["patient-birth"], "정보 없음")}
+                        </span>
                     ) : (
                         <span className={wsSubLabelClass}>환자를 선택하세요</span>
                     )}
                   </div>
 
+                  {isUploading && (
+                      <div className="flex flex-1 items-center gap-2 px-4 min-w-[120px]">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-canvas">
+                          {uploadProgress >= 0 ? (
+                              <div
+                                  className="h-full rounded-full bg-mint-deep transition-[width] duration-200"
+                                  style={{ width: `${Math.round(uploadProgress * 100)}%` }}
+                              />
+                          ) : (
+                              <div className="h-full w-1/3 animate-pulse rounded-full bg-mint-deep" />
+                          )}
+                        </div>
+                        <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
+                          {uploadProgress >= 0 ? `${Math.round(uploadProgress * 100)}%` : "업로드 중..."}
+                        </span>
+                      </div>
+                  )}
+
                   <div className="flex items-center gap-4">
                     {selectedPatient && (
                         <div className="flex gap-2">
+                          {/*다운로드 버튼(주소 이동)*/}
                           <button
                               type="button"
-                              onClick={() => setCheckedStudyIds(new Set())}
+                              onClick={() => router.push("/research")}
+                              className="px-2 py-1 text-xs cursor-pointer"
+                          >
+                            다운로드
+                          </button>
+                          <button
+                              type="button"
+                              onClick={clearCheckedStudies}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"
                           >
@@ -297,7 +529,9 @@ export default function WorkspaceDashboardPage() {
                           </button>
                           <button
                               type="button"
-                              onClick={() => executeStudyAction("백엔드로 전송할 검사 ID(숨기기) 리스트:")}
+                              onClick={() => {
+                                void updateCheckedStudiesHidden(!showHiddenStudies);
+                              }}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"
                           >
@@ -305,14 +539,16 @@ export default function WorkspaceDashboardPage() {
                           </button>
                           <button
                               type="button"
-                              onClick={toggleShowHiddenStudies}
+                              onClick={switchStudyVisibilityView}
                               className="px-2 py-1 text-xs cursor-pointer"
                           >
                             {showHiddenStudies ? "일반 파일 보기" : "숨긴 파일 보기"}
                           </button>
                           <button
                               type="button"
-                              onClick={() => executeStudyAction("연구 목적 활용 허용할 검사 ID 리스트:")}
+                              onClick={() => {
+                                void requestResearchAllowApi();
+                              }}
                               disabled={checkedStudyIds.size === 0}
                               className="px-2 py-1 text-xs cursor-pointer"
                           >
@@ -321,9 +557,72 @@ export default function WorkspaceDashboardPage() {
                         </div>
                     )}
 
-                    <button type="button" className="btn btn-medium whitespace-nowrap">
-                      파일 추가
-                    </button>
+                    {/* 파일 업로드용 숨겨진 input */}
+                    <div className="relative">
+                      <button
+                          type="button"
+                          className="btn btn-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => setShowUploadMenu(prev => !prev)}
+                          disabled={isUploading}
+                      >
+                        {isUploading ? "업로드 중..." : "파일 추가"}
+                      </button>
+
+                      {/* 버튼 눌렀을 때만 아래에 뜨는 작은 선택 메뉴 */}
+                      {showUploadMenu && (
+                          <div className="absolute mt-1 flex flex-col border rounded bg-white shadow z-10">
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  setShowUploadMenu(false);
+                                  if (!selectedPatientId) {
+                                    showToast("환자를 먼저 선택해주세요.");
+                                    return;
+                                  }
+                                  fileInputRef.current?.click(); // 숨겨진 일반 파일 input을 대신 클릭
+                                }}
+                            >
+                              파일로 추가
+                            </button>
+                            <button
+                                type="button"
+                                className="px-3 py-1 text-xs text-left hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  setShowUploadMenu(false);
+                                  if (!selectedPatientId) {
+                                    showToast("환자를 먼저 선택해주세요.");
+                                    return;
+                                  }
+                                  folderInputRef.current?.click(); // 숨겨진 폴더 input을 대신 클릭
+                                }}
+                            >
+                              폴더로 추가
+                            </button>
+                          </div>
+                      )}
+
+                      {/* 일반 파일 여러 개 선택용 화면엔 안 보임 */}
+                      <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          onChange={handleFileUpload}
+                      />
+
+                      {/* 폴더 전체(하위 폴더 포함) 선택용, 화면엔 안 보임 */}
+                      <input
+                          ref={folderInputRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          // @ts-expect-error - React 타입 정의에 webkitdirectory가 없어서 타입 에러 무시
+                          webkitdirectory=""
+                          directory=""
+                          onChange={handleFileUpload}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -331,11 +630,12 @@ export default function WorkspaceDashboardPage() {
 
             {selectedPatient ? (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <div className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-xs tracking-[0.02em] text-ink-soft bg-canvas border-b border-line max-[560px]:hidden" style={{ gridTemplateColumns: studyGridColumns }}>
+                  <div
+                      className="grid items-center gap-2.5 shrink-0 font-bold py-3 px-5 text-xs tracking-[0.02em] text-ink-soft bg-canvas border-b border-line max-[560px]:hidden"
+                      style={{ gridTemplateColumns: studyGridColumns }}
+                  >
                     <span></span>
-                    <span className="col-modality">모달리티</span>
                     <span className={colDescClass}>검사 설명</span>
-                    {/* ★ 수정 포인트 2: <span className="col-body">검사 부위</span> 제거됨 */}
                     <span className={colDateClass}>검사 일자</span>
                     <span className={colSeriesClass}>시리즈</span>
                     <span className={colImagesClass}>영상 수</span>
@@ -343,8 +643,12 @@ export default function WorkspaceDashboardPage() {
                   </div>
 
                   <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-1.5">
-                    {displayedStudies.length > 0 ? (
-                        displayedStudies.map((it, idx) => (
+                    {isStudyLoading ? (
+                        <li className="p-4 text-center text-slate-500 text-sm">검사 목록을 불러오는 중입니다.</li>
+                    ) : studyError ? (
+                        <li className="p-4 text-center text-sm text-red-600">{studyError}</li>
+                    ) : displayedStudies.length > 0 ? (
+                        displayedStudies.map((it) => (
                             <li key={it["study-key"]}>
                               <div
                                   className="study-row grid items-center gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] border-transparent rounded-xl bg-transparent font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 hover:bg-canvas"
@@ -360,14 +664,8 @@ export default function WorkspaceDashboardPage() {
                                       className="cursor-pointer"
                                   />
                                 </div>
-                                <span className="col-modality">
-                          <span className={`${modalityBadgeClass} ${modalityColors[it.modality.toLowerCase()] || "bg-slate"}`}>
-                            {it.modality}
-                          </span>
-                        </span>
-                                <span className={colDescClass}>{it.description}</span>
-                                {/* ★ 수정 포인트 3: <span className="col-body">{it.bodyPart}</span> 제거됨 */}
-                                <span className={colDateClass}>{it.datetime.split("T")[0]}</span>
+                                <span className={colDescClass}>{it.description ? it.description : "-"}</span>
+                                <span className={colDateClass}>{formatDate(it.datetime)}</span>
                                 <span className={colSeriesClass}>#{it["series-num"]}</span>
                                 <span className={colImagesClass}>{it["images-num"]}</span>
                                 <span
@@ -375,23 +673,26 @@ export default function WorkspaceDashboardPage() {
                                         it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
                                     }`}
                                 >
-                          {it["allow-research"] ? "예" : "아니오"}
-                        </span>
+                                    {it["allow-research"] ? "예" : "아니오"}
+                                  </span>
                               </div>
                             </li>
                         ))
                     ) : (
                         <li className="p-4 text-center text-slate-500 text-sm">
-                          표시할 검사 파일이 없습니다.
+                          {showHiddenStudies ? "숨긴 검사가 없습니다." : "표시할 검사 파일이 없습니다."}
                         </li>
                     )}
                   </ul>
                 </div>
             ) : (
-                <div className="flex flex-1 items-center justify-center text-ink-soft text-base p-8">왼쪽에서 환자를 선택해 주세요.</div>
+                <div className="flex flex-1 items-center justify-center text-ink-soft text-base p-8">
+                  왼쪽에서 환자를 선택해 주세요.
+                </div>
             )}
           </section>
         </section>
+        {isAddPatientModalOpen && <AddPatientModal onClose={() => setIsAddPatientModalOpen(false)} onRefresh={fetchPatients} />}
       </div>
   );
 }

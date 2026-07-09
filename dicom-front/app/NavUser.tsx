@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {logout} from "@/app/api/authApi";
+import { useUpload } from "@/app/context/UploadContext";
 
 export default function NavUser() {
   const router = useRouter();
   const pathname = usePathname();
+  const { cancelUpload } = useUpload();
   const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
 
   // 로그인 여부
@@ -27,6 +29,10 @@ export default function NavUser() {
   }, [pathname]);
 
   const handleLogout = async () => {
+    // 서버가 /api/dicom/** 요청의 로그인 여부를 검사하지 않기 때문에, 로그아웃해도
+    // 서버가 알아서 업로드를 막아주지 않는다. 그래서 로그아웃 처리 전에 여기서
+    // 직접 진행 중인 업로드를 취소한다.
+    cancelUpload();
     await logout();
     localStorage.removeItem("username");
     setIsLogin(false);

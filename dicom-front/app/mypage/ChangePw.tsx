@@ -44,11 +44,29 @@ export default function ChangePw() {
       setPwMessage({ type: "error", text: "새 비밀번호가 일치하지 않습니다." });
       return;
     }
-    // 인증 미구현: 실제 변경은 추후 백엔드 연동.
-    setEditingPw(false);
-    setPw({ current: "", next: "", confirm: "" });
-    await changePassword(pw.current, pw.next);
-    setPwMessage({ type: "ok", text: "비밀번호가 변경되었습니다. " });
+
+    try {
+      await changePassword(pw.current, pw.next);
+      setPwMessage({ type: "ok", text: "비밀번호가 변경되었습니다." });
+      setEditingPw(false);
+      setPw({ current: "", next: "", confirm: "" });
+    } catch (err: unknown) {
+      let message = "비밀번호 변경 중 오류가 발생했습니다.";
+
+      if (err instanceof Error && 'status' in err) {
+        const status = (err as { status: number }).status;
+
+        console.log(status);
+
+        if (status === 401) {
+          message = "현재 비밀번호가 일치하지 않습니다.";
+        } else if (status === 400) {
+          message = "입력 형식이 올바르지 않습니다.";
+        }
+      }
+
+      setPwMessage({ type: "error", text: message });
+    }
   }
 
   return (

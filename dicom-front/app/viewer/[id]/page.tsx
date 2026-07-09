@@ -1,65 +1,175 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { patients, studies, series as allSeries } from "@/mock-data";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
+import { apiFetch } from "@/app/api/apiFetch";
+
+type StudyDto = {
+    "study-key": number;
+    description: string;
+    datetime: string;
+    "series-num": number;
+    // "images-num": number;
+    "allow-research": boolean;
+    hidden: boolean;
+    patient: {
+        name: string;
+        birth: string;
+    } | null;
+};
+
+type SeriesDto = {
+    "series-key": number;
+    "series-index": number;
+    datetime: string | null;
+    "series-num": number;
+    bodypart: string;
+    // "images-num": number;
+    SeriesDescription: string;
+    hidden: boolean;
+};
+
+type InstanceInfo = {
+    "instance-id": string;
+    "number-of-frames": number;
+};
+
+// 시리즈 내 인스턴스들을 뷰어에 넘길 클립단위로 묶은 결과.
+// 클립 하나 = 뷰어에서 연속으로 스크롤/재생되는 이미지 묶음 하나.
+type Clip = {
+    label: string;   // 클립 선택 UI에 보여줄 이름
+    urls: string[];  // 이 클립에 속한 이미지 URL들 (cornerstone에 그대로 넘어감)
+};
+
+// 시리즈의 인스턴스 목록을 클립 단위로 재구성한다.
+// - 프레임이 1장인 인스턴스(CT/MR 슬라이스, 일반 X-ray 등)는 서로 이어지는 하나의 연속 스택으로 묶는다.
+//   시리즈 안의 단일 프레임 인스턴스들은 전부 한 줄로 스크롤된다 이거는 이전이랑 똑같은 방식이고 x-ray같은 애들만 특이 케이스
+
+// - 프레임이 2장 이상인 인스턴스(초음파 시네 루프, 혈관조영 시네 등)는 그 자체로 독립된 클립이 된다.
+//   같은 시리즈 안에 서로 다른 각도/시점의 시네이 여러 개 섞여 있어도 하나로 뭉치지 않도록 분리하기 위함.
+//   ex: 시리즈 하나에 100프레임/16프레임/150프레임짜리 혈관조영 시네이 3개 섞여 있으면 클립 3개로 분리됨
+function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
+    const clips: Clip[] = [];
+    let currentStack: string[] = [];
+
+    const flushStack = () => {
+        if (currentStack.length > 0) {
+            clips.push({ label: `스택 (${currentStack.length}장)`, urls: currentStack });
+            currentStack = [];
+        }
+    };
+
+    instances.forEach((inst) => {
+        const baseUrl = `/api/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`;
+        const frameCount = inst["number-of-frames"] || 1;
+
+        if (frameCount <= 1) {
+            currentStack.push(baseUrl);
+            return;
+        }
+
+        // 멀티프레임 인스턴스를 만나면 지금까지 쌓인 단일 프레임 스택을 먼저 끊어서 클립으로 내보내고
+        // 이 인스턴스는 자기 프레임들만으로 별도의 클립을 새로 만든다.
+        flushStack();
+        const frameUrls = Array.from({ length: frameCount }, (_, frame) => `${baseUrl}?frame=${frame}`);
+        clips.push({ label: `시네 (${frameCount}프레임)`, urls: frameUrls });
+    });
+
+    flushStack();
+    return clips;
+}
 
 export default function ViewerPage() {
     const params = useParams();
-    const studyIdFromUrl = params?.id as string;
+    const studyKey = Number(params?.id);
 
-    const currentStudy = studies.find((s) => s["study-key"] === studyIdFromUrl) ?? null;
-    const currentPatient = patients.find((p) => p["patient-id"] === currentStudy?.["patient-id"]) || patients[0];
+    const [study, setStudy] = useState<StudyDto | null>(null);
+    const [seriesList, setSeriesList] = useState<SeriesDto[]>([]);
+    const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
+    const [clips, setClips] = useState<Clip[]>([]); // 선택된 시리즈를 클립 단위로 나눈 목록
+    const [selectedClipIndex, setSelectedClipIndex] = useState(0); // 그중 현재 뷰어에 보여줄 클립
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const seriesList = useMemo(() => {
-        if (!currentStudy) return [];
-        const filteredSeries = allSeries.filter((s) => s["study-key"] === currentStudy["study-key"]);
-        
-        if (filteredSeries.length > 0) {
-            return filteredSeries.map((s) => ({
-                id: s["series-key"],
-                seriesNumber: s["series-index"],
-                description: `${currentStudy.modality} Scan`,
-                images: s["images-num"],
-                date: s.datetime.replace("T", " ").split("Z")[0],
-                bodyPart: s.bodypart,
-            }));
-        }
-        return [];
-    }, [currentStudy]);
-
-    const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
-
-    // 초기 선택 로직
+    // 1. Study 상세 + Series 목록 로드
     useEffect(() => {
-        if (seriesList.length > 0 && !selectedSeriesId) {
-            setSelectedSeriesId(seriesList[0].id);
+        if (!studyKey || Number.isNaN(studyKey)) {
+            setError(`잘못된 접근입니다. (studyKey: ${params?.id})`);
+            setLoading(false);
+            return;
         }
-    }, [seriesList, selectedSeriesId]);
 
-    const handleSelectSeries = (id: string) => {
+        async function loadStudyAndSeries() {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const [studyData, seriesData]: [StudyDto, SeriesDto[]] = await Promise.all([
+                    apiFetch(`/api/dicom/studies/${studyKey}`, { credentials: "include" }),
+                    apiFetch(`/api/dicom/studies/${studyKey}/series`, { credentials: "include" }),
+                ]);
+
+                setStudy(studyData);
+                setSeriesList(seriesData);
+                setSelectedSeriesId(seriesData.length > 0 ? seriesData[0]["series-key"] : null);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : "스터디 정보를 불러오지 못했습니다.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadStudyAndSeries();
+    }, [studyKey]);
+
+    // 선택된 시리즈의 인스턴스 목록 -> 클립 목록 구성
+    // 같은 파일 URL에 ?frame=N만 다르게 붙이면, cornerstone-wado-image-loader가 파일을 한 번만 받아서 그 안에서 N번째 프레임만 잘라 보여준다 — 이 부분은 buildClips 안에서 그대로 처리됨
+    useEffect(() => {
+        if (!selectedSeriesId) {
+            setClips([]);
+            return;
+        }
+
+        async function loadInstances() {
+            try {
+                const instances: InstanceInfo[] = await apiFetch(
+                    `/api/dicom/series/${selectedSeriesId}/instances`,
+                    { credentials: "include" }
+                );
+                setClips(buildClips(selectedSeriesId as number, instances));
+                setSelectedClipIndex(0); // 시리즈를 바꿨으니 항상 첫 번째 클립부터 보여준다
+            } catch (e) {
+                setError(e instanceof Error ? e.message : "이미지 목록을 불러오지 못했습니다.");
+            }
+        }
+
+        loadInstances();
+    }, [selectedSeriesId]);
+
+    // 실제 뷰어(DicomViewer)에 넘기는 배열은 현재 선택된 이미지의 URL들뿐이다.
+    const dicomUrls = clips[selectedClipIndex]?.urls ?? [];
+
+    const handleSelectSeries = (id: number) => {
         setSelectedSeriesId(id);
     };
 
-    // ── Tailwind 스타일 변수 ──
-    const modalityBadgeClass = "inline-flex items-center justify-center font-bold min-w-10.5 px-2 py-1 rounded-lg text-xs tracking-[0.02em] text-paper";
-    const modalityColors: Record<string, string> = {
-        ct: "bg-[#2563eb]",
-        mr: "bg-[#7c3aed]",
-        cr: "bg-[#0e7490]",
-        us: "bg-[#c2410c]",
-        pt: "bg-[#be185d]",
-    };
+    if (loading) {
+        return (
+            <div className="page flex h-screen items-center justify-center">
+                <p className="text-slate-500 text-sm">불러오는 중...</p>
+            </div>
+        );
+    }
 
-    // 샘플 1번부터 4번 파일 목록 (실제 연동 시에는 API에서 받아온 해당 시리즈의 인스턴스 URL 배열로 대체)
-    const dicomUrls = [
-      "/dicom/CT_brain_001.dcm",
-      "/dicom/CT_brain_002.dcm",
-      "/dicom/CT_brain_003.dcm",
-      "/dicom/CT_brain_004.dcm"
-    ];
+    if (error) {
+        return (
+            <div className="page flex h-screen items-center justify-center">
+                <p className="text-red-500 text-sm">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="page flex h-screen flex-col overflow-hidden">
@@ -78,37 +188,44 @@ export default function ViewerPage() {
                                 </Link>
                                 <h2 className="m-0 font-bold text-xl text-ink tracking-[-0.01em]">시리즈 목록</h2>
                             </div>
-                            {currentStudy && (
+                            {study && (
                                 <div className="text-base font-semibold text-slate-700 mt-1 mb-0.5 flex items-center gap-2">
-                                    <span className={`${modalityBadgeClass} ${modalityColors[currentStudy.modality.toLowerCase()] || "bg-slate"}`}>{currentStudy.modality}</span>
-                                    <span className="text-sm text-slate-500 font-normal">| {currentStudy.datetime.replace("T", " ").split("Z")[0]}</span>
+                                    <span className="text-sm text-slate-500 font-normal">
+                                        {study.description || "N/A"} · {study.datetime ? study.datetime.replace("T", " ").split("Z")[0] : "N/A"}
+                                    </span>
                                 </div>
                             )}
-                            <span className="text-left font-medium text-sm text-ink-soft leading-[1.4]">{currentPatient["patient-name"]} · {currentPatient["patient-birth"]}</span>
+                            {study && (
+                                <span className="text-left font-medium text-sm text-ink-soft leading-[1.4]">
+                                    {study.patient?.name || "N/A"} · {study.patient?.birth ? study.patient.birth.split("T")[0] : "N/A"}
+                                </span>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                         <div className="gap-2.5 shrink-0 tracking-[0.02em] bg-canvas border-b border-line max-[560px]:hidden flex items-center px-4 py-3 text-sm font-bold text-slate-500">
                             <span className="w-16">시리즈</span>
+                            <span className="w-16">검사 설명</span>
                             <span className="flex-1 text-center">부위</span>
-                            <span className="w-16 text-right">영상 수</span>
+                            {/*<span className="w-16 text-right">영상 수</span>*/}
                         </div>
 
                         <ul className="min-h-0 flex-1 list-none overflow-y-auto m-0 p-1.5">
                             {seriesList.length > 0 ? (
                                 seriesList.map((ser) => (
-                                    <li key={ser.id}>
+                                    <li key={ser["series-key"]}>
                                         <button
                                             type="button"
-                                            onClick={() => handleSelectSeries(ser.id)}
+                                            onClick={() => handleSelectSeries(ser["series-key"])}
                                             className={`study-row gap-2.5 w-full cursor-pointer text-left p-3.5 border-[1.5px] rounded-xl font-[inherit] text-sm text-ink transition-[background,border-color] duration-150 flex items-center px-4 py-3 ${
-                                                ser.id === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent hover:bg-canvas"
+                                                ser["series-key"] === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent hover:bg-canvas"
                                             }`}
                                         >
-                                            <span className="w-16 font-mono text-[#14b876] font-bold">#{ser.seriesNumber}</span>
-                                            <span className="flex-1 text-center pl-2 truncate">{ser.bodyPart}</span>
-                                            <span className="w-16 text-right ">{ser.images}장</span>
+                                            <span className="w-16 font-mono text-[#14b876] font-bold">#{ser["series-num"] ?? "N/A"}</span>
+                                            <span className="w-16 truncate">{ser.SeriesDescription || "N/A"}</span>
+                                            <span className="flex-1 text-center pl-2 truncate">{ser.bodypart || "N/A"}</span>
+                                            {/*<span className="w-16 text-right">{ser["images-num"]}장</span>*/}
                                         </button>
                                     </li>
                                 ))
@@ -123,11 +240,32 @@ export default function ViewerPage() {
 
                 {/* 우측 메인 뷰어 패널 */}
                 <section className="flex min-h-0 flex-col overflow-hidden bg-paper border border-line rounded-[20px] relative h-full p-4">
+                    {/* 클립 선택 바 — 시리즈 안에 클립이 2개 이상일 때만 노출된다.
+                        (CT/MR처럼 클립이 1개(=하나의 연속 스택)뿐인 일반적인 경우엔 기존과 동일하게 아무 UI도 안 보임) */}
+                    {clips.length > 1 && (
+                        <div className="flex shrink-0 gap-2 mb-3 overflow-x-auto">
+                            {clips.map((clip, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => setSelectedClipIndex(idx)}
+                                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors duration-150 cursor-pointer ${
+                                        idx === selectedClipIndex
+                                            ? "bg-[rgba(76,255,157,0.14)] border-mint-deep text-ink"
+                                            : "border-line text-ink-soft hover:bg-canvas"
+                                    }`}
+                                >
+                                    {clip.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <div className="main-viewer-zone flex flex-1 justify-center items-center h-full w-full relative min-h-0">
-                        {/* selectedSeriesId에 따라 다른 URL 배열을 넘겨줄 수 있습니다. 현재는 데모용 고정 배열을 넘깁니다. */}
-                        <DicomViewer dicomUrls={dicomUrls}>
-                            <button type="button" className="btn btn-small shadow-md">AI 판독</button>
-                        </DicomViewer>
+                        {dicomUrls.length > 0 ? (
+                            <DicomViewer dicomUrls={dicomUrls} />
+                        ) : (
+                            <div className="text-slate-400 text-sm">시리즈를 선택하면 이미지가 표시됩니다.</div>
+                        )}
                     </div>
                 </section>
             </section>
