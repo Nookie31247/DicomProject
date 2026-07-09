@@ -20,7 +20,7 @@ export default function LoginForm() {
             setErrorMsg("");
             const loginRes = await login(id, password);
             localStorage.setItem("username", loginRes.username);
-            router.push("/workspace");
+            router.push(loginRes.userType === "RESEARCHER" ? "/research" : "/workspace");
         } catch (err: unknown) {
             setErrorMsg("아이디 혹은 비밀번호가 일치하지 않습니다.");
         }
