@@ -6,12 +6,15 @@
 
 import { ToastProvider } from "@/app/context/ToastContext";
 import { UploadProvider } from "@/app/context/UploadContext";
+import { ConfirmProvider } from "@/app/context/ConfirmContext";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
       <ToastProvider>
         <UploadProvider>
-          {children}
+          <ConfirmProvider>
+            {children}
+          </ConfirmProvider>
         </UploadProvider>
       </ToastProvider>
   );
