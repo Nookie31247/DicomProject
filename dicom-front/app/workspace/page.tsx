@@ -7,6 +7,7 @@ import AddPatientModal from "@/app/workspace/AddPatientModal";
 import { useToast } from "@/app/context/ToastContext";
 import { useUpload } from "@/app/context/UploadContext";
 import { useConfirm } from "@/app/context/ConfirmContext";
+import { RoleGuard } from "@/app/components/auth/RouteAccess";
 import { clampDateInputValue, formatDateInputValue, getMaxDateInputValue, getMinDateInputValue } from "@/services/dateInputValue";
 
 // ── 스타일 변수 ──
@@ -83,9 +84,11 @@ const getDefaultPatientEndDate = () => {
 // "useSearchParams() should be wrapped in a suspense boundary" 에러가 난다).
 export default function WorkspaceDashboardPage() {
   return (
+    <RoleGuard allow="MEDICAL">
       <Suspense fallback={null}>
         <WorkspaceDashboardPageInner />
       </Suspense>
+    </RoleGuard>
   );
 }
 

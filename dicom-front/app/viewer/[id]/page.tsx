@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
+import { RoleGuard } from "@/app/components/auth/RouteAccess";
 import { medicalApiFetch } from "../../api/ApiFetch";
 
 type StudyDto = {
@@ -81,6 +82,14 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
 }
 
 export default function ViewerPage() {
+    return (
+        <RoleGuard allow="MEDICAL">
+            <ViewerPageInner />
+        </RoleGuard>
+    );
+}
+
+function ViewerPageInner() {
     const params = useParams();
     const router = useRouter();
     const studyKey = Number(params?.id);

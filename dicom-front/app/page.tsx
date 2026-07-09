@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
+import { HomeRedirect } from "@/app/components/auth/RouteAccess";
 
 export const metadata: Metadata = {
   title: "DICOM! — DICOM 파일을 보다 간편하게",
@@ -16,6 +17,7 @@ export default function Home() {
 
   return (
     <div className="page">
+      <HomeRedirect />
 
 
       {/* ───────────── Hero ───────────── */}

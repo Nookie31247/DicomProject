@@ -46,6 +46,14 @@ export default function NavUser() {
     const accountType = getStoredAccountType();
     try {
       await logout(accountType);
+    } catch (error) {
+      const status = typeof error === "object" && error !== null && "status" in error
+        ? (error as { status?: unknown }).status
+        : null;
+
+      if (status !== 401 && status !== 403) {
+        console.error("Logout failed", error);
+      }
     } finally {
       clearStoredAuth();
       setIsLogin(false);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Download, ShieldCheck, FileText, AlertCircle, Calendar } from "lucide-react";
 import dicomApi from "@/app/api/dicomApi";
+import { RoleGuard } from "@/app/components/auth/RouteAccess";
 
 interface StudyItem {
     "study-key": number;
@@ -26,6 +27,14 @@ interface SeriesItem {
 }
 
 export default function ResearchDataPage() {
+    return (
+        <RoleGuard allow="RESEARCHER">
+            <ResearchDataPageInner />
+        </RoleGuard>
+    );
+}
+
+function ResearchDataPageInner() {
     //상태 : 예시 데이터
     const [studies, setStudies] = useState<StudyItem[]>([]);
     const [loading, setLoading] = useState(true);
