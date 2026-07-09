@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
 import { apiFetch } from "@/app/api/apiFetch";
 
@@ -83,6 +82,7 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
 
 export default function ViewerPage() {
     const params = useParams();
+    const router = useRouter();
     const studyKey = Number(params?.id);
 
     const [study, setStudy] = useState<StudyDto | null>(null);
@@ -182,10 +182,17 @@ export default function ViewerPage() {
                     <div className="flex shrink-0 items-start justify-between gap-3 pt-4.5 px-4.5 pb-4 border-b border-line">
                         <div className="flex min-w-0 flex-1 flex-col gap-1.25">
                             <div className="flex items-center gap-2">
-                                {/* useRouter() 대신 Link 태그로 변경하여 서버 컴포넌트로 만듭니다. */}
-                                <Link href="/workspace" className="flex shrink-0 cursor-pointer items-center justify-center w-7.5 h-7.5 rounded-lg border border-line bg-paper text-ink-soft text-xl leading-none transition-[background,color,border-color] duration-150 hover:bg-canvas hover:text-ink hover:border-mint-deep transform-none font-bold no-underline">
+                                {/* workspace로 그냥 이동(<Link href="/workspace">)하면 검색/선택했던 상태가
+                                    다 초기화된 채로 이동하게 된다. router.back()은 브라우저 뒤로가기와
+                                    똑같이 동작해서, workspace 페이지가 URL 쿼리로 들고 있던 선택 상태를
+                                    그대로 복원한다. */}
+                                <button
+                                    type="button"
+                                    onClick={() => router.back()}
+                                    className="flex shrink-0 cursor-pointer items-center justify-center w-7.5 h-7.5 rounded-lg border border-line bg-paper text-ink-soft text-xl leading-none transition-[background,color,border-color] duration-150 hover:bg-canvas hover:text-ink hover:border-mint-deep transform-none font-bold no-underline"
+                                >
                                     ←
-                                </Link>
+                                </button>
                                 <h2 className="m-0 font-bold text-xl text-ink tracking-[-0.01em]">시리즈 목록</h2>
                             </div>
                             {study && (

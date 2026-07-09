@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dicomApi from "../api/dicomApi";
+import { clampDateInputValue, getMaxDateInputValue, getMinDateInputValue } from "@/services/dateInputValue";
 
 interface Props {
     onClose: () => void;
@@ -38,7 +39,18 @@ export default function AddPatientModal({ onClose, onRefresh }: Props) {
                         <option value="M">남성</option>
                         <option value="F">여성</option>
                     </select>
-                    <input type="date" className="border p-2 rounded" required onChange={(e) => setFormData({...formData, birth: e.target.value})} />
+                    <input
+                        type="date"
+                        className="border p-2 rounded"
+                        required
+                        min={getMinDateInputValue()}
+                        max={getMaxDateInputValue()}
+                        onChange={(e) => setFormData({...formData, birth: e.target.value})}
+                        onBlur={(e) => setFormData({
+                            ...formData,
+                            birth: clampDateInputValue(e.target.value, getMinDateInputValue(), getMaxDateInputValue()),
+                        })}
+                    />
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
                     <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">취소</button>
