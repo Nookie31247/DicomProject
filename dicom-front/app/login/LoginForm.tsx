@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { login } from "@/app/api/authApi";
@@ -14,6 +14,15 @@ export default function LoginForm() {
 
     // 비밀번호 입력창을 가리키는 ref
     const passwordInputRef = useRef<HTMLInputElement>(null);
+
+    // 이미 로그인된 사용자가 /login에 직접 접근한 경우, 로그인 폼을 보여주는 대신 각자의 홈(연구원은 /research, 그 외는 /workspace)으로 바로 보낸다
+    useEffect(() => {
+        const username = localStorage.getItem("username");
+        if (username) {
+            const userType = localStorage.getItem("userType");
+            router.replace(userType === "RESEARCHER" ? "/research" : "/workspace");
+        }
+    }, [router]);
 
     const doLogin = async () => {
         try {

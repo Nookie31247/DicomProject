@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { checkId, signup } from "@/app/api/authApi";
 import { useToast } from "@/app/context/ToastContext";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,14 @@ import { Eye, EyeOff } from 'lucide-react';
 export default function SignupForm() {
   const router = useRouter();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const username = localStorage.getItem("username");
+    if (username) {
+      const userType = localStorage.getItem("userType");
+      router.replace(userType === "RESEARCHER" ? "/research" : "/workspace");
+    }
+  }, [router]);
 
   // 포커스 제어를 위한 Ref들
   const passwordInputRef = useRef<HTMLInputElement>(null);

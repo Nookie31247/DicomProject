@@ -6,13 +6,8 @@ import Link from "next/link";
 import {logout} from "@/app/api/authApi";
 import { useUpload } from "@/app/context/UploadContext";
 
-export default function NavUser() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { cancelUpload } = useUpload();
-  const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
-
   // 로그인 여부
+function useAuthState(pathname: string) {
   const [isLogin, setIsLogin] = useState(false);
   const [username, setUsername] = useState("");
   const [userType, setUserType] = useState(""); // "연구원" 배지 표시용
@@ -24,13 +19,38 @@ export default function NavUser() {
       setUsername(name);
       setUserType(type ?? "");
       setIsLogin(true);
-    }
-    else {
+    } else {
       setUsername("");
       setUserType("");
-      setIsLogin(false)
+      setIsLogin(false);
     }
   }, [pathname]);
+
+  return { isLogin, username, userType };
+}
+
+const homePathFor = (userType: string) => (userType === "RESEARCHER" ? "/research" : "/workspace");
+
+export function HeaderLogo() {
+  const pathname = usePathname();
+  const { isLogin, userType } = useAuthState(pathname);
+
+  return (
+      <Link
+          href={isLogin ? homePathFor(userType) : "/"}
+          className="font-bold no-underline text-3xl tracking-[-0.01em] text-ink"
+      >
+        DICOM!
+      </Link>
+  );
+}
+
+export default function NavUser() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { cancelUpload } = useUpload();
+  const { isLogin, username, userType } = useAuthState(pathname); // 기존 useState/useEffect 3줄+1블록을 훅 호출로 대체
+  const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
 
   const handleLogout = async () => {
     // 서버가 /api/dicom/** 요청의 로그인 여부를 검사하지 않기 때문에, 로그아웃해도
@@ -40,9 +60,6 @@ export default function NavUser() {
     await logout();
     localStorage.removeItem("username");
     localStorage.removeItem("userType");
-    setIsLogin(false);
-    setUsername("");
-    setUserType("");
     router.push("/");
   };
 
