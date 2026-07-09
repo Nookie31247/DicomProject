@@ -50,8 +50,15 @@ export default function ResearchDataPage() {
     // 서버가 zip 하나로 묶는 동안(체크 항목이 많으면 수 초 걸릴 수 있음) 버튼을 잠그기 위한 상태
     const [downloading, setDownloading] = useState(false);
 
+    // 연구원 계정 여부. 연구원은 원칙상 익명화된 데이터만 받아야 하는데
+    // 익명화 기능(#11)이 아직 없어서, 그게 붙기 전까지는 이 페이지에서
+    // 연구원에게 "익명화 준비 중" 배지를 보여주고 다운로드 버튼을 잠근다.
+    // (실제 차단은 백엔드 blockResearcherDownload가 하고, 이건 UX용 안내일 뿐)
+    const [isResearcher, setIsResearcher] = useState(false);
+
     // 연구 허용 스터디 목록 조회
     useEffect(() => {
+        setIsResearcher(localStorage.getItem("userType") === "RESEARCHER");
         dicomApi.getResearchStudies()
             .then((data: StudyItem[]) => setStudies(data))
             .finally(() => setLoading(false));
@@ -189,6 +196,11 @@ export default function ResearchDataPage() {
                 <div className="lg:col-span-2 bg-paper border border-line rounded-[20px] p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <FileText size={20} /> 연구 활용 허용 자료
+                        {isResearcher && (
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                익명화 준비 중
+                            </span>
+                        )}
                     </h2>
 
                     <div className="grid font-bold text-xs text-ink-soft bg-canvas p-3 rounded-lg mb-2" style={{ gridTemplateColumns: gridCols }}>
@@ -276,14 +288,22 @@ export default function ResearchDataPage() {
                         익명화된 자료는 DICOM 헤더 내 개인식별정보가 제거된 후 다운로드됩니다.
                     </div>
 
+                    {/* 연구원 계정 전용 안내: 익명화 기능이 붙기 전까지는 다운로드를 못 받는 이유를 설명 */}
+                    {isResearcher && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4 text-xs text-amber-800 leading-relaxed">
+                            연구원 계정은 개인정보 보호를 위해 익명화 처리된 자료만 다운로드할 수 있습니다.
+                            익명화 기능은 현재 준비 중이며, 완료되는 대로 이 페이지에서 다운로드가 가능해집니다.
+                        </div>
+                    )}
+
                     <div className="text-xs text-ink-soft mb-4">선택된 항목: {checked.size}개</div>
 
                     <button
                         onClick={() => { void startDownload(); }}
-                        disabled={checked.size === 0 || downloading}
+                        disabled={checked.size === 0 || downloading || isResearcher}
                         className="w-full btn btn-big bg-mint text-slate font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <Download size={20} /> {downloading ? "압축하는 중..." : "다운로드 시작"}
+                        <Download size={20} /> {isResearcher ? "익명화 준비 중" : downloading ? "압축하는 중..." : "다운로드 시작"}
                     </button>
                 </div>
             </div>
