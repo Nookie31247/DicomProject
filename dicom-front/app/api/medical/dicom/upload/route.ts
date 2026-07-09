@@ -1,10 +1,12 @@
 export const runtime = "nodejs";
 
+const medicalApiOrigin = (process.env.MEDICAL_API_ORIGIN ?? "http://localhost:8080").replace(/\/$/, "");
+
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const bodyBuffer = await request.arrayBuffer();
 
-  const backendResponse = await fetch("http://localhost:8080/api/medical/dicom/upload", {
+  const backendResponse = await fetch(`${medicalApiOrigin}/api/medical/dicom/upload`, {
     method: "POST",
     headers: {
       "Content-Type": contentType,

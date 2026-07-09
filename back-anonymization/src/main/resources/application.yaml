@@ -20,7 +20,6 @@ spring:
       port: ${REDIS_PORT:6380}
 
   jpa:
-    show-sql: true
     hibernate:
       ddl-auto: create-drop
       naming:
@@ -32,15 +31,13 @@ spring:
         use_sql_comments: true
 
 orthanc:
-  url: http://localhost:8043
-  username: orthanc
-  password: orthanc
+  url: ${ORTHANC_URL:http://localhost:8043}
 
 app:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 jwt:
   secret-key: ${JWT_SECRET_KEY:66eI6rCA7LigIOuvuO2DgOy8gCDrgpjro6jsubTrr7jrhbgg66+47L2U7Yag}
