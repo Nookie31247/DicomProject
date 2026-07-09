@@ -12,7 +12,9 @@ public class GlobalExceptionHandler {
     // 우리가 정의한 비즈니스 예외 처리
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException e) {
-        System.out.println(e.getMessage());
+        String original = e.getMessage();
+        String truncated = original.substring(0, Math.min(original.length(), 1000));
+        System.out.println(truncated);
         ErrorCode errorCode = e.getErrorCode();
         return ResponseEntity
                 .status(errorCode.getStatus())

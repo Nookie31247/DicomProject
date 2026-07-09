@@ -8,7 +8,8 @@ services:
       - "8043:8042"
       - "4243:4242"
     environment:
-      ORTHANC__NAME: "Hanul_Hospital_Anonymization_PACS"
+      ORTHANC__NAME: "PACS_ANON"
+      ORTHANC__DICOM_AET: "PACS_ANON"
 
       DICOM_WEB_PLUGIN_ENABLED: "true"
       ORTHANC__DICOM_WEB__ENABLE: "true"

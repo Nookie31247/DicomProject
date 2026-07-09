@@ -8,11 +8,18 @@ services:
       - "8042:8042" # 웹 UI 및 DICOMweb REST API 포트
       - "4242:4242" # DICOM 통신 포트
     environment:
-      ORTHANC__NAME: "Hanul_Hospital_PACS"
+      ORTHANC__NAME: "PACS_MAIN"
+      ORTHANC__DICOM_AET: "PACS_MAIN"
 
       # DICOMweb 플러그인 활성화
       DICOM_WEB_PLUGIN_ENABLED: "true"
       ORTHANC__DICOM_WEB__ENABLE: "true"
+
+      # (중요) 여기에 익명화 Orthanc 서버 정보 등록하기
+      DICOM_MODALITIES: |
+        {
+          "anonymization-server": ["PACS_ANON", "192.168.7.17", 4243]
+        }
 
       # Orthanc Explorer 2 플러그인 활성화
       ORTHANC_EXPLORER_2_PLUGIN_ENABLED: "true"

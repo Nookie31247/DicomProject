@@ -4,7 +4,6 @@ import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Series;
 import com.allegro.dicomback.entity.Study;
 import com.allegro.dicomback.entity.User;
-import com.allegro.dicomback.entity.User;
 import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.exception.ErrorCode;
 import com.allegro.dicomback.repository.PatientRepository;
@@ -54,13 +53,13 @@ public class DicomService {
     private final StudyRepository studyRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final AnonymizationService anonymizationService;
 
     private final RestTemplate restTemplate = new RestTemplate();
     @Value("${orthanc.url:http://localhost:8042}")
     private String orthancUrl;
 
-    // ======================================== 이영무 추가 ======================================================
-
+    /// 매개변수로 입력받은 정보를 통해 환자 정보를 필터링한 후 가져옵니다.
     public List<PatientDto> getPatients(Long doctorKey, String start, String end, String search) {
         List<Patient> patientList;
         List<PatientDto> patientDtoList = new ArrayList<>();
@@ -92,17 +91,6 @@ public class DicomService {
                 endDay
         );
 
-//        // 검색어가 있을 때
-//        if(StringUtils.hasText(search)) {
-//            // 여기서는 시작일, 종료일, 검색어 3가지 모두를 가지고 검색한다.
-//            patientList = patientRepository.findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(doctorKey, search, startDay, endDay);
-//        }
-//        // 검색어가 없을 때
-//        else {
-//            // 여기서는 시작일과 종료일만 가지고 검색한다.
-//            patientList = patientRepository.findByDoctorKey_KeyAndRecentStudyBetween(doctorKey, startDay, endDay);
-//        }
-
         for(Patient p : patientList) {
             patientDtoList.add(new PatientDto(
                     p.getKey(),
@@ -118,6 +106,7 @@ public class DicomService {
         return patientDtoList;
     }
 
+    /// 매개변수로 입력받은 정보를 통해 스터디 정보를 필터링한 후 가져옵니다.
     public List<StudyDto> getStudies(Long doctorKey, Long patientKey, String start, String end, String search) {
         List<Study> studyList;
         LocalDateTime startDay;
@@ -200,6 +189,7 @@ public class DicomService {
                 .toList();
     }
 
+    /// 매개변수로 입력받은 정보를 통해 시리즈 정보를 필터링한 후 가져옵니다.
     public List<SeriesDto> getSeries(Long doctorKey, Long studyKey) {
         List<Series> seriesList = seriesRepository.getSeries(doctorKey, studyKey);
         List<SeriesDto> seriesDtoList = new ArrayList<>();
@@ -217,11 +207,8 @@ public class DicomService {
 
     }
 
-    public void setAnonymization(Long doctorKey, Long studyKey) {
-        // 익명화 DB 만들면 여기에 관련 로직 추가할 것
-    }
-
     // 정보를 수정하는 메서드에는 @Transactional(readOnly = true)를 사용할 수 없다.
+    /// 환자 숨김 설정 여부를 저장합니다.
     @Transactional
     public void setHidePatients(Long doctorKey, List<PatientHideDto> requests) {
         List<Long> hiddenPatients = new ArrayList<>();
@@ -239,6 +226,7 @@ public class DicomService {
             patientRepository.changeHiddenFlag(doctorKey, showPatients, false);
     }
 
+    /// 스터디 숨김 설정 여부를 저장합니다.
     @Transactional
     public void setHideStudies(Long doctorKey, List<StudyHideDto> requests) {
         List<Long> hiddenStudies = new ArrayList<>();
@@ -256,23 +244,7 @@ public class DicomService {
             studyRepository.changeHiddenFlag(doctorKey, showStudies, false);
     }
 
-    @Transactional
-    public void setAllowResearchStudies(Long doctorKey, List<StudyResearchDto> requests) {
-        List<Long> allowedStudies = new ArrayList<>();
-        List<Long> disallowedStudies = new ArrayList<>();
-        requests.forEach(r -> {
-            if(r.allowResearch())
-                allowedStudies.add(r.studyKey());
-            else
-                disallowedStudies.add(r.studyKey());
-        });
-
-        if(!allowedStudies.isEmpty())
-            studyRepository.changeAllowResearch(doctorKey, allowedStudies, true);
-        if(!disallowedStudies.isEmpty())
-            studyRepository.changeAllowResearch(doctorKey, disallowedStudies, false);
-    }
-
+    /// 시리즈 숨김 설정 여부를 설정합니다.
     @Transactional
     public void setHideSeries(Long doctorKey, List<SeriesHideDto> requests) {
         List<Long> hiddenSeries = new ArrayList<>();
@@ -290,7 +262,28 @@ public class DicomService {
             seriesRepository.changeHiddenFlag(doctorKey, showSeries, false);
     }
 
-    // 시리즈 전체 ZIP 다운로드 (Orthanc /archive)
+    /// 스터디를 연구 목적으로 사용하는 것을 허용하도록 설정합니다.
+    @Transactional
+    public void setAllowResearchStudies(Long doctorKey, List<StudyResearchDto> requests) {
+        List<Long> allowedStudies = new ArrayList<>();
+        List<Long> disallowedStudies = new ArrayList<>();
+        requests.forEach(r -> {
+            if(r.allowResearch())
+                allowedStudies.add(r.studyKey());
+            else
+                disallowedStudies.add(r.studyKey());
+        });
+
+        if(!allowedStudies.isEmpty())
+            studyRepository.changeAllowResearch(doctorKey, allowedStudies, true);
+        if(!disallowedStudies.isEmpty())
+            studyRepository.changeAllowResearch(doctorKey, disallowedStudies, false);
+
+        List<String> orthancUids = studyRepository.findOrthancUidFromKeys(allowedStudies);
+        anonymizationService.anonymize(orthancUids);
+    }
+
+    /// 시리즈 전체 ZIP 다운로드
     //GET http://localhost:8080/api/dicom/series/download?series-key=1
     public StreamingResponseBody downloadSeriesAsZip(Long seriesKey) {
         Series series = seriesRepository.findById(seriesKey)
@@ -313,7 +306,7 @@ public class DicomService {
         };
     }
 
-    // 스터디 전체 ZIP 다운로드 (Orthanc /archiv)
+    /// 스터디 전체 ZIP 다운로드
     //GET http://localhost:8080/api/dicom/studies/download?study-key=1
     public StreamingResponseBody downloadStudyAsZip(Long studyKey) {
         Study study = studyRepository.findById(studyKey)
@@ -336,8 +329,9 @@ public class DicomService {
         };
     }
 
-    // 연구 활용이 허용된 스터디 목록을 이 의사(doctorKey) 기준으로 조회해서
-    // 화면에 필요한 시리즈 수를 채우는 메서드 (/research 페이지가 최초 로딩될 때 호출하는 API의 실제 로직)
+    // TODO 임시 로직. 나중에 삭제할 것
+    /// 연구 활용이 허용된 스터디 목록을 이 의사(doctorKey) 기준으로 조회해서
+    /// 화면에 필요한 시리즈 수를 채우는 메서드 (/research 페이지가 최초 로딩될 때 호출하는 API의 실제 로직)
     public List<StudyDto> getResearchStudies() {
 
         // 의사가 담당하는 환자들 중, 연구 허용 + 숨김 아님 조건에 맞는 Study 엔티티들을 DB에서 가져옴
@@ -383,6 +377,7 @@ public class DicomService {
                 })
                 .toList();
     }
+
     @Transactional
     public void addPatient(Long doctorKey, PatientRequestDto request) {
 

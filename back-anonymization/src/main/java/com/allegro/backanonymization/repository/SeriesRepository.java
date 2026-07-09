@@ -15,6 +15,8 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
         Long getImagesNum();
     }
 
+    boolean existsByUid(String uid);
+
     @Query(
             """
                     select

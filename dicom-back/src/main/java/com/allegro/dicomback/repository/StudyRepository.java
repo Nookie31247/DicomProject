@@ -102,6 +102,11 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
     """)
     List<Study> findResearchStudies();
 
+    @Query("""
+            select s.orthancId from Study s
+            where s.key in :studyKeys
+    """)
+    List<String> findOrthancUidFromKeys(@Param("studyKeys") List<Long> studyKeys);
 }
 // 담당 의사와 무관하게, 연구 활용 허용된(allowResearch=true) 스터디 전체 조회
 //@Query("""

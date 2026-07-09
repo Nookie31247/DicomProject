@@ -11,5 +11,5 @@ import java.util.List;
 
 public interface StudyRepository extends JpaRepository<Study, Long> {
     List<Study> findStudiesByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
-
+    boolean existsByUid(String uid);
 }
