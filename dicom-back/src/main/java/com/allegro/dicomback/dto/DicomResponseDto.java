@@ -55,6 +55,7 @@ public class DicomResponseDto {
             @JsonProperty("datetime")LocalDateTime dateTime,
             @JsonProperty("series-num")Number seriesNum,
             @JsonProperty("bodypart")String  bodyPart,
+            @JsonProperty("description")String description,
             @JsonProperty("hidden") boolean hidden
     ) {}
 

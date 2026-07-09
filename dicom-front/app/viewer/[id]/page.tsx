@@ -27,7 +27,7 @@ type SeriesDto = {
     "series-num": number;
     bodypart: string;
     // "images-num": number;
-    SeriesDescription: string;
+    description: string;
     hidden: boolean;
 };
 
@@ -223,7 +223,7 @@ export default function ViewerPage() {
                                             }`}
                                         >
                                             <span className="w-16 font-mono text-[#14b876] font-bold">#{ser["series-num"] ?? "N/A"}</span>
-                                            <span className="w-16 truncate">{ser.SeriesDescription || "N/A"}</span>
+                                            <span className="w-16 truncate">{ser.description || "N/A"}</span>
                                             <span className="flex-1 text-center pl-2 truncate">{ser.bodypart || "N/A"}</span>
                                             {/*<span className="w-16 text-right">{ser["images-num"]}장</span>*/}
                                         </button>

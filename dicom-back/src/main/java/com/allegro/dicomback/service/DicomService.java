@@ -210,6 +210,7 @@ public class DicomService {
                         s.getCreatedAt(),
                         s.getSeriesNum(),
                         s.getBodyPart(),
+                        s.getSeriesDescription(),
                         s.getHiddenFlag()
                 ))
         );
@@ -480,6 +481,7 @@ public class DicomService {
         String seriesTime = attrs.getString(Tag.SeriesTime);
         String modality = attrs.getString(Tag.Modality);
         String bodyPart = attrs.getString(Tag.BodyPartExamined);
+        String seriesDescription = attrs.getString(Tag.SeriesDescription);
         Integer seriesNum = parseIntTag(attrs.getString(Tag.SeriesNumber));
 
         //NumberOfFrames(0028,0008): 초음파/혈관조영처럼 인스턴스 1개 안에 여러 프레임이 들어있는 경우(얘네는 이미지 하나가 사실상 시리즈 하나 판정임).
@@ -554,6 +556,7 @@ public class DicomService {
                         .studyKey(study)
                         .seriesNum(seriesNum)
                         .bodyPart(bodyPart)
+                        .seriesDescription(seriesDescription)
                         .modality(modality)
                         .createdAt(parseDicomDateTime(
                                 StringUtils.hasText(seriesDate) ? seriesDate : studyDate,

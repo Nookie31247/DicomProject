@@ -91,6 +91,7 @@ public class AiService {
                         s.getCreatedAt(),
                         s.getSeriesNum(),
                         s.getBodyPart(),
+                        s.getSeriesDescription(),
                         s.getHiddenFlag() != null && s.getHiddenFlag()
                 ))
                 .collect(Collectors.toList());
