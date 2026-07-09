@@ -169,6 +169,20 @@ public class DicomController {
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .body(stream);
     }
+
+    // 여러 study/series 체크 후 한 번에 다운로드 — 요청 1번, zip 파일 1개로 응답
+    // (studies/download, series/download를 체크 개수만큼 따로 부르면 브라우저가 다중 자동 다운로드를 막아버려서 추가함 그래서 하나의 zip으로 묶어서 처리)
+    @AuditLogged(action = "DOWNLOAD", targetType = "BATCH")
+    @PostMapping("/download/batch")
+    public ResponseEntity<StreamingResponseBody> downloadBatch(
+            @RequestBody BatchDownloadDto request
+    ) {
+        StreamingResponseBody stream = dicomService.downloadBatchAsZip(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"download.zip\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
+    }
     //다운로드 페이지
     @GetMapping("/studies/research")
     public ResponseEntity<List<StudyDto>> getResearchStudies(@CookieValue(name = "token") String token) {

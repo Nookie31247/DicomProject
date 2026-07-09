@@ -47,6 +47,9 @@ export default function ResearchDataPage() {
     // "study:123", "series:456" 처럼 접두어로 두 종류의 id 네임스페이스를 구분
     const [checked, setChecked] = useState<Set<string>>(new Set());
 
+    // 서버가 zip 하나로 묶는 동안(체크 항목이 많으면 수 초 걸릴 수 있음) 버튼을 잠그기 위한 상태
+    const [downloading, setDownloading] = useState(false);
+
     // 연구 허용 스터디 목록 조회
     useEffect(() => {
         dicomApi.getResearchStudies()
@@ -102,23 +105,55 @@ export default function ResearchDataPage() {
         setChecked(next);
     };
 
-    // 체크된 study/series 각각에 대해 <a> 태그를 만들어 클릭 -> 브라우저 다운로드 트리거
-    const startDownload = () => {
-        let delay = 0;
+    // 체크된 study/series를 zip 하나로 묶어서 한 번만 다운로드함
+    // 백엔드의 /api/dicom/download/batch가 선택된 항목 전체를 zip 하나로 합쳐 다운로드 자체를 1번만 트리거하도록 바꿈
+    // 부모 스터디가 체크돼 있는 시리즈는 어차피 study zip에 포함되므로 중복 방지를 위해 제외함
+    const startDownload = async () => {
+        const checkedStudyKeys = new Set(
+            Array.from(checked)
+                .filter((item) => item.startsWith("study:"))
+                .map((item) => Number(item.split(":")[1]))
+        );
+
+        // series-key -> 그 시리즈가 속한 study-key 역방향 조회 맵
+        const seriesToStudy = new Map<number, number>();
+        Object.entries(seriesByStudy).forEach(([studyKey, seriesList]) => {
+            seriesList.forEach((s) => seriesToStudy.set(s["series-key"], Number(studyKey)));
+        });
+
+        const studyKeys: number[] = [];
+        const seriesKeys: number[] = [];
+
         checked.forEach((item) => {
             const [type, idStr] = item.split(":");
-            const url =
-                type === "study"
-                    ? `/api/dicom/studies/download?study-key=${idStr}`
-                    : `/api/dicom/series/download?series-key=${idStr}`;
+            const id = Number(idStr);
 
-            setTimeout(() => {
-                const a = document.createElement("a");
-                a.href = url;
-                a.click();
-            }, delay);
-            delay += 150; // 여러 개를 동시에 클릭하면 브라우저가 막을 수 있어 조금 딜레이를 준다.
+            if (type === "study") {
+                studyKeys.push(id);
+                return;
+            }
+            // 부모 스터디가 이미 포함 대상이면 건너뛴다 (studies.zip에 이미 들어있음)
+            if (!checkedStudyKeys.has(seriesToStudy.get(id) ?? -1)) {
+                seriesKeys.push(id);
+            }
         });
+
+        if (studyKeys.length === 0 && seriesKeys.length === 0) return;
+
+        setDownloading(true);
+        try {
+            const blob = await dicomApi.downloadBatch(studyKeys, seriesKeys);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "download.zip";
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert(e instanceof Error ? e.message : "다운로드 중 문제가 발생했습니다.");
+        } finally {
+            setDownloading(false);
+        }
     };
 
     // 날짜 필터링 로직 검사일자 기준, 대상은 실제 조회된 studies
@@ -244,11 +279,11 @@ export default function ResearchDataPage() {
                     <div className="text-xs text-ink-soft mb-4">선택된 항목: {checked.size}개</div>
 
                     <button
-                        onClick={startDownload}
-                        disabled={checked.size === 0}
+                        onClick={() => { void startDownload(); }}
+                        disabled={checked.size === 0 || downloading}
                         className="w-full btn btn-big bg-mint text-slate font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <Download size={20} /> 다운로드 시작
+                        <Download size={20} /> {downloading ? "압축하는 중..." : "다운로드 시작"}
                     </button>
                 </div>
             </div>

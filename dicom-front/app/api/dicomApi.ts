@@ -155,7 +155,22 @@ const dicomApi = {
 
       xhr.send(formData);
     });
-  }
+  },
+
+  // 연구 자료 다운로드 페이지: 체크된 study/series 여러 개를 zip 하나로 묶어 받는다.
+  // body가 있는 POST에 응답도 바이너리(zip)라서 텍스트 응답을 전제하는 apiFetch를 못 쓰고 fetch를 직접 써서 blob으로 받음
+  downloadBatch: async (studyKeys: number[], seriesKeys: number[]): Promise<Blob> => {
+    const response = await fetch(BASE_URL + "/api/dicom/download/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ "study-keys": studyKeys, "series-keys": seriesKeys }),
+    });
+    if (!response.ok) {
+      throw new Error(`다운로드 실패 (status: ${response.status})`);
+    }
+    return response.blob();
+  },
 }
 
 export interface HiddenPatientList {
