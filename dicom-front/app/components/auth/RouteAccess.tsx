@@ -1,8 +1,8 @@
 "use client";
 
-import { type ReactNode, useEffect, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
-import { getStoredAccountType, type AccountType } from "@/app/api/ApiFetch";
+import {type ReactNode, useEffect, useSyncExternalStore} from "react";
+import {useRouter} from "next/navigation";
+import {type AccountType, getStoredAccountType} from "@/app/api/ApiFetch";
 
 const HOME_BY_ACCOUNT_TYPE = {
   MEDICAL: "/workspace",

@@ -11,7 +11,7 @@
 // 연구 목적 활용 허용처럼 "되돌릴 수 없는 동작" 앞에 확인을 한 번 더 받고 싶을 때뿐 아니라,
 // 다른 위험한 동작(삭제, 일괄 처리 등)에도 그대로 재사용할 수 있다.
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {createContext, useCallback, useContext, useEffect, useRef, useState} from "react";
 
 /**
  * 확인 모달의 옵션입니다.

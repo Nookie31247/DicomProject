@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import ChangePw from "@/app/mypage/ChangePw";
 import Withdraw from "@/app/mypage/Withdraw";
 import BackButton from "@/app/mypage/BackButton";
-import { getUserInfo } from "@/app/api/authApi";
-import { getStoredAccountType, type AccountType } from "@/app/api/ApiFetch";
+import {getUserInfo} from "@/app/api/authApi";
+import {type AccountType, getStoredAccountType} from "@/app/api/ApiFetch";
 
 type UserInfo = {
   userId: string;

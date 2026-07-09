@@ -1,4 +1,4 @@
-import { medicalApiFetch, researchApiFetch } from "./ApiFetch";
+import {medicalApiFetch, researchApiFetch} from "./ApiFetch";
 
 /**
  * DICOM 관련 작업을 위한 API 클라이언트입니다.

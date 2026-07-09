@@ -1,6 +1,5 @@
 package com.allegro.dicomback.repository;
 
-import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Study;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

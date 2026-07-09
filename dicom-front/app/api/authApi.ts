@@ -1,8 +1,4 @@
-import {
-  AccountType,
-  ApiFetch,
-  getStoredAccountType,
-} from "./ApiFetch";
+import {AccountType, ApiFetch, getStoredAccountType,} from "./ApiFetch";
 
 const USER_API_BASE = {
   MEDICAL: "/api/medical/users",

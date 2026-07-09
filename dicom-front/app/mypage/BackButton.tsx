@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import {useRouter} from "next/navigation";
 
 // 그냥 <Link href="/workspace">로 이동하면 workspace가 URL 쿼리로 들고 있던 선택
 // 환자/날짜 필터가 초기화된 채로 이동하게 된다. router.back()은 브라우저 뒤로가기와

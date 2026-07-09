@@ -1,7 +1,9 @@
 package com.allegro.dicomback.controller;
 
 import com.allegro.dicomback.dto.UserRequestDto.*;
-import com.allegro.dicomback.dto.UserResponseDto.*;
+import com.allegro.dicomback.dto.UserResponseDto.CheckIdRes;
+import com.allegro.dicomback.dto.UserResponseDto.LoginRes;
+import com.allegro.dicomback.dto.UserResponseDto.UserInfoRes;
 import com.allegro.dicomback.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

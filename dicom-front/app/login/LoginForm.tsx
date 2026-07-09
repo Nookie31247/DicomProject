@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { login } from "@/app/api/authApi";
-import type { AccountType } from "@/app/api/ApiFetch";
+import {useRef, useState} from "react";
+import {Eye, EyeOff} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {login} from "@/app/api/authApi";
+import type {AccountType} from "@/app/api/ApiFetch";
 
 /**
  * 사용자 인증을 처리하는 로그인 폼 컴포넌트입니다.

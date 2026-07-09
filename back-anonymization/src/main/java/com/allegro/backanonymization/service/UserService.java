@@ -1,15 +1,14 @@
 package com.allegro.backanonymization.service;
 
 import com.allegro.backanonymization.config.JwtTokenProvider;
-import com.allegro.backanonymization.dto.UserRequestDto.*;
+import com.allegro.backanonymization.dto.UserRequestDto.ChangePasswordRequest;
+import com.allegro.backanonymization.dto.UserRequestDto.DeleteUserRequest;
+import com.allegro.backanonymization.dto.UserRequestDto.LoginRequest;
+import com.allegro.backanonymization.dto.UserRequestDto.SignupRequest;
 import com.allegro.backanonymization.dto.UserResponseDto;
 import com.allegro.backanonymization.entity.User;
 import com.allegro.backanonymization.exception.BaseException;
 import com.allegro.backanonymization.exception.ErrorCode;
-import com.allegro.backanonymization.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import com.allegro.backanonymization.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;

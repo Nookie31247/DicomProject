@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { checkId, signup } from "@/app/api/authApi";
-import { useToast } from "@/app/context/ToastContext";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from 'lucide-react';
-import type { AccountType } from "@/app/api/ApiFetch";
+import {useRef, useState} from "react";
+import {checkId, signup} from "@/app/api/authApi";
+import {useToast} from "@/app/context/ToastContext";
+import {useRouter} from "next/navigation";
+import {Eye, EyeOff} from 'lucide-react';
+import type {AccountType} from "@/app/api/ApiFetch";
 
 /**
  * 새로운 사용자 등록을 처리하는 회원가입 폼 컴포넌트입니다.

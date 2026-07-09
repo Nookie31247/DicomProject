@@ -1,6 +1,7 @@
 package com.allegro.backanonymization.config;
 
-import com.allegro.backanonymization.exception.*;
+import com.allegro.backanonymization.exception.BaseException;
+import com.allegro.backanonymization.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;

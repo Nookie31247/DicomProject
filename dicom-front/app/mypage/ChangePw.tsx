@@ -1,6 +1,6 @@
 "use client"
 
-import {useState, type SubmitEvent} from "react";
+import {type SubmitEvent, useState} from "react";
 import {changePassword} from "@/app/api/authApi";
 
 /**

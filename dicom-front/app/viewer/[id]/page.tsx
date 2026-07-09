@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
-import { RoleGuard } from "@/app/components/auth/RouteAccess";
-import { medicalApiFetch } from "../../api/ApiFetch";
+import {RoleGuard} from "@/app/components/auth/RouteAccess";
+import {medicalApiFetch} from "../../api/ApiFetch";
 
 type StudyDto = {
     "study-key": number;

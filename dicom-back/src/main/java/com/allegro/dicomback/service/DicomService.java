@@ -1,5 +1,9 @@
 package com.allegro.dicomback.service;
 
+import com.allegro.dicomback.dto.DicomRequestDto.*;
+import com.allegro.dicomback.dto.DicomResponseDto.PatientDto;
+import com.allegro.dicomback.dto.DicomResponseDto.SeriesDto;
+import com.allegro.dicomback.dto.DicomResponseDto.StudyDto;
 import com.allegro.dicomback.entity.Patient;
 import com.allegro.dicomback.entity.Series;
 import com.allegro.dicomback.entity.Study;
@@ -10,11 +14,12 @@ import com.allegro.dicomback.repository.PatientRepository;
 import com.allegro.dicomback.repository.SeriesRepository;
 import com.allegro.dicomback.repository.StudyRepository;
 import com.allegro.dicomback.repository.UserRepository;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.io.DicomInputStream;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,9 +32,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import com.allegro.dicomback.dto.DicomResponseDto.*;
-import com.allegro.dicomback.dto.DicomRequestDto.*;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -39,7 +41,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

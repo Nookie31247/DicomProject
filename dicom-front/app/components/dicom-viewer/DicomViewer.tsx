@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import initCornerstone from "@/app/lib/cornerstoneInit";
-import { dicomTagDictionary } from "./dicom-dictionary";
-import {getTextDecoder, getElementDisplayValue} from "./dicom-charset"
-import { medicalApiFetch } from "../../api/ApiFetch";
+import {dicomTagDictionary} from "./dicom-dictionary";
+import {getElementDisplayValue, getTextDecoder} from "./dicom-charset"
+import {medicalApiFetch} from "../../api/ApiFetch";
 
 interface DicomViewerProps {
   dicomUrls: string[];

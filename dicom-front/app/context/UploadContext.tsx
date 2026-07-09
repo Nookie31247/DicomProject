@@ -9,9 +9,9 @@
 //   없고(불가피), 로그아웃은 명시적으로 cancelUpload()를 호출해서 취소한다.
 // - 한 번에 하나의 업로드만 허용한다(동시에 여러 개 올리는 시나리오는 지원하지 않음).
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import {createContext, useCallback, useContext, useMemo, useRef, useState} from "react";
 import dicomApi from "@/app/api/dicomApi";
-import { useToast } from "@/app/context/ToastContext";
+import {useToast} from "@/app/context/ToastContext";
 
 /**
  * DICOM 업로드 작업의 결과입니다.

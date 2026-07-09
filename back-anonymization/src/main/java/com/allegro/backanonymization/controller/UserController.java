@@ -1,7 +1,9 @@
 package com.allegro.backanonymization.controller;
 
 import com.allegro.backanonymization.dto.UserRequestDto.*;
-import com.allegro.backanonymization.dto.UserResponseDto.*;
+import com.allegro.backanonymization.dto.UserResponseDto.CheckIdRes;
+import com.allegro.backanonymization.dto.UserResponseDto.LoginRes;
+import com.allegro.backanonymization.dto.UserResponseDto.UserInfoRes;
 import com.allegro.backanonymization.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

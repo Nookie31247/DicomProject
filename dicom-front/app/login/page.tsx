@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type {Metadata} from "next";
 import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 import LoginForm from "./LoginForm";
