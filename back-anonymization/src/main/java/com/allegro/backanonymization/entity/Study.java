@@ -38,6 +38,10 @@ public class Study {
     @Column(name = "patient_sex")
     private String patientSex;
 
+    // 익명화 쪽에서 day shift처리하여 실제 검사 날짜를 가리는 가짜 검사일
+    @Column(name = "study_date")
+    private LocalDate studyDate;
+
     @Column(name = "description")
     private String description;
 

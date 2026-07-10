@@ -7,6 +7,8 @@ import com.allegro.dicomback.dto.DicomResponseDto.PatientDto;
 import com.allegro.dicomback.dto.DicomResponseDto.SeriesDto;
 import com.allegro.dicomback.dto.DicomResponseDto.StudyDto;
 import com.allegro.dicomback.dto.DicomResponseDto.UploadResultDto;
+import com.allegro.dicomback.dto.DicomResponseDto.FailedFileDto;
+import com.allegro.dicomback.exception.BaseException;
 import com.allegro.dicomback.log.AuditLogged;
 import com.allegro.dicomback.service.AiService;
 import com.allegro.dicomback.service.DicomService;
@@ -268,17 +270,19 @@ public class DicomController {
             @RequestParam("patientKey") Long patientKey,
             @RequestParam("files") List<MultipartFile> files) {
 
-        List<String> succeeded = new ArrayList<>();   // 성공한 파일명
-        List<String> failed = new ArrayList<>();      // 실패한 파일명
+        List<String> succeeded = new ArrayList<>();        // 성공한 파일명
+        List<FailedFileDto> failed = new ArrayList<>();     // [변경] 실패한 파일명 + 사유
 
         for (MultipartFile file : files) {
             try {
                 dicomService.processDicomFile(patientKey, file);
                 succeeded.add(file.getOriginalFilename());
+            } catch (BaseException e) {
+                log.warn("파일 처리 실패(이미 등록된 dicom): {} - {}", file.getOriginalFilename(), e.getErrorCode().getMessage());
+                failed.add(new FailedFileDto(file.getOriginalFilename(), e.getErrorCode().getMessage()));
             } catch (Exception e) {
-                // 여기서 return 하지 않고 로그만 남긴 뒤 다음 파일로 계속 진행한다
                 log.error("파일 처리 실패: {}", file.getOriginalFilename(), e);
-                failed.add(file.getOriginalFilename());
+                failed.add(new FailedFileDto(file.getOriginalFilename(), "파일 처리 중 오류가 발생했습니다."));
             }
         }
         // 몇 개 성공/실패했는지 프론트에서 바로 보여줄 수 있게 요약해서 반환

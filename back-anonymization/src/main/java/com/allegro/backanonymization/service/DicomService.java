@@ -81,11 +81,14 @@ public class DicomService {
                     SeriesRepository.SeriesAndImagesCount count = countMap.get(study.getKey());
                     Long seriesNum = count == null ? 0L : count.getSeriesNum();
                     Long imagesNum = count == null ? 0L : count.getImagesNum();
+                    LocalDateTime displayDateTime = study.getStudyDate() != null
+                            ? study.getStudyDate().atStartOfDay()
+                            : study.getCreatedAt();
 
                     return new StudyDto(
                             study.getKey(),
                             study.getDescription(),
-                            study.getCreatedAt(),
+                            displayDateTime,
                             seriesNum,
                             imagesNum,
                             true,

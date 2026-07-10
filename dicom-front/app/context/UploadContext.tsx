@@ -70,9 +70,23 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
       signal: controller.signal,
       onProgress: (ratio) => setUploadProgress(ratio),
     })
-        .then(() => {
-          showToast("파일 업로드 및 태그 추출 완료!");
-          setUploadResult({ patientKey, success: true, at: Date.now() });
+        .then((result) => {
+          const failedFiles = result["failed-files"] ?? [];
+          const succeededCount = result["succeeded-files"]?.length ?? 0;
+
+          if (failedFiles.length === 0) {
+            showToast("파일 업로드 및 태그 추출 완료!");
+            setUploadResult({ patientKey, success: true, at: Date.now() });
+            return;
+          }
+          const reasonText = Array.from(new Set(failedFiles.map((f) => f.message))).join(" / ");
+
+          showToast(
+              succeededCount > 0
+                  ? `${succeededCount}개 업로드 완료, ${failedFiles.length}개 실패 - ${reasonText}`
+                  : `업로드 실패 - ${reasonText}`
+          );
+          setUploadResult({ patientKey, success: succeededCount > 0, at: Date.now() });
         })
         .catch((error: unknown) => {
           // 로그아웃 등으로 명시적으로 취소한 경우엔 실패 토스트를 띄우지 않는다.

@@ -161,4 +161,20 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             where s.key in :studyKeys
     """)
     List<String> findOrthancUidFromKeys(@Param("studyKeys") List<Long> studyKeys);
+
+    /**
+     * 연구 허용 처리(익명화 요청) 시, Study의 Orthanc ID와 함께 소속 환자(patientKey)까지
+     * 한 번에 가져옵니다. 환자별 날짜 시프트 오프셋을 계산하려면 patientKey가 필요해서 추가했다.
+     * join fetch로 Patient를 같이 가져와서 N+1 쿼리(스터디마다 따로 환자 조회)를 피한다.
+     *
+     * @param studyKeys 검사(study) 키 목록
+     * @return patientKey까지 함께 로딩된 {@link Study} 목록
+     */
+    @Query("""
+            select s
+            from Study s
+            join fetch s.patientKey p
+            where s.key in :studyKeys
+    """)
+    List<Study> findWithPatientByKeys(@Param("studyKeys") List<Long> studyKeys);
 }

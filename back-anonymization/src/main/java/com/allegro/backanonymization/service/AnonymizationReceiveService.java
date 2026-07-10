@@ -120,6 +120,8 @@ public class AnonymizationReceiveService {
                 .patientBirth(parseDicomDate(patientTags.get("PatientBirthDate")))
                 .patientSex(patientTags.get("PatientSex"))
                 .description(studyTags.get("StudyDescription"))
+                // StudyDate 태그를 읽어서 저장한다. 실제 검사일자 추적 방지 위해서 추가
+                .studyDate(parseDicomDate(studyTags.get("StudyDate")))
                 .build();
 
         Study savedStudy = studyRepository.save(study);

@@ -33,9 +33,104 @@ type DetectRawResponse = {
   unsupportedReason: string | null;
 };
 
+// DICOM Overlay Plane(그룹 6000~601E, 짝수 그룹) 1개를 화면에 그리기 위해 미리 가공해둔 형태.
+// 원본 촬영 장비가 픽셀 데이터와 별개로 저장해두는 1비트 흑백 그래픽(주석/측정선 등)이며,
+// cornerstone-core는 이 태그들을 자동으로 그려주지 않아서 직접 파싱해서 캔버스에 그려야 한다.
+type OverlayPlane = {
+  rows: number;
+  cols: number;
+  originRow0: number; // Overlay Origin을 0-based로 변환한 값 (이미지 좌표계 기준 시작 행)
+  originCol0: number; // 위와 동일, 시작 열
+  // 원본 해상도(rows x cols) 그대로 미리 렌더링해둔 오프스크린 비트맵. 매 프레임(줌/팬)마다
+  // 비트를 다시 해석하지 않고, 이 캔버스를 목적지 크기에 맞게 drawImage로 늘여서 그리기만 하면 된다.
+  canvas: HTMLCanvasElement;
+};
+
+// [신규] dicom-parser의 DataSet(ds)에서 Overlay Plane(그룹 6000, 6002, ... 601E - 짝수만 존재,
+// 최대 16개)을 전부 찾아서 오프스크린 캔버스로 미리 렌더링해둔다. 컴포넌트 상태에 의존하지 않는
+// 순수 함수라 컴포넌트 바깥(모듈 레벨)에 둔다 - getElementDisplayValue 같은 다른 파싱 유틸과 동일한 위치.
+//
+// DICOM Overlay Plane 구조(태그 그룹 앞자리는 60xx로 동일, 뒷자리 4자리로 의미가 정해짐):
+//   (60xx,0010) Rows, (60xx,0011) Columns - 오버레이 비트맵의 크기
+//   (60xx,0050) Overlay Origin - 이 오버레이가 이미지의 어느 위치(행,열)에서 시작하는지 (1-based)
+//   (60xx,0100) Bits Allocated, (60xx,0102) Bit Position - 대부분 1비트/픽셀(값 1, 0)이라 그 외 형식은 건너뛴다
+//   (60xx,3000) Overlay Data - 실제 비트맵. 픽셀 1개가 1비트이고, 바이트 안에서 최하위비트(LSB)가
+//                              그 바이트가 담당하는 8픽셀 중 첫 번째(가장 앞) 픽셀에 해당한다(DICOM PS3.5).
+function extractOverlayPlanes(ds: any): OverlayPlane[] {
+  const planes: OverlayPlane[] = [];
+
+  for (let group = 0x6000; group <= 0x601e; group += 2) {
+    const hex = group.toString(16).padStart(4, "0");
+    const dataTag = `x${hex}3000`;
+
+    // (60xx,3000)이 없으면 이 번호의 오버레이는 애초에 파일에 없는 것 - 다음 그룹으로 넘어간다.
+    const dataElement = ds.elements?.[dataTag];
+    if (!dataElement) continue;
+
+    const rows = ds.uint16(`x${hex}0010`);
+    const cols = ds.uint16(`x${hex}0011`);
+    if (!rows || !cols) continue; // 크기 정보가 없으면 그릴 수 없으니 건너뜀
+
+    // 대부분의 오버레이는 1비트/픽셀(Bits Allocated=1, Bit Position=0)이다.
+    // 그 외 형식(드묾)은 이번 구현 범위 밖이라 방어적으로 건너뛴다.
+    const bitsAllocated = ds.uint16(`x${hex}0100`) ?? 1;
+    const bitPosition = ds.uint16(`x${hex}0102`) ?? 0;
+    if (bitsAllocated !== 1 || bitPosition !== 0) continue;
+
+    // Overlay Origin(60xx,0050)은 (row, col) 두 값을 가진 1-based 좌표다. 값이 없으면 기본값 (1,1).
+    const originRow1Based = ds.int16(`x${hex}0050`, 0) ?? 1;
+    const originCol1Based = ds.int16(`x${hex}0050`, 1) ?? 1;
+
+    // 오버레이 원본 바이트(비트 패킹된 상태)를 파일 전체 바이트 배열에서 오프셋/길이로 잘라낸다.
+    // dicom-parser는 이렇게 큰 바이너리 값(OW/OB/UN 등)을 위한 전용 getter가 없어서 이 방식이 표준적이다.
+    const overlayBytes: Uint8Array = ds.byteArray.slice(
+      dataElement.dataOffset,
+      dataElement.dataOffset + dataElement.length
+    );
+
+    // 오프스크린 캔버스에 원본 해상도(rows x cols) 그대로 렌더링해둔다.
+    // 비트가 1이면 잘 보이는 녹색으로 불투명하게, 0이면 완전 투명하게 칠해서 이미지 위에 겹쳐도
+    // 아래 CT/X-ray 픽셀이 그대로 비쳐 보이도록 한다.
+    const offCanvas = document.createElement("canvas");
+    offCanvas.width = cols;
+    offCanvas.height = rows;
+    const offCtx = offCanvas.getContext("2d");
+    if (!offCtx) continue;
+
+    const imageData = offCtx.createImageData(cols, rows);
+    const totalPixels = rows * cols;
+    for (let i = 0; i < totalPixels; i++) {
+      const byteIndex = i >> 3; // i / 8 (이 픽셀이 몇 번째 바이트에 들어있는지)
+      const bitIndex = i & 7;   // i % 8 (그 바이트 안에서 몇 번째 비트인지, 0=최하위비트)
+      const bit = (overlayBytes[byteIndex] >> bitIndex) & 1;
+      const pixelOffset = i * 4; // RGBA 4바이트씩
+      if (bit) {
+        imageData.data[pixelOffset] = 0;       // R
+        imageData.data[pixelOffset + 1] = 255; // G
+        imageData.data[pixelOffset + 2] = 0;   // B
+        imageData.data[pixelOffset + 3] = 255; // A - 완전 불투명
+      } else {
+        imageData.data[pixelOffset + 3] = 0;   // A - 완전 투명(꺼진 픽셀은 안 그림)
+      }
+    }
+    offCtx.putImageData(imageData, 0, 0);
+
+    planes.push({
+      rows,
+      cols,
+      originRow0: originRow1Based - 1,
+      originCol0: originCol1Based - 1,
+      canvas: offCanvas,
+    });
+  }
+
+  return planes;
+}
+
 export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const cornerstoneRef = useRef<any>(null); // pixelToCanvas 계산에 동기적으로 재사용하기 위한 참조
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null); // [신규] Overlay Plane을 그릴 실제 화면 캔버스
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -43,6 +138,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [metadata, setMetadata] = useState<Array<{tag: string; name: string; value: string}>>([]);
+  const [overlayPlanes, setOverlayPlanes] = useState<OverlayPlane[]>([]); // [신규] 현재 이미지의 Overlay Plane들
 
   // AI 판독 관련 상태
   const [aiBoxes, setAiBoxes] = useState<AiBox[]>([]);
@@ -144,6 +240,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
         setAiError(null);
         setAiCandidates(null);
         setAiInfo(null);
+        setOverlayPlanes([]); // [신규] 이전 이미지의 Overlay Plane도 마찬가지로 초기화
 
         const cornerstone = (await import("cornerstone-core")).default;
         const element = elementRef.current;
@@ -189,6 +286,11 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
             }
           }
           setMetadata(parsedMeta);
+
+          // [신규] Overlay Plane(그룹 6000~601E) 추출. 장비가 픽셀 데이터와 별도로 저장해둔
+          // 1비트 그래픽(주석/측정선 등)인데, cornerstone은 이걸 자동으로 그려주지 않으므로
+          // 직접 파싱해서 오프스크린 캔버스에 미리 렌더링해둔다(실제 화면 배치는 아래 useEffect가 담당).
+          setOverlayPlanes(extractOverlayPlanes(ds));
         }
 
         // 백그라운드 지연 로딩 (Prefetching) - 다음 10개
@@ -393,6 +495,52 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
     }
   };
 
+  // [신규] Overlay Plane을 실제 화면 캔버스(overlayCanvasRef)에 그린다.
+  // AI 박스와 같은 이유로 renderTick(줌/팬/윈도우레벨 변경)이 바뀔 때마다 다시 그려야
+  // 오버레이가 이미지 위에 계속 정확한 위치로 붙어있는다. 이미지가 바뀌어 overlayPlanes가
+  // 새로 채워질 때도 당연히 다시 그려야 하므로 두 값 모두 의존성 배열에 넣는다.
+  useEffect(() => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // 캔버스 해상도를 실제 화면에 표시된 크기(CSS 픽셀)에 맞춘다. 안 맞추면 흐릿하게 늘어나거나
+    // 잘려 보인다. 매번 새로 만들 필요는 없고 값이 바뀌었을 때만 갱신한다.
+    const displayWidth = canvas.clientWidth;
+    const displayHeight = canvas.clientHeight;
+    if (canvas.width !== displayWidth) canvas.width = displayWidth;
+    if (canvas.height !== displayHeight) canvas.height = displayHeight;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const element = elementRef.current;
+    const cornerstone = cornerstoneRef.current;
+    if (!element || !cornerstone || overlayPlanes.length === 0) return;
+
+    for (const plane of overlayPlanes) {
+      try {
+        // 오버레이 비트맵의 좌상단/우하단이 "원본 이미지 픽셀 좌표계"에서 어디에 해당하는지 구한 뒤,
+        // 그 두 점을 지금 화면(줌/팬 반영된 캔버스 좌표계)으로 변환해서 그 사각형 안에 그려 넣는다.
+        const topLeft = cornerstone.pixelToCanvas(element, { x: plane.originCol0, y: plane.originRow0 });
+        const bottomRight = cornerstone.pixelToCanvas(element, {
+          x: plane.originCol0 + plane.cols,
+          y: plane.originRow0 + plane.rows,
+        });
+        ctx.drawImage(
+          plane.canvas,
+          topLeft.x,
+          topLeft.y,
+          bottomRight.x - topLeft.x,
+          bottomRight.y - topLeft.y
+        );
+      } catch {
+        // 아직 이미지가 표시되기 전이면 pixelToCanvas가 실패할 수 있음 - 그냥 건너뜀
+      }
+    }
+  }, [overlayPlanes, renderTick]);
+
   return (
     <div className="flex w-full h-full gap-5">
       {/* 뷰어 캔버스 영역 */}
@@ -423,6 +571,14 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
             if (e.button === 1) e.preventDefault();
           }}
         ></div>
+
+        {/* [신규] DICOM Overlay Plane 렌더링용 캔버스. SVG 대신 <canvas>를 쓰는 이유:
+            오버레이는 512x512 같은 픽셀 단위 비트맵이라, 픽셀마다 SVG <rect>를 그리면
+            (최대 26만 개 이상) 브라우저가 감당을 못 한다. 실제 그리기는 위쪽 useEffect가 담당. */}
+        <canvas
+          ref={overlayCanvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none z-10"
+        />
 
         {/* AI 판독 박스 오버레이 - 이미지 위에 겹쳐서 그리되, 마우스 조작은 그대로 캔버스로 통과시킴 */}
         {isLoaded && aiBoxes.length > 0 && (

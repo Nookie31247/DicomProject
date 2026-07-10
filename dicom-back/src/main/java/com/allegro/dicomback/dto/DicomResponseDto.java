@@ -128,15 +128,27 @@ public class DicomResponseDto {
     ) {}
 
     /**
+     * 업로드 실패 파일 1개에 대한 상세 정보입니다.
+     * (예: 이미 다른 환자에게 등록된 검사입니다).
+     *
+     * @param fileName 실패한 파일 이름
+     * @param message 실패 사유(사용자에게 그대로 보여줘도 되는 문구)
+     */
+    public record FailedFileDto(
+            @JsonProperty("file-name") String fileName,
+            @JsonProperty("message") String message
+    ) {}
+
+    /**
      * 다중 파일 업로드 결과를 요약하기 위한 DTO입니다.
-     * 프론트엔드에 성공한 파일과 실패한 파일을 알리는 데 사용됩니다.
+     * 프론트엔드에 성공한 파일과 실패한 파일(사유 포함)을 알리는 데 사용됩니다.
      *
      * @param succeededFiles 성공적으로 업로드된 파일 이름 목록
-     * @param failedFiles 업로드에 실패한 파일 이름 목록
+     * @param failedFiles 업로드에 실패한 파일과 그 사유 목록
      */
     public record UploadResultDto(
             @JsonProperty("succeeded-files") List<String> succeededFiles,
-            @JsonProperty("failed-files") List<String> failedFiles
+            @JsonProperty("failed-files") List<FailedFileDto> failedFiles
     ) {}
 
     /**

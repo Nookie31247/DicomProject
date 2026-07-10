@@ -231,7 +231,7 @@ function ResearchDataPageInner() {
                                         <button onClick={() => toggleExpand(studyKey)} className="flex items-center gap-1 text-xs font-semibold text-ink-soft">
                                             {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />} 스터디
                                         </button>
-                                        <span className="text-sm">{study.description ?? "설명 없음"}</span>
+                                        <span className="text-sm truncate min-w-0" title={study.description ?? "설명 없음"}>{study.description ?? "설명 없음"}</span>
                                         <span className="text-xs text-ink-soft">{study.datetime?.slice(0, 10)}</span>
                                         <span className="text-xs text-mint-deep font-semibold">연구 허용</span>
                                     </div>

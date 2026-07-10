@@ -103,6 +103,19 @@ export default function ViewerPage() {
 }
 
 /**
+ * 길이 자르기
+ * @param text 원본 설명 텍스트 (없을 수 있음)
+ * @param maxLength 이 길이를 넘으면 자름 (기본 10자)
+ * @returns 잘린 텍스트, 원본이 없으면 "N/A"
+ */
+function truncateDescription(text: string | null | undefined, maxLength = 10): string {
+    if (!text) {
+        return "N/A";
+    }
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+/**
  * 뷰어 페이지의 내부 컴포넌트입니다.
  * DICOM 데이터를 가져오고 뷰어를 렌더링하는 것을 처리합니다.
  *
@@ -258,7 +271,7 @@ function ViewerPageInner() {
                                             }`}
                                         >
                                             <span className="w-16 font-mono text-[#14b876] font-bold">#{ser["series-num"] ?? "N/A"}</span>
-                                            <span className="w-16 truncate">{ser.description || "N/A"}</span>
+                                            <span className="w-16" title={ser.description || "N/A"}>{truncateDescription(ser.description)}</span>
                                             <span className="flex-1 text-center pl-2 truncate">{ser.bodypart || "N/A"}</span>
                                             {/*<span className="w-16 text-right">{ser["images-num"]}장</span>*/}
                                         </button>

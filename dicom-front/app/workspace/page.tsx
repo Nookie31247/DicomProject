@@ -545,7 +545,7 @@ function WorkspaceDashboardPageInner() {
                   <div className="flex flex-col flex-1 gap-2">
                     <input
                         type="text"
-                        placeholder="환자 이름 또는 ID 검색"
+                        placeholder="환자 이름으로 검색"
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-[#14b876]"
                         value={patientSearchKeyword}
                         onChange={(e) => setPatientSearchKeyword(e.target.value)}
