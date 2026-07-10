@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {Eye, EyeOff} from "lucide-react";
 import {useRouter} from "next/navigation";
 import {login} from "@/app/api/authApi";

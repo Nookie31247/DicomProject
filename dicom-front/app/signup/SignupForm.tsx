@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {checkId, signup} from "@/app/api/authApi";
 import {useToast} from "@/app/context/ToastContext";
 import {useRouter} from "next/navigation";

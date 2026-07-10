@@ -13,11 +13,6 @@ import { clearStoredAuth, getStoredAccountType } from "@/app/api/ApiFetch";
  *
  * @returns 내비게이션 사용자 인터페이스
  */
-export default function NavUser() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { cancelUpload } = useUpload();
-  const navLinkClass = "relative font-semibold no-underline text-lg text-ink after:absolute after:left-0 after:bottom-[-6px] after:h-[2px] after:w-0 after:bg-mint-deep after:transition-[width] after:duration-200 after:content-[''] hover:after:w-full";
 
   // 로그인 여부
 function useAuthState(pathname: string) {
@@ -89,9 +84,6 @@ export default function NavUser() {
       }
     } finally {
       clearStoredAuth();
-      setIsLogin(false);
-      setUsername("");
-      setUserType("");
       router.push("/");
     }
   };
