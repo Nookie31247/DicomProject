@@ -1,15 +1,12 @@
 import {medicalApiFetch, researchApiFetch} from "./ApiFetch";
 
-// [신규] 업로드 실패 파일 1개의 상세 정보 (백엔드 DicomResponseDto.FailedFileDto와 대응).
-// message는 서버가 사용자에게 그대로 보여줘도 되도록 만든 한국어 문구다(예: "이미 다른 환자에게 등록된 검사입니다.").
+// 업로드 실패 파일 1개의 정보
 interface UploadFailedFileDto {
   "file-name": string;
   message: string;
 }
 
-// [신규] 다중 파일 업로드 결과 요약 (백엔드 UploadResultDto와 대응).
-// 기존엔 이 응답을 아예 안 들여다보고 무조건 "완료!" 토스트만 띄웠는데, 이제 failed-files를 보고
-// 실패 사유를 토스트로 안내하기 위해 타입을 명시한다.
+// 다중 파일 업로드 결과 요약
 export interface UploadResultDto {
   "succeeded-files": string[];
   "failed-files": UploadFailedFileDto[];
@@ -134,10 +131,6 @@ const dicomApi = {
       };
 
       xhr.onload = () => {
-        // 이 업로드 엔드포인트는 실제로는 항상 UploadResultDto를 담아 200으로 응답하지만(컨트롤러
-        // 코드 참고), 이 헬퍼는 다른 곳에서도 쓰일 수 있는 범용 함수라 204(본문 없음) 방어 코드가
-        // 남아있었다. 반환 타입을 Promise<UploadResultDto>로 강화하면서 null을 그대로 resolve하면
-        // 타입이 안 맞으므로, "성공/실패 파일이 없는" 빈 결과로 대체한다.
         if (xhr.status === 204) {
           resolve({ "succeeded-files": [], "failed-files": [] });
           return;

@@ -271,7 +271,7 @@ public class DicomController {
             @RequestParam("files") List<MultipartFile> files) {
 
         List<String> succeeded = new ArrayList<>();        // 성공한 파일명
-        List<FailedFileDto> failed = new ArrayList<>();     // [변경] 실패한 파일명 + 사유
+        List<FailedFileDto> failed = new ArrayList<>();     //실패한 파일명 + 사유
 
         for (MultipartFile file : files) {
             try {

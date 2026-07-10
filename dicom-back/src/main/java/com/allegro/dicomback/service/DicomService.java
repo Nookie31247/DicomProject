@@ -331,13 +331,8 @@ public class DicomService {
         if(!disallowedStudies.isEmpty())
             studyRepository.changeAllowResearch(doctorKey, disallowedStudies, false);
 
-        // [수정] 기존엔 orthancId만 뽑아서 넘겼는데, 이제 익명화 시 검사일(StudyDate)을 환자별로
-        // 일관되게 시프트하기 위해 patientKey도 같이 필요해서 findWithPatientByKeys로 바꿨다.
-        // (날짜 시프트 오프셋을 왜 patientKey로부터 계산하는지는 computeDateOffsetDays() 주석 참고)
         List<Study> allowedStudyEntities = studyRepository.findWithPatientByKeys(allowedStudies);
 
-        // orthancId가 아직 없는(동기화 안 된) Study는 건너뛴다 — 기존에도 orthancId만 넘기던 방식이라
-        // null인 study는 애초에 리스트에 넣지 않았던 것과 동일하게 처리.
         Map<String, Integer> orthancUidToDateOffsetDays = new HashMap<>();
         for (Study study : allowedStudyEntities) {
             if (study.getOrthancId() == null) {
@@ -351,7 +346,7 @@ public class DicomService {
     }
 
     /**
-     * 환자 키로부터 "환자마다 다르지만, 같은 환자는 항상 같은" 날짜 시프트 오프셋(일수)을 계산합니다.
+     * 환자 키로부터 환자마다 다르지만, 같은 환자는 항상 같은 날짜 시프트 오프셋(일수)을 계산합니다.
      * 그래서 절대 날짜는 환자별 오프셋만큼 day shift를 사용하여 일정 수치만큼 밀어내고, 간격은 그대로 보존하는 방식을 쓴다.
      *
      * @param patientKey 환자 키 (patients 테이블 PK)

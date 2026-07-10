@@ -34,28 +34,21 @@ type DetectRawResponse = {
 };
 
 // DICOM Overlay Plane(그룹 6000~601E, 짝수 그룹) 1개를 화면에 그리기 위해 미리 가공해둔 형태.
-// 원본 촬영 장비가 픽셀 데이터와 별개로 저장해두는 1비트 흑백 그래픽(주석/측정선 등)이며,
-// cornerstone-core는 이 태그들을 자동으로 그려주지 않아서 직접 파싱해서 캔버스에 그려야 한다.
 type OverlayPlane = {
   rows: number;
   cols: number;
-  originRow0: number; // Overlay Origin을 0-based로 변환한 값 (이미지 좌표계 기준 시작 행)
+  originRow0: number; // Overlay Origin을 0-based로 변환한 값
   originCol0: number; // 위와 동일, 시작 열
-  // 원본 해상도(rows x cols) 그대로 미리 렌더링해둔 오프스크린 비트맵. 매 프레임(줌/팬)마다
-  // 비트를 다시 해석하지 않고, 이 캔버스를 목적지 크기에 맞게 drawImage로 늘여서 그리기만 하면 된다.
   canvas: HTMLCanvasElement;
 };
 
-// [신규] dicom-parser의 DataSet(ds)에서 Overlay Plane(그룹 6000, 6002, ... 601E - 짝수만 존재,
-// 최대 16개)을 전부 찾아서 오프스크린 캔버스로 미리 렌더링해둔다. 컴포넌트 상태에 의존하지 않는
-// 순수 함수라 컴포넌트 바깥(모듈 레벨)에 둔다 - getElementDisplayValue 같은 다른 파싱 유틸과 동일한 위치.
+// dicom-parser의 DataSet(ds)에서 Overlay Plane(그룹 6000, 6002, ... 601E - 짝수만 존재,최대 16개)을 전부 찾아서 오프스크린 캔버스로 미리 렌더링해둔다.
 //
 // DICOM Overlay Plane 구조(태그 그룹 앞자리는 60xx로 동일, 뒷자리 4자리로 의미가 정해짐):
 //   (60xx,0010) Rows, (60xx,0011) Columns - 오버레이 비트맵의 크기
 //   (60xx,0050) Overlay Origin - 이 오버레이가 이미지의 어느 위치(행,열)에서 시작하는지 (1-based)
 //   (60xx,0100) Bits Allocated, (60xx,0102) Bit Position - 대부분 1비트/픽셀(값 1, 0)이라 그 외 형식은 건너뛴다
-//   (60xx,3000) Overlay Data - 실제 비트맵. 픽셀 1개가 1비트이고, 바이트 안에서 최하위비트(LSB)가
-//                              그 바이트가 담당하는 8픽셀 중 첫 번째(가장 앞) 픽셀에 해당한다(DICOM PS3.5).
+//   (60xx,3000) Overlay Data - 실제 비트맵. 픽셀 1개가 1비트이고, 바이트 안에서 최하위비트(LSB)가 그 바이트가 담당하는 8픽셀 중 첫 번째(가장 앞) 픽셀에 해당한다(DICOM PS3.5).
 function extractOverlayPlanes(ds: any): OverlayPlane[] {
   const planes: OverlayPlane[] = [];
 
@@ -240,7 +233,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
         setAiError(null);
         setAiCandidates(null);
         setAiInfo(null);
-        setOverlayPlanes([]); // [신규] 이전 이미지의 Overlay Plane도 마찬가지로 초기화
+        setOverlayPlanes([]);
 
         const cornerstone = (await import("cornerstone-core")).default;
         const element = elementRef.current;
@@ -287,7 +280,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
           }
           setMetadata(parsedMeta);
 
-          // [신규] Overlay Plane(그룹 6000~601E) 추출. 장비가 픽셀 데이터와 별도로 저장해둔
+          // Overlay Plane(그룹 6000~601E) 추출. 장비가 픽셀 데이터와 별도로 저장해둔
           // 1비트 그래픽(주석/측정선 등)인데, cornerstone은 이걸 자동으로 그려주지 않으므로
           // 직접 파싱해서 오프스크린 캔버스에 미리 렌더링해둔다(실제 화면 배치는 아래 useEffect가 담당).
           setOverlayPlanes(extractOverlayPlanes(ds));
@@ -495,7 +488,7 @@ export default function DicomViewer({ dicomUrls, children }: DicomViewerProps) {
     }
   };
 
-  // [신규] Overlay Plane을 실제 화면 캔버스(overlayCanvasRef)에 그린다.
+  // Overlay Plane을 실제 화면 캔버스(overlayCanvasRef)에 그린다.
   // AI 박스와 같은 이유로 renderTick(줌/팬/윈도우레벨 변경)이 바뀔 때마다 다시 그려야
   // 오버레이가 이미지 위에 계속 정확한 위치로 붙어있는다. 이미지가 바뀌어 overlayPlanes가
   // 새로 채워질 때도 당연히 다시 그려야 하므로 두 값 모두 의존성 배열에 넣는다.

@@ -63,13 +63,9 @@ public class AnonymizationService {
     /**
      * Orthanc UID를 통해 검사(study) 목록을 익명화합니다.
      *
-     * 기존엔 Orthanc에 아무 지시 없이(빈 바디) 익명화를 맡겨서, Orthanc 기본 프로파일이
-     * StudyDescription 같은 태그를 보수적으로 지워버리고 StudyDate도 그냥 기본값으로 대체해버렸다.
-     * 이제는 (1) StudyDescription은 유지하도록 명시하고, (2) StudyDate는 완전히 지우는 대신
-     * 환자별로 일관된 오프셋만큼 밀어서(day shift) 절대 날짜는 감추되 검사 간 간격은 보존한다.
-     *
-     * @param orthancUidToDateOffsetDays 익명화할 Orthanc Study ID -> 그 Study 환자의 날짜 오프셋(일수).
-     *                                   오프셋 계산은 DicomService.computeDateOffsetDays() 참고.
+     * @param orthancUidToDateOffsetDays
+     * 익명화할 Orthanc Study ID -> 그 Study 환자의 날짜 오프셋(일수).
+     * 오프셋 계산은 DicomService.computeDateOffsetDays().
      */
     public void anonymize(Map<String, Integer> orthancUidToDateOffsetDays) {
         if (orthancUidToDateOffsetDays == null || orthancUidToDateOffsetDays.isEmpty()) {
