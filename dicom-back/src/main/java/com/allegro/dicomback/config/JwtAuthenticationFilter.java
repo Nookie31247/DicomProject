@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * JWT를 사용하여 요청을 인증하는 필터입니다.
@@ -63,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String userId = jwtTokenProvider.getUserId(token);
-            var auth = new UsernamePasswordAuthenticationToken(userId, null);
+            var auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (BaseException e) {
             writeError(response, e.getErrorCode());

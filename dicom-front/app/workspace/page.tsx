@@ -1,6 +1,7 @@
 "use client";
 
 import {useState, useEffect, useRef, Suspense} from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import dicomApi from "../api/dicomApi";
 import AddPatientModal from "@/app/workspace/AddPatientModal";
@@ -267,12 +268,24 @@ function WorkspaceDashboardPageInner() {
     }
   };
 
+  // 연구 목적 활용 허용을 누르면 백엔드에서 익명화 파이프라인(익명화 -> 별도 Orthanc 전송 ->
+  // 익명화 서버 통지 -> 임시본 삭제)이 순차로 도는 동안 요청이 걸려있는다. 이 동안 "연구 활용"
+  // 칸이 계속 "아니오"로만 보이면 진행 상황을 알 수 없으니, 처리 중인 studyKey를 따로 들고
+  // 있다가 그 행에만 스피너를 보여준다.
+  const [pendingResearchAllowIds, setPendingResearchAllowIds] = useState<Set<number>>(new Set());
+
   const requestResearchAllowApi = async () => {
     const selectedIds = Array.from(checkedStudyIds);
 
     if (selectedIds.length === 0) {
       return;
     }
+
+    setPendingResearchAllowIds((prev) => {
+      const next = new Set(prev);
+      selectedIds.forEach((id) => next.add(id));
+      return next;
+    });
 
     try {
       await dicomApi.setStudyResearch(
@@ -292,12 +305,28 @@ function WorkspaceDashboardPageInner() {
     } catch (error) {
       console.error("연구 목적 활용 허용 설정 실패", error);
       showToast("연구 목적 활용 허용 설정에 실패했습니다.");
+    } finally {
+      setPendingResearchAllowIds((prev) => {
+        const next = new Set(prev);
+        selectedIds.forEach((id) => next.delete(id));
+        return next;
+      });
     }
   };
 
   // 연구 목적 활용 허용은 한번 누르면 데이터가 익명화되어 다운로드 가능해지고,
   // 이 익명화 자체는 되돌릴 수 없는 작업이라 실수로 누르지 않도록 확인창을 한 번 더 띄운다.
   const handleClickResearchAllow = async () => {
+    const selectedIds = Array.from(checkedStudyIds);
+    const alreadyAllowed = studies.some(
+        (s) => selectedIds.includes(s["study-key"]) && s["allow-research"],
+    );
+
+    if (alreadyAllowed) {
+      showToast("이미 연구 목적 활용이 허용된 검사가 포함되어 있습니다.");
+      return;
+    }
+
     const ok = await confirm({
       title: "연구 목적 데이터 활용 여부",
       message: "선택한 검사를 연구 목적으로 활용하도록 허용합니다.\n허용 시 데이터를 익명화 후 다운로드 할 수 있으며,\n이 작업은 되돌릴 수 없습니다.\n\n계속하시겠습니까?",
@@ -854,11 +883,15 @@ function WorkspaceDashboardPageInner() {
                                 <span className={colSeriesClass}>#{it["series-num"]}</span>
                                 <span className={colImagesClass}>{it["images-num"]}</span>
                                 <span
-                                    className={`text-center font-bold ${
+                                    className={`flex items-center justify-center font-bold ${
                                         it["allow-research"] ? "text-[#28a745]" : "text-[#dc3545]"
                                     }`}
                                 >
-                                    {it["allow-research"] ? "예" : "아니오"}
+                                    {pendingResearchAllowIds.has(it["study-key"]) ? (
+                                        <Loader2 size={14} className="animate-spin text-ink-soft" aria-label="익명화 처리 중" />
+                                    ) : (
+                                        it["allow-research"] ? "예" : "아니오"
+                                    )}
                                   </span>
                               </div>
                             </li>
