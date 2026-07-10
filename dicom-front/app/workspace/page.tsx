@@ -716,14 +716,14 @@ function WorkspaceDashboardPageInner() {
                   <div className="flex items-center gap-4">
                     {selectedPatient && (
                         <div className="flex gap-2">
-                          {/*다운로드 버튼(주소 이동)*/}
-                          <button
-                              type="button"
-                              onClick={() => router.push("/research")}
-                              className="px-2 py-1 text-xs cursor-pointer"
-                          >
-                            다운로드
-                          </button>
+                          {/*/!*다운로드 버튼(주소 이동)*!/*/}
+                          {/*<button*/}
+                          {/*    type="button"*/}
+                          {/*    onClick={() => router.push("/research")}*/}
+                          {/*    className="px-2 py-1 text-xs cursor-pointer"*/}
+                          {/*>*/}
+                          {/*  다운로드*/}
+                          {/*</button>*/}
                           <button
                               type="button"
                               onClick={clearCheckedStudies}

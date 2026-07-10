@@ -26,6 +26,8 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     /**
      * 주어진 검사(study) 키 목록에 대해 시리즈 및 이미지의 집계된 수를 검색합니다.
      *
+     * +PR는 표기되지 않게 배제했기엔 카운트가 되선 안된다.
+     *
      * @param studyKeys 집계할 검사(study) 키 목록
      * @return 집계된 데이터를 포함하는 {@link SeriesAndImagesCount} 프로젝션 목록
      */
@@ -37,6 +39,7 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
         coalesce(sum(s.totalImagesCount), 0) as imagesNum
     from Series s
     where s.studyKey.key in :studyKeys
+      and (s.modality is null or upper(s.modality) not in ('PR'))
     group by s.studyKey.key
     """)
     List<SeriesAndImagesCount> getSeriesAndImagesCount(@Param("studyKeys") List<Long> studyKeys);
