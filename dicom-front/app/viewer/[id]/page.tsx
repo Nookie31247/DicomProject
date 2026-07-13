@@ -253,9 +253,9 @@ function ViewerPageInner() {
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                         <div className="gap-2.5 shrink-0 tracking-[0.02em] bg-canvas border-b border-line max-[560px]:hidden flex items-center px-4 py-3 text-sm font-bold text-slate-500">
-                            <span className="w-16">시리즈</span>
-                            <span className="w-16">검사 설명</span>
-                            <span className="flex-1 text-center">부위</span>
+                            <span className="w-14">시리즈</span>
+                            <span className="flex-1 text-center">검사 설명</span>
+                            <span className="w-16 text-center">부위</span>
                             {/*<span className="w-16 text-right">영상 수</span>*/}
                         </div>
 
@@ -270,9 +270,9 @@ function ViewerPageInner() {
                                                 ser["series-key"] === selectedSeriesId ? "bg-[rgba(76,255,157,0.14)] border-mint-deep" : "border-transparent hover:bg-canvas"
                                             }`}
                                         >
-                                            <span className="w-16 font-mono text-[#14b876] font-bold">#{ser["series-num"] ?? "N/A"}</span>
-                                            <span className="w-16" title={ser.description || "N/A"}>{truncateDescription(ser.description)}</span>
-                                            <span className="flex-1 text-center pl-2 truncate">{ser.bodypart || "N/A"}</span>
+                                            <span className="w-14 font-mono text-[#14b876] font-bold">#{ser["series-num"] ?? "N/A"}</span>
+                                            <span className="flex-1 text-center truncate" title={ser.description || "N/A"}>{truncateDescription(ser.description, 18)}</span>
+                                            <span className="w-16 shrink-0 text-center truncate">{ser.bodypart || "N/A"}</span>
                                             {/*<span className="w-16 text-right">{ser["images-num"]}장</span>*/}
                                         </button>
                                     </li>
