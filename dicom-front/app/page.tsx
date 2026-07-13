@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 import HeroCta from "@/app/HeroCta";
+import PromoCarousel from "@/app/PromoCarousel";
 import { HomeRedirect } from "@/app/components/auth/RouteAccess";
 
 export const metadata: Metadata = {
@@ -68,26 +68,7 @@ export default function Home() {
       </section>
 
       {/* ───────────── Promo / Intro panel ───────────── */}
-      <section
-        className="relative mx-[clamp(24px,5vw,62px)] mt-12 mb-20 flex min-h-140 flex-1 items-center justify-center overflow-hidden rounded-3xl p-12 max-[560px]:min-h-90 max-[560px]:px-6 max-[560px]:py-8"
-        id="how-it-works"
-        style={{
-          background: "linear-gradient(160deg, #e2e5ea 0%, #d9d9d9 100%)",
-        }}
-      >
-        <div
-          className="absolute inset-0 opacity-50"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.6) 1.5px, transparent 1.5px)",
-            backgroundSize: "26px 26px",
-          }}
-        />
-        <p className="relative m-0 max-w-180 text-center text-4xl font-semibold text-ink-soft max-[560px]:text-2xl">
-          여기에 서비스 소개(홍보) 내용을 작성합니다
-        </p>
-      </section>
+      <PromoCarousel />
     </div>
   );
 }
