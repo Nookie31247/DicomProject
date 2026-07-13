@@ -9,8 +9,8 @@ from dicom_name_realizer.names import NameFactory
 
 
 class FakeDataset:
-    def __init__(self):
-        self.PatientID = "TEST0001"
+    def __init__(self, patient_id="TEST0001"):
+        self.PatientID = patient_id
         self.PatientName = "ANONYMOUS"
         self.StudyInstanceUID = "1.2.3"
 
@@ -23,17 +23,19 @@ class DicomProcessingTests(unittest.TestCase):
         self.original_pydicom = sys.modules.get("pydicom")
         self.calls = []
 
-        def dcmread(path, *, force=False, stop_before_pixels=False):
-            self.calls.append(
-                {
-                    "path": path,
-                    "force": force,
-                    "stop_before_pixels": stop_before_pixels,
-                }
-            )
+        class InvalidDicomError(Exception):
+            pass
+
+        def dcmread(path):
+            self.calls.append({"path": path})
+            if Path(path).suffix == ".txt":
+                raise InvalidDicomError
             return FakeDataset()
 
-        sys.modules["pydicom"] = types.SimpleNamespace(dcmread=dcmread)
+        sys.modules["pydicom"] = types.SimpleNamespace(
+            dcmread=dcmread,
+            errors=types.SimpleNamespace(InvalidDicomError=InvalidDicomError),
+        )
 
     def tearDown(self):
         if self.original_pydicom is None:
@@ -53,7 +55,7 @@ class DicomProcessingTests(unittest.TestCase):
             summary = process_dicom_paths(
                 source_dir,
                 output_dir,
-                name_factory=NameFactory(locale="ko", seed="demo"),
+                name_factory=NameFactory(seed="demo"),
             )
 
             output_file = output_dir / "nested" / "image.dcm"
@@ -61,24 +63,25 @@ class DicomProcessingTests(unittest.TestCase):
             self.assertTrue(output_file.exists())
             self.assertRegex(output_file.read_text(encoding="utf-8"), r"^[A-Z]+\^[A-Z]+$")
             self.assertNotEqual(output_file.read_text(encoding="utf-8"), "ANONYMOUS")
+            self.assertEqual(source_file.read_bytes(), b"fake")
 
-    def test_dry_run_does_not_write_output(self):
+    def test_non_dicom_files_are_skipped(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            source_file = root / "image.dcm"
-            output_file = root / "out.dcm"
-            source_file.write_bytes(b"fake")
+            source_dir = root / "input"
+            output_dir = root / "output"
+            source_dir.mkdir()
+            (source_dir / "notes.txt").write_text("not dicom", encoding="utf-8")
 
             summary = process_dicom_paths(
-                source_file,
-                output_file,
-                name_factory=NameFactory(locale="en"),
-                dry_run=True,
+                source_dir,
+                output_dir,
+                name_factory=NameFactory(seed="demo"),
             )
 
-            self.assertEqual(summary.processed_count, 1)
-            self.assertFalse(output_file.exists())
-            self.assertTrue(self.calls[0]["stop_before_pixels"])
+            self.assertEqual(summary.processed_count, 0)
+            self.assertEqual(summary.skipped_count, 1)
+            self.assertFalse((output_dir / "notes.txt").exists())
 
 
 if __name__ == "__main__":

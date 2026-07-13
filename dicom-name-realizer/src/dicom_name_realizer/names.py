@@ -1,168 +1,69 @@
 from __future__ import annotations
 
-import hashlib
+import random
+import secrets
 from dataclasses import dataclass
+from dataclasses import field
 
 
-KO_FAMILY_NAMES = (
-    "KIM",
-    "LEE",
-    "PARK",
-    "CHOI",
-    "JUNG",
-    "KANG",
-    "CHO",
-    "YOON",
-    "JANG",
-    "LIM",
-    "HAN",
-    "OH",
-    "SEO",
-    "SHIN",
-    "KWON",
-    "HWANG",
-    "AHN",
-    "SONG",
-    "RYU",
-    "HONG",
-    "JEON",
-    "MOON",
-    "BAE",
-    "NAM",
+# Each entry is a complete DICOM Person Name value in FAMILY^GIVEN form.
+KO_NAMES = (
+    "KIM^MINJUN", "LEE^SEOJUN", "PARK^DOYUN", "CHOI^YEJUN",
+    "JUNG^SIWOO", "KANG^JUWON", "CHO^JIHO", "YOON^JUNSEO",
+    "JANG^HYUNWOO", "LIM^GEONWOO", "HAN^SEOYEON", "OH^HAYOON",
+    "SEO^JIYOO", "SHIN^JISU", "KWON^EUNSEO", "HWANG^YUNA",
+    "AHN^SOYUL", "SONG^HARIN", "RYU^JIWOO", "HONG^SUA",
+    "JEON^DAEUN", "MOON^YUJIN", "BAE^MINSEO", "NAM^YEWON",
+    "KIM^SEONGMIN", "LEE^DONGHYUN", "PARK^SEUNGHYUN", "CHOI^TAEYANG",
+    "JUNG^WOOJIN", "KANG^JUNYOUNG", "CHO^MINJI", "YOON^SEULGI",
+    "JANG^SOJUNG", "LIM^NAEUN", "HAN^CHAEWON", "OH^SOMIN",
+    "SEO^JIHYE", "SHIN^YESEUL", "KWON^HYEJIN", "HWANG^EUNJI",
 )
 
-KO_GIVEN_NAMES = (
-    "MINJUN",
-    "SEOJUN",
-    "DOYUN",
-    "YEJUN",
-    "SIWOO",
-    "JUWON",
-    "JIHO",
-    "JUNSEO",
-    "HYUNWOO",
-    "GEONWOO",
-    "SEOYEON",
-    "HAYOON",
-    "JIYOO",
-    "JISU",
-    "EUNSEO",
-    "YUNA",
-    "SOYUL",
-    "HARIN",
-    "JIWOO",
-    "SUA",
-    "DAEUN",
-    "YUJIN",
-    "MINSEO",
-    "YEWON",
+EN_NAMES = (
+    "SMITH^JAMES", "JOHNSON^MARY", "WILLIAMS^ROBERT", "BROWN^PATRICIA",
+    "JONES^JOHN", "GARCIA^JENNIFER", "MILLER^MICHAEL", "DAVIS^LINDA",
+    "MARTINEZ^DAVID", "RODRIGUEZ^ELIZABETH", "ANDERSON^WILLIAM", "TAYLOR^BARBARA",
+    "THOMAS^RICHARD", "MOORE^SUSAN", "MARTIN^JOSEPH", "LEE^JESSICA",
+    "PEREZ^THOMAS", "THOMPSON^SARAH", "WHITE^CHARLES", "HARRIS^KAREN",
+    "CLARK^DANIEL", "LEWIS^NANCY", "YOUNG^MATTHEW", "WALKER^LISA",
+    "HALL^CHRISTOPHER", "ALLEN^AMANDA", "KING^JOSHUA", "WRIGHT^MELISSA",
+    "SCOTT^ANDREW", "GREEN^STEPHANIE", "BAKER^RYAN", "ADAMS^REBECCA",
+    "NELSON^BRANDON", "CARTER^LAURA", "MITCHELL^KEVIN", "PEREZ^EMILY",
+    "ROBERTS^JACOB", "TURNER^OLIVIA", "PHILLIPS^ETHAN", "CAMPBELL^SOPHIA",
 )
 
-EN_FAMILY_NAMES = (
-    "SMITH",
-    "JOHNSON",
-    "WILLIAMS",
-    "BROWN",
-    "JONES",
-    "GARCIA",
-    "MILLER",
-    "DAVIS",
-    "MARTINEZ",
-    "RODRIGUEZ",
-    "ANDERSON",
-    "TAYLOR",
-    "THOMAS",
-    "MOORE",
-    "MARTIN",
-    "LEE",
-    "PEREZ",
-    "THOMPSON",
-    "WHITE",
-    "HARRIS",
-    "CLARK",
-    "LEWIS",
-    "YOUNG",
-    "WALKER",
+JA_NAMES = (
+    "SATO^HARUTO", "SUZUKI^YUTO", "TAKAHASHI^SOTA", "TANAKA^REN",
+    "WATANABE^YUKI", "ITO^KENTA", "YAMAMOTO^RYOTA", "NAKAMURA^TAKUMI",
+    "KOBAYASHI^DAIKI", "KATO^SHOTA", "YOSHIDA^SAKURA", "YAMADA^YUI",
+    "SASAKI^HINA", "YAMAGUCHI^RIN", "MATSUDA^AKARI", "INOUYE^MIO",
+    "SHIMIZU^NANAMI", "HAYASHI^KOHARU", "ABE^MOMOKA", "IKEDA^KANON",
 )
 
-EN_GIVEN_NAMES = (
-    "JAMES",
-    "MARY",
-    "ROBERT",
-    "PATRICIA",
-    "JOHN",
-    "JENNIFER",
-    "MICHAEL",
-    "LINDA",
-    "DAVID",
-    "ELIZABETH",
-    "WILLIAM",
-    "BARBARA",
-    "RICHARD",
-    "SUSAN",
-    "JOSEPH",
-    "JESSICA",
-    "THOMAS",
-    "SARAH",
-    "CHARLES",
-    "KAREN",
-    "DANIEL",
-    "NANCY",
-    "MATTHEW",
-    "LISA",
-)
+ALL_NAMES = KO_NAMES + EN_NAMES + JA_NAMES
 
 
-LOCALE_ALIASES = {
-    "ko": "ko",
-    "ko-kr": "ko",
-    "korean": "ko",
-    "en": "en",
-    "en-us": "en",
-    "english": "en",
-    "mixed": "mixed",
-}
-
-
-def normalize_locale(locale: str) -> str:
-    normalized = LOCALE_ALIASES.get(locale.strip().lower())
-    if normalized is None:
-        supported = ", ".join(sorted(set(LOCALE_ALIASES.values())))
-        raise ValueError(f"unsupported locale '{locale}'. Use one of: {supported}")
-    return normalized
-
-
-@dataclass(frozen=True)
+@dataclass
 class NameFactory:
-    locale: str = "ko"
-    seed: str = ""
+    """Randomly assign synthetic names while keeping one name per patient key."""
+
+    seed: str | None = None
+    _assigned_names: dict[str, str] = field(default_factory=dict, init=False)
+    _available_names: list[str] = field(default_factory=list, init=False)
+    _random: random.Random = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "locale", normalize_locale(self.locale))
+        self._random = random.Random(self.seed) if self.seed is not None else secrets.SystemRandom()
+        self._refill_names()
 
     def name_for_key(self, key: str) -> str:
-        digest = hashlib.sha256(f"{self.seed}\0{key}".encode("utf-8")).digest()
-        locale = self._locale_for_digest(digest)
-        family_names, given_names = self._name_pool(locale)
+        if key not in self._assigned_names:
+            if not self._available_names:
+                self._refill_names()
+            self._assigned_names[key] = self._available_names.pop()
+        return self._assigned_names[key]
 
-        family = family_names[_pick_index(digest, 1, len(family_names))]
-        given = given_names[_pick_index(digest, 5, len(given_names))]
-        return f"{family}^{given}"
-
-    def _locale_for_digest(self, digest: bytes) -> str:
-        if self.locale != "mixed":
-            return self.locale
-        return "ko" if digest[0] % 2 == 0 else "en"
-
-    @staticmethod
-    def _name_pool(locale: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
-        if locale == "ko":
-            return KO_FAMILY_NAMES, KO_GIVEN_NAMES
-        if locale == "en":
-            return EN_FAMILY_NAMES, EN_GIVEN_NAMES
-        raise ValueError(f"unsupported normalized locale '{locale}'")
-
-
-def _pick_index(digest: bytes, offset: int, modulo: int) -> int:
-    value = int.from_bytes(digest[offset : offset + 4], "big")
-    return value % modulo
+    def _refill_names(self) -> None:
+        self._available_names = list(ALL_NAMES)
+        self._random.shuffle(self._available_names)

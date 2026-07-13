@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
-
 from .names import NameFactory
 
 
@@ -28,16 +26,18 @@ class FileUpdate:
 @dataclass(frozen=True)
 class ProcessSummary:
     updates: tuple[FileUpdate, ...]
-    dry_run: bool
+    skipped_count: int
 
     @property
     def processed_count(self) -> int:
         return len(self.updates)
 
     def to_message(self) -> str:
-        action = "Planned" if self.dry_run else "Wrote"
         suffix = " No DICOM files matched." if not self.updates else ""
-        return f"{action} {self.processed_count} DICOM file(s).{suffix}"
+        return (
+            f"Wrote {self.processed_count} DICOM file(s); "
+            f"skipped {self.skipped_count} non-DICOM file(s).{suffix}"
+        )
 
 
 def process_dicom_paths(
@@ -45,46 +45,40 @@ def process_dicom_paths(
     output_path: Path,
     *,
     name_factory: NameFactory,
-    recursive: bool = True,
-    include_all: bool = False,
-    extension: str = ".dcm",
-    force: bool = False,
     overwrite: bool = False,
-    dry_run: bool = False,
 ) -> ProcessSummary:
     pydicom = _load_pydicom()
     input_path = input_path.resolve()
     output_path = output_path.resolve()
 
-    files = tuple(
-        _iter_input_files(
-            input_path,
-            recursive=recursive,
-            include_all=include_all,
-            extension=extension,
+    files = tuple(_iter_input_files(input_path))
+    if input_path.is_dir() and _is_relative_to(output_path, input_path):
+        raise DicomNameRealizerError(
+            "output directory must be outside the input directory"
         )
-    )
-
-    if input_path.is_dir() and output_path == input_path:
-        raise DicomNameRealizerError("output directory must be different from input directory")
 
     updates: list[FileUpdate] = []
+    skipped_count = 0
     for source_file in files:
         destination = _build_output_path(source_file, input_path, output_path)
-        if not dry_run and destination.exists() and not overwrite:
+        try:
+            dataset = pydicom.dcmread(str(source_file))
+        except pydicom.errors.InvalidDicomError:
+            skipped_count += 1
+            continue
+
+        if destination.exists() and not overwrite:
             raise DicomNameRealizerError(
                 f"output already exists: {destination}. Pass --overwrite to replace it."
             )
 
-        dataset = pydicom.dcmread(str(source_file), force=force, stop_before_pixels=dry_run)
         source_key = _patient_consistency_key(dataset, source_file)
         old_name = str(getattr(dataset, "PatientName", ""))
         new_name = name_factory.name_for_key(source_key)
 
-        if not dry_run:
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            dataset.PatientName = new_name
-            dataset.save_as(str(destination))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        dataset.PatientName = new_name
+        dataset.save_as(str(destination))
 
         updates.append(
             FileUpdate(
@@ -93,41 +87,11 @@ def process_dicom_paths(
                 source_key=source_key,
                 old_patient_name=old_name,
                 new_patient_name=new_name,
-                written=not dry_run,
+                written=True,
             )
         )
 
-    return ProcessSummary(updates=tuple(updates), dry_run=dry_run)
-
-
-def write_mapping_csv(path: Path, updates: Iterable[FileUpdate]) -> None:
-    import csv
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(
-            csv_file,
-            fieldnames=(
-                "source_path",
-                "output_path",
-                "source_key",
-                "old_patient_name",
-                "new_patient_name",
-                "written",
-            ),
-        )
-        writer.writeheader()
-        for update in updates:
-            writer.writerow(
-                {
-                    "source_path": str(update.source_path),
-                    "output_path": str(update.output_path),
-                    "source_key": update.source_key,
-                    "old_patient_name": update.old_patient_name,
-                    "new_patient_name": update.new_patient_name,
-                    "written": update.written,
-                }
-            )
+    return ProcessSummary(updates=tuple(updates), skipped_count=skipped_count)
 
 
 def _load_pydicom():
@@ -140,13 +104,7 @@ def _load_pydicom():
     return pydicom
 
 
-def _iter_input_files(
-    input_path: Path,
-    *,
-    recursive: bool,
-    include_all: bool,
-    extension: str,
-) -> Iterable[Path]:
+def _iter_input_files(input_path: Path):
     if input_path.is_file():
         yield input_path
         return
@@ -154,12 +112,8 @@ def _iter_input_files(
     if not input_path.is_dir():
         raise DicomNameRealizerError(f"input path does not exist: {input_path}")
 
-    normalized_extension = extension.lower()
-    candidates = input_path.rglob("*") if recursive else input_path.iterdir()
-    for candidate in sorted(candidates):
-        if not candidate.is_file():
-            continue
-        if include_all or candidate.suffix.lower() == normalized_extension:
+    for candidate in sorted(input_path.rglob("*")):
+        if candidate.is_file():
             yield candidate
 
 
@@ -180,3 +134,11 @@ def _patient_consistency_key(dataset, source_file: Path) -> str:
         if text:
             return f"{keyword}:{text}"
     return f"Path:{source_file.as_posix()}"
+
+
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+    except ValueError:
+        return False
+    return True
