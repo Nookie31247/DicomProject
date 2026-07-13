@@ -1,0 +1,9 @@
+.gradle/
+build/
+*.log
+logs/
+.env
+.env.*
+application-local.yml
+application-local.yaml
+
