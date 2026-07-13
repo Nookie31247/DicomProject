@@ -345,6 +345,10 @@ public class DicomService {
         anonymizationService.anonymize(orthancUidToDateOffsetDays);
     }
 
+    private static final long DATE_OFFSET_SALT = 913_047_211L; // 임의로 고른 고정값(의미 없는 매직넘버)
+    private static final int MIN_SHIFT_DAYS = 365;      // 1년 (하한)
+    private static final int MAX_SHIFT_DAYS = 365 * 3;  // 3년 (상한)
+
     /**
      * 환자 키로부터 환자마다 다르지만, 같은 환자는 항상 같은 날짜 시프트 오프셋(일수)을 계산합니다.
      * 그래서 절대 날짜는 환자별 오프셋만큼 day shift를 사용하여 일정 수치만큼 밀어내고, 간격은 그대로 보존하는 방식을 쓴다.
@@ -353,10 +357,6 @@ public class DicomService {
      * @return -1095 ~ -365일 또는 +365 ~ +1095일 범위의 날짜 오프셋(일수).
      *         같은 patientKey를 넣으면 항상 같은 값이 나온다.
      */
-    private static final long DATE_OFFSET_SALT = 913_047_211L; // 임의로 고른 고정값(의미 없는 매직넘버)
-    private static final int MIN_SHIFT_DAYS = 365;      // 1년 (하한)
-    private static final int MAX_SHIFT_DAYS = 365 * 3;  // 3년 (상한)
-
     private int computeDateOffsetDays(Long patientKey) {
         long seed = (patientKey == null ? 0L : patientKey) ^ DATE_OFFSET_SALT;
         // java.util.Random은 같은 seed를 주면 항상 같은 순서의 난수를 뽑으므로, 같은 환자는 항상 같은 오프셋을 받는다.
