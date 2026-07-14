@@ -14,16 +14,6 @@ import java.util.List;
  * 표준 CRUD 및 사용자 정의 쿼리 작업을 제공하기 위해 JpaRepository를 확장합니다.
  */
 public interface StudyRepository extends JpaRepository<Study, Long> {
-
-    /**
-     * 주어진 Study Instance UID를 가진 검사(study)가 존재하는지 확인합니다.
-     * 중복 저장을 방지하는 데 유용합니다.
-     *
-     * @param uid Study Instance UID
-     * @return 검사(study)가 존재하면 true, 그렇지 않으면 false
-     */
-    boolean existsByUid(String uid);
-
     /**
      * Study Instance UID로 검사(study)를 찾습니다. 기존 검사(study)를 재사용하는 데 사용할 수 있습니다.
      *
@@ -127,6 +117,7 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
                     select 1 from Patient p
                     where p = s.patientKey
                     and p.doctorKey.key = :doctorKey
+                order by s.createdAt desc
                 )
             """)
     int changeAllowResearch(
@@ -134,33 +125,6 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             @Param("studyKeys") List<Long> studyKeys,
             @Param("isAllowed") boolean isAllowed
     );
-
-    /**
-     * 연구 목적으로 허용되고 숨겨지지 않은 모든 검사(study)를 검색합니다.
-     *
-     * @return 생성 시간 내림차순으로 정렬된 조건과 일치하는 {@link Study} 목록
-     */
-    @Query("""
-    select s
-    from Study s
-    join fetch s.patientKey p
-    where s.allowResearch = true
-      and s.hiddenFlag = false
-    order by s.createdAt desc
-    """)
-    List<Study> findResearchStudies();
-
-    /**
-     * 주어진 검사(study) 키 목록에 대한 Orthanc ID를 검색합니다.
-     *
-     * @param studyKeys 검사(study) 키 목록
-     * @return 제공된 검사(study) 키에 해당하는 Orthanc ID 목록
-     */
-    @Query("""
-            select s.orthancId from Study s
-            where s.key in :studyKeys
-    """)
-    List<String> findOrthancUidFromKeys(@Param("studyKeys") List<Long> studyKeys);
 
     /**
      * 연구 허용 처리(익명화 요청) 시, Study의 Orthanc ID와 함께 소속 환자(patientKey)까지
