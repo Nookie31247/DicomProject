@@ -1,4 +1,4 @@
-import {medicalApiFetch, researchApiFetch} from "./ApiFetch";
+import {medicalApiFetch, medicalApiUrl, researchApiFetch, researchApiUrl} from "./ApiFetch";
 
 // 업로드 실패 파일 1개의 정보
 interface UploadFailedFileDto {
@@ -121,7 +121,8 @@ const dicomApi = {
   ): Promise<UploadResultDto> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/medical/dicom/upload");
+      xhr.open("POST", medicalApiUrl("/api/medical/dicom/upload"));
+      xhr.withCredentials = true;
 
       xhr.upload.onprogress = (e) => {
         if (!options?.onProgress) {
@@ -176,7 +177,7 @@ const dicomApi = {
   },
 
   downloadBatch: async (studyKeys: number[], seriesKeys: number[]): Promise<Blob> => {
-    const response = await fetch("/api/research/dicom/download/batch", {
+    const response = await fetch(researchApiUrl("/api/research/dicom/download/batch"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
