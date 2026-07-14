@@ -5,6 +5,7 @@ interface UploadFailedFileDto {
   "file-name": string;
   message: string;
 }
+const MEDICAL_API_ORIGIN = process.env.NEXT_PUBLIC_MEDICAL_API_ORIGIN ?? "";
 
 // 다중 파일 업로드 결과 요약
 export interface UploadResultDto {
