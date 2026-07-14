@@ -1,0 +1,96 @@
+services:
+  pacs-server:
+    image: orthancteam/orthanc:latest
+    container_name: pacs-orthanc
+    restart: always
+    ports:
+      - "${ORTHANC_HTTP_PORT:-8042}:8042"
+      - "${ORTHANC_DICOM_PORT:-4242}:4242"
+    environment:
+      ORTHANC__NAME: "${ORTHANC_NAME:-PACS_MAIN}"
+      ORTHANC__DICOM_AET: "${ORTHANC_NAME:-PACS_MAIN}"
+      DICOM_WEB_PLUGIN_ENABLED: "true"
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+      DICOM_MODALITIES: |
+        {
+          "anonymization-server": ["${ORTHANC_NAME_ANON:-PACS_ANON}", "${ANON_SERVER_PRIVATE_IP}", ${ORTHANC_DICOM_PORT_ANON:-4243}]
+        }
+      ORTHANC_EXPLORER_2_PLUGIN_ENABLED: "true"
+      ORTHANC__ORTHANC_EXPLORER2__ENABLE: "true"
+      ORTHANC__ORTHANC_EXPLORER2__IS_DEFAULT_ORTHANC_UI: "true"
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+    volumes:
+      - pacs-orthanc:/var/lib/orthanc/db
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+        reservations:
+          memory: 200m
+
+  pacs-db:
+    image: mysql:8.0
+    container_name: pacs-db
+    restart: always
+    ports:
+      - "${RDS_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${RDS_PASS:-pacs_password}"
+      MYSQL_DATABASE: "${RDS_NAME:-pacsdb}"
+    volumes:
+      - pacs-db:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          memory: 400m
+        reservations:
+          memory: 150m
+
+  redis:
+    image: redis:latest
+    container_name: pacs-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - pacs-redis:/var/lib/redis
+    deploy:
+      resources:
+        limits:
+          memory: 100m
+        reservations:
+          memory: 30m
+
+  dicom-back:
+    image: tenye725z/dicom-back:latest
+    container_name: dicom-back
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      RDS_HOST: pacs-db
+      RDS_PORT: 3306
+      RDS_NAME: "${RDS_NAME:-pacsdb}"
+      RDS_PASS: "${RDS_PASS:-pacs_password}"
+      REDIS_HOST: pacs-redis
+      REDIS_PORT: 6379
+      ORTHANC_URL: http://pacs-orthanc:8042
+      ANON_APP_URL: "http://${ANON_SERVER_PRIVATE_IP}:8081"
+      CORS_ORIGINS: "${PUBLIC_ORIGIN:-http://localhost:3000}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - pacs-db
+      - redis
+      - pacs-server
+    deploy:
+      resources:
+        limits:
+          memory: 900m
+        reservations:
+          memory: 400m
+
+volumes:
+  pacs-orthanc:
+  pacs-db:
+  pacs-redis:
