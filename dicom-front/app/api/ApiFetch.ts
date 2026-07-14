@@ -6,10 +6,22 @@ export enum ApiServer {
   RESEARCH_SERVER,
 }
 
+const API_ORIGIN_FALLBACKS: Record<ApiServer, string> = {
+  [ApiServer.MEDICAL_SERVER]: "http://localhost:8080",
+  [ApiServer.RESEARCH_SERVER]: "http://localhost:8081",
+};
+
 /**
  * 사용자 계정 역할을 나타내는 타입입니다.
  */
 export type AccountType = "MEDICAL" | "RESEARCHER";
+
+/**
+ * 계정 유형에 따라 API 서버를 결정합니다.
+ */
+export function apiServerForAccount(accountType: AccountType) {
+  return accountType === "RESEARCHER" ? ApiServer.RESEARCH_SERVER : ApiServer.MEDICAL_SERVER;
+}
 
 const AUTH_ERROR_CODES = new Set(["JWT_001", "JWT_002", "JWT_003", "JWT_004"]);
 
@@ -27,14 +39,47 @@ function normalizeApiPath(server: ApiServer, path: string) {
   return path.startsWith("/") ? `${prefix}${path}` : `${prefix}/${path}`;
 }
 
+function isAbsoluteUrl(path: string) {
+  return /^https?:\/\//i.test(path);
+}
+
+function apiOrigin(server: ApiServer) {
+  const origin = server === ApiServer.MEDICAL_SERVER
+    ? process.env.NEXT_PUBLIC_MEDICAL_API_ORIGIN
+    : process.env.NEXT_PUBLIC_RESEARCH_API_ORIGIN;
+
+  return (origin ?? API_ORIGIN_FALLBACKS[server]).replace(/\/$/, "");
+}
+
 /**
- * 계정 유형에 따라 API 서버를 결정합니다.
- *
- * @param accountType - 계정 유형
- * @returns 해당하는 API 서버 환경
+ * API path를 NEXT_PUBLIC 환경 변수에 지정한 백엔드 URL로 변환합니다.
  */
-export function apiServerForAccount(accountType: AccountType) {
-  return accountType === "RESEARCHER" ? ApiServer.RESEARCH_SERVER : ApiServer.MEDICAL_SERVER;
+export function apiUrl(server: ApiServer, path: string) {
+  if (isAbsoluteUrl(path)) {
+    return path;
+  }
+
+  return `${apiOrigin(server)}${normalizeApiPath(server, path)}`;
+}
+
+export function medicalApiUrl(path: string) {
+  return apiUrl(ApiServer.MEDICAL_SERVER, path);
+}
+
+export function researchApiUrl(path: string) {
+  return apiUrl(ApiServer.RESEARCH_SERVER, path);
+}
+
+function resolveApiUrl(path: string) {
+  if (isAbsoluteUrl(path)) {
+    return path;
+  }
+
+  if (path.startsWith("/api/research/")) {
+    return researchApiUrl(path);
+  }
+
+  return medicalApiUrl(path);
 }
 
 /**
@@ -82,7 +127,12 @@ function isAuthError(data: unknown) {
  * @returns 파싱된 응답 데이터 또는 null
  */
 export async function ApiFetch(path: string, options: RequestInit = {}) {
-  const response = await fetch(path, options);
+  const response = await fetch(resolveApiUrl(path), {
+    // Backend calls from the browser are cross-origin, so opt in to sending
+    // authentication cookies unless the caller explicitly chooses otherwise.
+    credentials: typeof window === "undefined" ? options.credentials : "include",
+    ...options,
+  });
 
   if (response.status === 204) {
     return null;

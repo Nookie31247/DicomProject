@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-const medicalApiOrigin = (process.env.MEDICAL_API_ORIGIN ?? "http://localhost:8080").replace(/\/$/, "");
+const medicalApiOrigin = (process.env.NEXT_PUBLIC_MEDICAL_API_ORIGIN ?? "http://localhost:8080").replace(/\/$/, "");
 
 /**
  * DICOM 업로드를 위한 POST 요청을 처리합니다.

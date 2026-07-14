@@ -14,28 +14,6 @@ import java.util.List;
  * 표준 CRUD 및 사용자 정의 쿼리 작업을 제공하기 위해 JpaRepository를 확장합니다.
  */
 public interface PatientRepository extends JpaRepository<Patient, Long> {
-
-    /**
-     * 최근 검사가 지정된 날짜 범위 내에 있는 특정 의사의 환자 목록을 검색합니다.
-     *
-     * @param doctorKey 의사 키
-     * @param start 범위의 시작 날짜
-     * @param end 범위의 종료 날짜
-     * @return 조건과 일치하는 {@link Patient} 목록
-     */
-    List<Patient> findByDoctorKey_KeyAndRecentStudyBetween(Long doctorKey, LocalDateTime start, LocalDateTime end);
-
-    /**
-     * 이름(포함) 및 최근 검사 날짜 범위로 특정 의사의 환자 목록을 검색합니다.
-     *
-     * @param doctorKey 의사 키
-     * @param name 검색할 이름 또는 일부 이름
-     * @param start 범위의 시작 날짜
-     * @param end 범위의 종료 날짜
-     * @return 조건과 일치하는 {@link Patient} 목록
-     */
-    List<Patient> findByDoctorKey_KeyAndNameContainingAndRecentStudyBetween(Long doctorKey, String name, LocalDateTime start, LocalDateTime end);
-
     /**
      * 특정 의사에게 할당된 여러 환자의 숨김 플래그를 업데이트합니다.
      *
@@ -74,6 +52,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
         where p.doctorKey.key = :doctorKey
           and (:name is null or p.name like %:name%)
           and (p.recentStudy is null or p.recentStudy between :start and :end)
+        order by p.recentStudy desc
     """)
     List<Patient> findByDoctorKeyWithOptionalRecentStudy(
             @Param("doctorKey") Long doctorKey,

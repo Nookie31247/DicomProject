@@ -4,7 +4,7 @@ import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
 import DicomViewer from "@/app/components/dicom-viewer/DicomViewer";
 import {RoleGuard} from "@/app/components/auth/RouteAccess";
-import {medicalApiFetch} from "../../api/ApiFetch";
+import {medicalApiFetch, medicalApiUrl} from "../../api/ApiFetch";
 
 type StudyDto = {
     "study-key": number;
@@ -69,7 +69,7 @@ function buildClips(seriesKey: number, instances: InstanceInfo[]): Clip[] {
     };
 
     instances.forEach((inst) => {
-        const baseUrl = `/api/medical/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`;
+        const baseUrl = medicalApiUrl(`/api/medical/dicom/series/${seriesKey}/instances/${inst["instance-id"]}/file`);
         const frameCount = inst["number-of-frames"] || 1;
 
         if (frameCount <= 1) {

@@ -59,6 +59,7 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     join st.patientKey p
     where p.doctorKey.key = :doctorKey
         and st.key = :studyKey
+    order by se.seriesNum asc
     """)
     List<Series> getSeries(
             @Param("doctorKey") Long doctorKey,
