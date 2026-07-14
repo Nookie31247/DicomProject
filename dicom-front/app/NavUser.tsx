@@ -54,7 +54,7 @@ export function HeaderLogo() {
           href={isLogin ? homePathFor(userType) : "/"}
           className="font-bold no-underline text-3xl tracking-[-0.01em] text-ink"
       >
-        DICOM!
+        AI Doctor
       </Link>
   );
 }

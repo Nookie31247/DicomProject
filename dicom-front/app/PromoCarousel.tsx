@@ -157,7 +157,7 @@ export default function PromoCarousel() {
                       <Icon size={28} strokeWidth={2.2} />
                     </div>
                     <span className="rounded-full bg-[#e9fff3] px-3 py-1.5 text-xs font-bold text-mint-deep">
-                      DICOM!
+                      AI Doctor
                     </span>
                   </div>
                   <p className="m-0 text-2xl font-bold tracking-[-0.02em] text-ink">

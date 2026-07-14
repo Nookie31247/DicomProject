@@ -4,7 +4,7 @@ import ScanVisual from "@/app/components/scan-visual/ScanVisual";
 import LoginForm from "./LoginForm";
 
 export const metadata: Metadata = {
-  title: "로그인 — DICOM!",
+  title: "로그인 — AI Doctor",
 };
 
 /**

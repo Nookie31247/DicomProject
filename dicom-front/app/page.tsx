@@ -4,10 +4,6 @@ import HeroCta from "@/app/HeroCta";
 import PromoCarousel from "@/app/PromoCarousel";
 import { HomeRedirect } from "@/app/components/auth/RouteAccess";
 
-export const metadata: Metadata = {
-  title: "DICOM! — DICOM 파일을 보다 간편하게",
-};
-
 /**
  * 서비스 기능을 설명하는 홈페이지 컴포넌트입니다.
  * 히어로 섹션과 홍보 콘텐츠를 표시합니다.

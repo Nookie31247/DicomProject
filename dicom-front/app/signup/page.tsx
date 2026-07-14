@@ -26,7 +26,7 @@ export default function SignupPage() {
           </p>
         </div>
         <div className="mx-auto w-full bg-paper rounded-3xl shadow-[0_24px_48px_-24px_rgba(15,31,61,0.18)] max-w-120 px-[clamp(28px,4vw,52px)] py-13 max-[900px]:px-6.5 max-[900px]:py-10">
-          <p className="eyebrow">DICOM!과 함께 시작해보세요</p>
+          <p className="eyebrow">AI Doctor와 함께 시작해보세요</p>
           <h1 className="font-bold text-4xl tracking-[-0.01em] m-0 text-ink max-[560px]:text-3xl mb-7">회원가입</h1>
             <SignupForm />
           <p className="text-center text-base text-ink-soft mt-6">
