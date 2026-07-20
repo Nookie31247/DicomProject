@@ -27,18 +27,19 @@
 | 인프라 | Orthanc PACS (DICOM 실물), MySQL 8.0 (메타데이터), Redis (토큰 블랙리스트), Docker Compose |
 
 
-## 실행화면
-| 회원가입 화면 |
-| ![회원가입 스샷](./Dicom_images/signup_img.png)|
+## 실행 화면
 
-| 로그인 화면 |
-| ![로그인 스샷](./Dicom_images/login_img.png) |
+### 회원가입
+![회원가입 스샷](./Dicom_images/signup_img.png)
 
-| 메인 화면  |
-| ![Dicom 메인 화면 스샷](./Dicom_images/main_img.png)|
+### 로그인
+![로그인 스샷](./Dicom_images/login_img.png)
 
-| 진찰 화면 |
-| ![진찰 화면 스샷](./Dicom_images/Dicom_img.png)|
+### 메인 화면
+![Dicom 메인 화면 스샷](./Dicom_images/main_img.png)
+
+### 진찰 화면
+![진찰 화면 스샷](./Dicom_images/Dicom_img.png)
 
 
  ## 시스템 파이프라인 흐름도
@@ -100,6 +101,6 @@ npm install && npm run dev
 ```
 
 ## 프로젝트 주소
-[AI Doctor 주소](https://dicom.nkdev.shop/)
+[AI Doctor 주소 : https://dicom.nkdev.shop/](https://dicom.nkdev.shop/)
 
 
