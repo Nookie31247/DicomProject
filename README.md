@@ -84,7 +84,7 @@
 | --- | --- | --- |
 | POST | /users/login · /signup | 연구원 인증 |
 | GET | /dicom/studies · /series | 익명화된 연구용 데이터 조회 |
-| GET | /dicom/studies/download 등 | 연구용 ZIP 다운로드 |
+| GET | /dicom/studies/download | 연구용 ZIP 다운로드 |
 | POST | /dicom/get-anonymization | 익명화 완료 서비스 간 내부 콜백 |
 
 
