@@ -11,10 +11,10 @@
 - **보안/감사**: JWT(httpOnly 쿠키) 인증, Redis 토큰 블랙리스트, 민감 정보 조회 시 감사 로그 기록
 
 
-| 질환 |    모달리티    |           모델            |
-|:-:|:----------:|:-----------------------:|
-|뇌종양|  CT / MR   |        best.onnx        |
-|폐렴|CR(흉부 X-ray)|CR_pneumonia_yolov8n.onnx|
+| 질환 |    모달리티    | 추론 모델 |
+|:-:|:----------:|:-----:|
+|뇌종양|  CT / MR   | YOLO8 |
+|폐렴|CR(흉부 X-ray)| YOLO8 |
 
 
 ## 기술 스택
@@ -103,4 +103,7 @@ npm install && npm run dev
 ## 프로젝트 주소
 [AI Doctor 주소 : https://dicom.nkdev.shop/](https://dicom.nkdev.shop/)
 
+
+## 시연 영상
+[시연 영상 주소 : https://drive.google.com/file/d/1LqY-ZGo944oxoFBVURGQUHjOv3z9B90Y/view?usp=sharing](https://drive.google.com/file/d/1LqY-ZGo944oxoFBVURGQUHjOv3z9B90Y/view?usp=sharing)
 
